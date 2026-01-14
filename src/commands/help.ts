@@ -33,7 +33,6 @@ LIST OPTIONS:
                              Valid: ui, feature, bugfix, setup, development, testing, docs
   --passes                   Show only completed items (passes=true)
   --no-passes                Show only incomplete items (passes=false)
-  --stats                    Show statistics instead of entries
 
 TOGGLE OPTIONS:
   <n> [n2] [n3]...           Toggle one or more entries by number
@@ -52,7 +51,6 @@ EXAMPLES:
   ralph list -c feature      # Show only feature entries
   ralph list --passes        # Show only completed entries
   ralph list --no-passes     # Show only incomplete entries
-  ralph list --stats         # Show statistics with progress bar
   ralph status               # Show completion summary
   ralph toggle 1             # Toggle entry #1
   ralph toggle 1 2 3         # Toggle multiple entries

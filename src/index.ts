@@ -31,8 +31,8 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   // Top-level PRD commands (shortcuts)
   add: () => prdAdd(),
   list: (args) => {
-    const { category, passesFilter, showStats } = parseListArgs(args);
-    prdList(category, passesFilter, showStats);
+    const { category, passesFilter } = parseListArgs(args);
+    prdList(category, passesFilter);
   },
   status: () => prdStatus(),
   toggle: (args) => prdToggle(args),
