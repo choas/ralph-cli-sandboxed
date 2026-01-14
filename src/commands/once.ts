@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import { checkFilesExist, loadConfig, loadPrompt, getPaths } from "../utils/config.js";
+import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig } from "../utils/config.js";
 import { resolvePromptVariables } from "../templates/prompts.js";
 
 export async function once(_args: string[]): Promise<void> {
@@ -14,33 +14,33 @@ export async function once(_args: string[]): Promise<void> {
     technologies: config.technologies,
   });
   const paths = getPaths();
+  const cliConfig = getCliConfig(config);
 
   console.log("Starting single ralph iteration...\n");
 
+  // Build CLI arguments: config args + runtime args
+  const cliArgs = [
+    ...(cliConfig.args ?? []),
+    "--dangerously-skip-permissions",
+    "-p",
+    `@${paths.prd} @${paths.progress} ${prompt}`,
+  ];
+
   return new Promise((resolve, reject) => {
-    const proc = spawn(
-      "claude",
-      [
-        "--permission-mode", "acceptEdits",
-        "--dangerously-skip-permissions",
-        "-p",
-        `@${paths.prd} @${paths.progress} ${prompt}`,
-      ],
-      {
-        stdio: "inherit",
-        shell: true,
-      }
-    );
+    const proc = spawn(cliConfig.command, cliArgs, {
+      stdio: "inherit",
+      shell: true,
+    });
 
     proc.on("close", (code) => {
       if (code !== 0) {
-        console.error(`\nClaude exited with code ${code}`);
+        console.error(`\n${cliConfig.command} exited with code ${code}`);
       }
       resolve();
     });
 
     proc.on("error", (err) => {
-      reject(new Error(`Failed to start claude: ${err.message}`));
+      reject(new Error(`Failed to start ${cliConfig.command}: ${err.message}`));
     });
   });
 }

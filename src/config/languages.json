@@ -1,0 +1,156 @@
+{
+  "languages": {
+    "bun": {
+      "name": "Bun (TypeScript)",
+      "description": "Bun runtime with TypeScript",
+      "checkCommand": "bun check",
+      "testCommand": "bun test",
+      "docker": {
+        "install": "# Install Bun\nRUN curl -fsSL https://bun.sh/install | bash\nENV PATH=\"/home/node/.bun/bin:$PATH\""
+      },
+      "technologies": [
+        { "name": "Elysia", "description": "Fast web framework for Bun" },
+        { "name": "Hono", "description": "Lightweight web framework" },
+        { "name": "Drizzle ORM", "description": "TypeScript ORM" },
+        { "name": "Prisma", "description": "Type-safe database ORM" },
+        { "name": "SQLite", "description": "Embedded SQL database" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" }
+      ]
+    },
+    "node": {
+      "name": "Node.js (TypeScript)",
+      "description": "Node.js with TypeScript",
+      "checkCommand": "npm run typecheck",
+      "testCommand": "npm test",
+      "docker": {
+        "install": "# Node.js already included in base image"
+      },
+      "technologies": [
+        { "name": "Express", "description": "Minimal web framework" },
+        { "name": "Fastify", "description": "High-performance web framework" },
+        { "name": "NestJS", "description": "Progressive Node.js framework" },
+        { "name": "Next.js", "description": "React framework for production" },
+        { "name": "Prisma", "description": "Type-safe database ORM" },
+        { "name": "TypeORM", "description": "TypeScript ORM" },
+        { "name": "Jest", "description": "JavaScript testing framework" },
+        { "name": "Vitest", "description": "Fast unit testing framework" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "MongoDB", "description": "NoSQL document database" },
+        { "name": "Redis", "description": "In-memory data store" }
+      ]
+    },
+    "python": {
+      "name": "Python",
+      "description": "Python with mypy type checking",
+      "checkCommand": "mypy .",
+      "testCommand": "pytest",
+      "docker": {
+        "install": "# Install Python and tools\nRUN apt-get update && apt-get install -y \\\n    python3 \\\n    python3-pip \\\n    python3-venv \\\n    && rm -rf /var/lib/apt/lists/*\nRUN pip3 install --break-system-packages mypy pytest"
+      },
+      "technologies": [
+        { "name": "FastAPI", "description": "Modern async web framework" },
+        { "name": "Django", "description": "Full-featured web framework" },
+        { "name": "Flask", "description": "Lightweight web framework" },
+        { "name": "SQLAlchemy", "description": "SQL toolkit and ORM" },
+        { "name": "Pydantic", "description": "Data validation library" },
+        { "name": "Celery", "description": "Distributed task queue" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "Redis", "description": "In-memory data store" },
+        { "name": "pytest", "description": "Testing framework" }
+      ]
+    },
+    "go": {
+      "name": "Go",
+      "description": "Go language",
+      "checkCommand": "go build ./...",
+      "testCommand": "go test ./...",
+      "docker": {
+        "install": "# Install Go (architecture-aware)\nRUN ARCH=$(dpkg --print-architecture) && \\\n    curl -fsSL \"https://go.dev/dl/go1.22.0.linux-${ARCH}.tar.gz\" | tar -C /usr/local -xzf -\nENV PATH=\"/usr/local/go/bin:/home/node/go/bin:$PATH\"\nENV GOPATH=\"/home/node/go\"",
+        "version": "1.22.0"
+      },
+      "technologies": [
+        { "name": "Gin", "description": "High-performance web framework" },
+        { "name": "Echo", "description": "Minimalist web framework" },
+        { "name": "Fiber", "description": "Express-inspired web framework" },
+        { "name": "GORM", "description": "ORM library for Go" },
+        { "name": "sqlx", "description": "SQL extensions for Go" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "Redis", "description": "In-memory data store" }
+      ]
+    },
+    "rust": {
+      "name": "Rust",
+      "description": "Rust with Cargo",
+      "checkCommand": "cargo check",
+      "testCommand": "cargo test",
+      "docker": {
+        "install": "# Install Rust\nRUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y\nENV PATH=\"/home/node/.cargo/bin:$PATH\""
+      },
+      "technologies": [
+        { "name": "Actix-web", "description": "Powerful web framework" },
+        { "name": "Axum", "description": "Ergonomic web framework" },
+        { "name": "Rocket", "description": "Web framework with focus on ease" },
+        { "name": "Diesel", "description": "Safe, extensible ORM" },
+        { "name": "SQLx", "description": "Async SQL toolkit" },
+        { "name": "Tokio", "description": "Async runtime" },
+        { "name": "Serde", "description": "Serialization framework" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" }
+      ]
+    },
+    "java": {
+      "name": "Java",
+      "description": "Java with Maven",
+      "checkCommand": "mvn compile",
+      "testCommand": "mvn test",
+      "docker": {
+        "install": "# Install Java ${version} and Maven\nRUN apt-get update && apt-get install -y \\\n    openjdk-${version}-jdk \\\n    maven \\\n    && rm -rf /var/lib/apt/lists/* \\\n    && ln -s /usr/lib/jvm/java-${version}-openjdk-$(dpkg --print-architecture) /usr/lib/jvm/java-${version}-openjdk\nENV JAVA_HOME=\"/usr/lib/jvm/java-${version}-openjdk\"",
+        "version": 17,
+        "versionConfigurable": true
+      },
+      "technologies": [
+        { "name": "Spring Boot", "description": "Production-ready framework" },
+        { "name": "Quarkus", "description": "Kubernetes-native Java" },
+        { "name": "Micronaut", "description": "Modern JVM framework" },
+        { "name": "Hibernate", "description": "ORM framework" },
+        { "name": "JPA", "description": "Java Persistence API" },
+        { "name": "JUnit", "description": "Testing framework" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "MySQL", "description": "Popular SQL database" }
+      ]
+    },
+    "kotlin": {
+      "name": "Kotlin",
+      "description": "Kotlin with Gradle",
+      "checkCommand": "gradle build",
+      "testCommand": "gradle test",
+      "docker": {
+        "install": "# Install Kotlin and Gradle (Java ${version})\nRUN apt-get update && apt-get install -y \\\n    openjdk-${version}-jdk \\\n    && rm -rf /var/lib/apt/lists/* \\\n    && ln -s /usr/lib/jvm/java-${version}-openjdk-$(dpkg --print-architecture) /usr/lib/jvm/java-${version}-openjdk\nENV JAVA_HOME=\"/usr/lib/jvm/java-${version}-openjdk\"\n# Install Gradle\nRUN curl -fsSL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip && \\\n    unzip -d /opt /tmp/gradle.zip && \\\n    rm /tmp/gradle.zip\nENV PATH=\"/opt/gradle-8.5/bin:$PATH\"\n# Install Kotlin compiler\nRUN curl -fsSL https://github.com/JetBrains/kotlin/releases/download/v1.9.22/kotlin-compiler-1.9.22.zip -o /tmp/kotlin.zip && \\\n    unzip -d /opt /tmp/kotlin.zip && \\\n    rm /tmp/kotlin.zip\nENV PATH=\"/opt/kotlinc/bin:$PATH\"",
+        "version": 17,
+        "versionConfigurable": true,
+        "gradleVersion": "8.5",
+        "kotlinVersion": "1.9.22"
+      },
+      "technologies": [
+        { "name": "Ktor", "description": "Asynchronous web framework" },
+        { "name": "Spring Boot", "description": "Production-ready framework" },
+        { "name": "Exposed", "description": "Kotlin SQL framework" },
+        { "name": "Koin", "description": "Dependency injection framework" },
+        { "name": "Kotest", "description": "Kotlin testing framework" },
+        { "name": "kotlinx.coroutines", "description": "Coroutines for async programming" },
+        { "name": "kotlinx.serialization", "description": "Multiplatform serialization" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "MongoDB", "description": "NoSQL document database" }
+      ]
+    },
+    "none": {
+      "name": "None (custom)",
+      "description": "Custom configuration",
+      "checkCommand": "echo 'no check configured'",
+      "testCommand": "echo 'no tests configured'",
+      "docker": {
+        "install": "# Custom language - add your dependencies here"
+      },
+      "technologies": []
+    }
+  }
+}

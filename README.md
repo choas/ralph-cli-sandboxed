@@ -71,6 +71,24 @@ After running `ralph init`, you'll have:
 - **Rust** - `cargo check`, `cargo test`
 - **Custom** - Define your own commands
 
+### CLI Configuration
+
+Ralph can be configured to use different AI CLI tools. By default, it uses Claude Code. Configure in `.ralph/config.json`:
+
+```json
+{
+  "cli": {
+    "command": "claude",
+    "args": ["--permission-mode", "acceptEdits"]
+  }
+}
+```
+
+- `command`: The CLI executable name (must be in PATH)
+- `args`: Default arguments passed to the CLI
+
+The `-p` flag with PRD/prompt content and `--dangerously-skip-permissions` (in containers) are added automatically at runtime.
+
 ## PRD Format
 
 The PRD (`prd.json`) is an array of requirements:

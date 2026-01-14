@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 
+export interface CliConfig {
+  command: string;
+  args?: string[];
+}
+
 export interface RalphConfig {
   language: string;
   checkCommand: string;
@@ -9,6 +14,16 @@ export interface RalphConfig {
   notifyCommand?: string;
   technologies?: string[];
   javaVersion?: number;
+  cli?: CliConfig;
+}
+
+export const DEFAULT_CLI_CONFIG: CliConfig = {
+  command: "claude",
+  args: ["--permission-mode", "acceptEdits"],
+};
+
+export function getCliConfig(config: RalphConfig): CliConfig {
+  return config.cli ?? DEFAULT_CLI_CONFIG;
 }
 
 const RALPH_DIR = ".ralph";

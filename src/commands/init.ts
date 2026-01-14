@@ -1,8 +1,9 @@
 import { existsSync, writeFileSync, mkdirSync, copyFileSync } from "fs";
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
-import { LANGUAGES, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, type LanguageConfig, type TechnologyStack } from "../templates/prompts.js";
+import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, type LanguageConfig, type TechnologyStack } from "../templates/prompts.js";
 import { promptSelect, promptConfirm, promptInput, promptMultiSelect } from "../utils/prompt.js";
+import { DEFAULT_CLI_CONFIG } from "../utils/config.js";
 
 // Get package root directory (works for both dev and installed package)
 const __filename = fileURLToPath(import.meta.url);
@@ -40,6 +41,7 @@ export async function init(args: string[]): Promise<void> {
   }
 
   // Select language
+  const LANGUAGES = getLanguages();
   const languageKeys = Object.keys(LANGUAGES);
   const languageNames = languageKeys.map(k => `${LANGUAGES[k].name} - ${LANGUAGES[k].description}`);
 
@@ -98,6 +100,7 @@ export async function init(args: string[]): Promise<void> {
     checkCommand: finalConfig.checkCommand,
     testCommand: finalConfig.testCommand,
     imageName,
+    cli: DEFAULT_CLI_CONFIG,
   };
 
   // Add technologies if any were selected

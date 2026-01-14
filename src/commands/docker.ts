@@ -3,89 +3,29 @@ import { join, basename } from "path";
 import { spawn } from "child_process";
 import { loadConfig, getRalphDir } from "../utils/config.js";
 import { promptConfirm } from "../utils/prompt.js";
+import { getLanguagesJson } from "../templates/prompts.js";
 
 const DOCKER_DIR = "docker";
 
-// Language-specific Dockerfile snippets
-const LANGUAGE_SNIPPETS: Record<string, string> = {
-  bun: `
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/home/node/.bun/bin:$PATH"
-`,
-  node: `
-# Node.js already included in base image
-`,
-  python: `
-# Install Python and tools
-RUN apt-get update && apt-get install -y \\
-    python3 \\
-    python3-pip \\
-    python3-venv \\
-    && rm -rf /var/lib/apt/lists/*
-RUN pip3 install --break-system-packages mypy pytest
-`,
-  go: `
-# Install Go (architecture-aware)
-RUN ARCH=$(dpkg --print-architecture) && \\
-    curl -fsSL "https://go.dev/dl/go1.22.0.linux-\${ARCH}.tar.gz" | tar -C /usr/local -xzf -
-ENV PATH="/usr/local/go/bin:/home/node/go/bin:$PATH"
-ENV GOPATH="/home/node/go"
-`,
-  rust: `
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/home/node/.cargo/bin:$PATH"
-`,
-  none: `
-# Custom language - add your dependencies here
-`,
-};
-
-// Java snippet generator (supports configurable Java version)
-function getJavaSnippet(javaVersion: number = 17): string {
-  return `
-# Install Java ${javaVersion} and Maven
-RUN apt-get update && apt-get install -y \\
-    openjdk-${javaVersion}-jdk \\
-    maven \\
-    && rm -rf /var/lib/apt/lists/* \\
-    && ln -s /usr/lib/jvm/java-${javaVersion}-openjdk-$(dpkg --print-architecture) /usr/lib/jvm/java-${javaVersion}-openjdk
-ENV JAVA_HOME="/usr/lib/jvm/java-${javaVersion}-openjdk"
-`;
-}
-
-// Kotlin snippet generator (supports configurable Java version)
-function getKotlinSnippet(javaVersion: number = 17): string {
-  return `
-# Install Kotlin and Gradle (Java ${javaVersion})
-RUN apt-get update && apt-get install -y \\
-    openjdk-${javaVersion}-jdk \\
-    && rm -rf /var/lib/apt/lists/* \\
-    && ln -s /usr/lib/jvm/java-${javaVersion}-openjdk-$(dpkg --print-architecture) /usr/lib/jvm/java-${javaVersion}-openjdk
-ENV JAVA_HOME="/usr/lib/jvm/java-${javaVersion}-openjdk"
-# Install Gradle
-RUN curl -fsSL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip && \\
-    unzip -d /opt /tmp/gradle.zip && \\
-    rm /tmp/gradle.zip
-ENV PATH="/opt/gradle-8.5/bin:$PATH"
-# Install Kotlin compiler
-RUN curl -fsSL https://github.com/JetBrains/kotlin/releases/download/v1.9.22/kotlin-compiler-1.9.22.zip -o /tmp/kotlin.zip && \\
-    unzip -d /opt /tmp/kotlin.zip && \\
-    rm /tmp/kotlin.zip
-ENV PATH="/opt/kotlinc/bin:$PATH"
-`;
-}
-
-// Get language snippet, with special handling for Java/Kotlin
+// Get language Docker snippet from config, with version substitution
 function getLanguageSnippet(language: string, javaVersion?: number): string {
-  if (language === "java") {
-    return getJavaSnippet(javaVersion);
+  const languagesJson = getLanguagesJson();
+  const langConfig = languagesJson.languages[language];
+
+  if (!langConfig || !langConfig.docker) {
+    return "# Custom language - add your dependencies here";
   }
-  if (language === "kotlin") {
-    return getKotlinSnippet(javaVersion);
+
+  let snippet = langConfig.docker.install;
+
+  // Replace ${version} placeholder with actual version
+  if (langConfig.docker.versionConfigurable && javaVersion) {
+    snippet = snippet.replace(/\$\{version\}/g, String(javaVersion));
+  } else if (langConfig.docker.version) {
+    snippet = snippet.replace(/\$\{version\}/g, String(langConfig.docker.version));
   }
-  return LANGUAGE_SNIPPETS[language] || LANGUAGE_SNIPPETS.none;
+
+  return "\n" + snippet + "\n";
 }
 
 function generateDockerfile(language: string, javaVersion?: number): string {

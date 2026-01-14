@@ -1,6 +1,30 @@
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 export interface TechnologyStack {
   name: string;
   description: string;
+}
+
+export interface DockerConfig {
+  install: string;
+  version?: number | string;
+  versionConfigurable?: boolean;
+  gradleVersion?: string;
+  kotlinVersion?: string;
+}
+
+export interface LanguageConfigJson {
+  name: string;
+  description: string;
+  checkCommand: string;
+  testCommand: string;
+  docker?: DockerConfig;
+  technologies?: TechnologyStack[];
 }
 
 export interface LanguageConfig {
@@ -11,128 +35,68 @@ export interface LanguageConfig {
   technologies?: TechnologyStack[];
 }
 
-export const LANGUAGES: Record<string, LanguageConfig> = {
-  bun: {
-    name: "Bun (TypeScript)",
-    checkCommand: "bun check",
-    testCommand: "bun test",
-    description: "Bun runtime with TypeScript",
-    technologies: [
-      { name: "Elysia", description: "Fast web framework for Bun" },
-      { name: "Hono", description: "Lightweight web framework" },
-      { name: "Drizzle ORM", description: "TypeScript ORM" },
-      { name: "Prisma", description: "Type-safe database ORM" },
-      { name: "SQLite", description: "Embedded SQL database" },
-      { name: "PostgreSQL", description: "Advanced SQL database" },
-    ],
+interface LanguagesJson {
+  languages: Record<string, LanguageConfigJson>;
+}
+
+// Load languages from JSON config file
+function loadLanguagesConfig(): LanguagesJson {
+  // In development: src/config/languages.json
+  // In production: dist/config/languages.json
+  const configPath = join(__dirname, "..", "config", "languages.json");
+  const content = readFileSync(configPath, "utf-8");
+  return JSON.parse(content);
+}
+
+// Convert JSON config to the legacy format for compatibility
+function convertToLanguageConfig(config: LanguageConfigJson): LanguageConfig {
+  return {
+    name: config.name,
+    checkCommand: config.checkCommand,
+    testCommand: config.testCommand,
+    description: config.description,
+    technologies: config.technologies,
+  };
+}
+
+// Lazy-load languages to avoid issues at import time
+let _languagesCache: Record<string, LanguageConfig> | null = null;
+let _languagesJsonCache: LanguagesJson | null = null;
+
+export function getLanguagesJson(): LanguagesJson {
+  if (!_languagesJsonCache) {
+    _languagesJsonCache = loadLanguagesConfig();
+  }
+  return _languagesJsonCache;
+}
+
+export function getLanguages(): Record<string, LanguageConfig> {
+  if (!_languagesCache) {
+    const json = getLanguagesJson();
+    _languagesCache = {};
+    for (const [key, config] of Object.entries(json.languages)) {
+      _languagesCache[key] = convertToLanguageConfig(config);
+    }
+  }
+  return _languagesCache;
+}
+
+// Export for backwards compatibility
+export const LANGUAGES: Record<string, LanguageConfig> = new Proxy({} as Record<string, LanguageConfig>, {
+  get(_target, prop: string) {
+    return getLanguages()[prop];
   },
-  node: {
-    name: "Node.js (TypeScript)",
-    checkCommand: "npm run typecheck",
-    testCommand: "npm test",
-    description: "Node.js with TypeScript",
-    technologies: [
-      { name: "Express", description: "Minimal web framework" },
-      { name: "Fastify", description: "High-performance web framework" },
-      { name: "NestJS", description: "Progressive Node.js framework" },
-      { name: "Next.js", description: "React framework for production" },
-      { name: "Prisma", description: "Type-safe database ORM" },
-      { name: "TypeORM", description: "TypeScript ORM" },
-      { name: "Jest", description: "JavaScript testing framework" },
-      { name: "Vitest", description: "Fast unit testing framework" },
-      { name: "PostgreSQL", description: "Advanced SQL database" },
-      { name: "MongoDB", description: "NoSQL document database" },
-      { name: "Redis", description: "In-memory data store" },
-    ],
+  ownKeys() {
+    return Object.keys(getLanguages());
   },
-  python: {
-    name: "Python",
-    checkCommand: "mypy .",
-    testCommand: "pytest",
-    description: "Python with mypy type checking",
-    technologies: [
-      { name: "FastAPI", description: "Modern async web framework" },
-      { name: "Django", description: "Full-featured web framework" },
-      { name: "Flask", description: "Lightweight web framework" },
-      { name: "SQLAlchemy", description: "SQL toolkit and ORM" },
-      { name: "Pydantic", description: "Data validation library" },
-      { name: "Celery", description: "Distributed task queue" },
-      { name: "PostgreSQL", description: "Advanced SQL database" },
-      { name: "Redis", description: "In-memory data store" },
-      { name: "pytest", description: "Testing framework" },
-    ],
+  getOwnPropertyDescriptor(_target, prop: string) {
+    const languages = getLanguages();
+    if (prop in languages) {
+      return { enumerable: true, configurable: true, value: languages[prop] };
+    }
+    return undefined;
   },
-  go: {
-    name: "Go",
-    checkCommand: "go build ./...",
-    testCommand: "go test ./...",
-    description: "Go language",
-    technologies: [
-      { name: "Gin", description: "High-performance web framework" },
-      { name: "Echo", description: "Minimalist web framework" },
-      { name: "Fiber", description: "Express-inspired web framework" },
-      { name: "GORM", description: "ORM library for Go" },
-      { name: "sqlx", description: "SQL extensions for Go" },
-      { name: "PostgreSQL", description: "Advanced SQL database" },
-      { name: "Redis", description: "In-memory data store" },
-    ],
-  },
-  rust: {
-    name: "Rust",
-    checkCommand: "cargo check",
-    testCommand: "cargo test",
-    description: "Rust with Cargo",
-    technologies: [
-      { name: "Actix-web", description: "Powerful web framework" },
-      { name: "Axum", description: "Ergonomic web framework" },
-      { name: "Rocket", description: "Web framework with focus on ease" },
-      { name: "Diesel", description: "Safe, extensible ORM" },
-      { name: "SQLx", description: "Async SQL toolkit" },
-      { name: "Tokio", description: "Async runtime" },
-      { name: "Serde", description: "Serialization framework" },
-      { name: "PostgreSQL", description: "Advanced SQL database" },
-    ],
-  },
-  java: {
-    name: "Java",
-    checkCommand: "mvn compile",
-    testCommand: "mvn test",
-    description: "Java with Maven",
-    technologies: [
-      { name: "Spring Boot", description: "Production-ready framework" },
-      { name: "Quarkus", description: "Kubernetes-native Java" },
-      { name: "Micronaut", description: "Modern JVM framework" },
-      { name: "Hibernate", description: "ORM framework" },
-      { name: "JPA", description: "Java Persistence API" },
-      { name: "JUnit", description: "Testing framework" },
-      { name: "PostgreSQL", description: "Advanced SQL database" },
-      { name: "MySQL", description: "Popular SQL database" },
-    ],
-  },
-  kotlin: {
-    name: "Kotlin",
-    checkCommand: "gradle build",
-    testCommand: "gradle test",
-    description: "Kotlin with Gradle",
-    technologies: [
-      { name: "Ktor", description: "Asynchronous web framework" },
-      { name: "Spring Boot", description: "Production-ready framework" },
-      { name: "Exposed", description: "Kotlin SQL framework" },
-      { name: "Koin", description: "Dependency injection framework" },
-      { name: "Kotest", description: "Kotlin testing framework" },
-      { name: "kotlinx.coroutines", description: "Coroutines for async programming" },
-      { name: "kotlinx.serialization", description: "Multiplatform serialization" },
-      { name: "PostgreSQL", description: "Advanced SQL database" },
-      { name: "MongoDB", description: "NoSQL document database" },
-    ],
-  },
-  none: {
-    name: "None (custom)",
-    checkCommand: "echo 'no check configured'",
-    testCommand: "echo 'no tests configured'",
-    description: "Custom configuration",
-  },
-};
+});
 
 // Generate the prompt template with $variables (stored in prompt.md)
 export function generatePromptTemplate(): string {

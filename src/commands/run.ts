@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { checkFilesExist, loadConfig, loadPrompt, getPaths } from "../utils/config.js";
+import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliConfig } from "../utils/config.js";
 import { resolvePromptVariables } from "../templates/prompts.js";
 
 /**
@@ -72,24 +72,26 @@ function createFilteredPrd(prdPath: string, category?: string): { tempPath: stri
   };
 }
 
-async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string): Promise<{ exitCode: number; output: string }> {
+async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string, cliConfig: CliConfig): Promise<{ exitCode: number; output: string }> {
   return new Promise((resolve, reject) => {
     let output = "";
 
-    // Build claude arguments
-    const claudeArgs = ["--permission-mode", "acceptEdits"];
+    // Build CLI arguments: config args + runtime args
+    const cliArgs = [
+      ...(cliConfig.args ?? []),
+    ];
 
     // Only add --dangerously-skip-permissions when running in a container
     if (sandboxed) {
-      claudeArgs.push("--dangerously-skip-permissions");
+      cliArgs.push("--dangerously-skip-permissions");
     }
 
     // Use the filtered PRD (only incomplete items) for the prompt
-    claudeArgs.push("-p", `@${filteredPrdPath} @${paths.progress} ${prompt}`);
+    cliArgs.push("-p", `@${filteredPrdPath} @${paths.progress} ${prompt}`);
 
     const proc = spawn(
-      "claude",
-      claudeArgs,
+      cliConfig.command,
+      cliArgs,
       {
         stdio: ["inherit", "pipe", "inherit"],
       }
@@ -106,7 +108,7 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
     });
 
     proc.on("error", (err) => {
-      reject(new Error(`Failed to start claude: ${err.message}`));
+      reject(new Error(`Failed to start ${cliConfig.command}: ${err.message}`));
     });
   });
 }
@@ -215,6 +217,7 @@ export async function run(args: string[]): Promise<void> {
     technologies: config.technologies,
   });
   const paths = getPaths();
+  const cliConfig = getCliConfig(config);
 
   // Check if we're running in a sandboxed container environment
   const sandboxed = isRunningInContainer();
@@ -311,7 +314,7 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath);
+      const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath, cliConfig);
 
       // Clean up temp file after each iteration
       try {
@@ -322,7 +325,7 @@ export async function run(args: string[]): Promise<void> {
       filteredPrdPath = null;
 
       if (exitCode !== 0) {
-        console.error(`\nClaude exited with code ${exitCode}`);
+        console.error(`\n${cliConfig.command} exited with code ${exitCode}`);
         console.log("Continuing to next iteration...");
       }
 

@@ -64,10 +64,21 @@ EXAMPLES:
 CONFIGURATION:
   After running 'ralph init', you'll have:
   .ralph/
-  ├── config.json      Project configuration (language, commands, javaVersion)
+  ├── config.json      Project configuration (language, commands, cli)
   ├── prompt.md        Prompt template with $variables ($language, $checkCommand, etc.)
   ├── prd.json         Product requirements document
   └── progress.txt     Progress tracking file
+
+CLI CONFIGURATION:
+  The CLI tool can be configured in .ralph/config.json:
+  {
+    "cli": {
+      "command": "claude",
+      "args": ["--permission-mode", "acceptEdits"]
+    }
+  }
+
+  Default uses Claude Code. Customize 'command' and 'args' for other AI CLIs.
 `;
 
 export function help(_args: string[]): void {
