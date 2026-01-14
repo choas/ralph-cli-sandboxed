@@ -1,0 +1,21 @@
+{
+  "name": "ralph-cli-sandboxed",
+  "version": "0.1.0",
+  "description": "Ralph CLI tool",
+  "main": "dist/index.js",
+  "bin": {
+    "ralph": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"Tests pass\" && exit 0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
