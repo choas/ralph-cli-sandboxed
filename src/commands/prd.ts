@@ -29,7 +29,7 @@ function savePrd(entries: PrdEntry[]): void {
   writeFileSync(getPrdPath(), JSON.stringify(entries, null, 2) + "\n");
 }
 
-async function add(): Promise<void> {
+export async function prdAdd(): Promise<void> {
   console.log("Add new PRD entry\n");
 
   const category = await promptSelect("Select category:", CATEGORIES);
@@ -69,7 +69,7 @@ async function add(): Promise<void> {
   console.log(`\nAdded entry #${prd.length}: "${description}"`);
 }
 
-function list(category?: string, passesFilter?: boolean, showStats?: boolean): void {
+export function prdList(category?: string, passesFilter?: boolean, showStats?: boolean): void {
   const prd = loadPrd();
 
   if (prd.length === 0) {
@@ -166,7 +166,7 @@ function list(category?: string, passesFilter?: boolean, showStats?: boolean): v
   });
 }
 
-function status(): void {
+export function prdStatus(): void {
   const prd = loadPrd();
 
   if (prd.length === 0) {
@@ -213,7 +213,7 @@ function status(): void {
   }
 }
 
-function toggle(args: string[]): void {
+export function prdToggle(args: string[]): void {
   const arg = args[0];
 
   // Check for --all flag
@@ -273,7 +273,7 @@ function toggle(args: string[]): void {
   savePrd(prd);
 }
 
-function clean(): void {
+export function prdClean(): void {
   const prd = loadPrd();
 
   const originalLength = prd.length;
@@ -291,7 +291,7 @@ function clean(): void {
   console.log(`${filtered.length} ${filtered.length === 1 ? "entry" : "entries"} remaining.`);
 }
 
-function parseListArgs(args: string[]): { category?: string; passesFilter?: boolean; showStats?: boolean } {
+export function parseListArgs(args: string[]): { category?: string; passesFilter?: boolean; showStats?: boolean } {
   let category: string | undefined;
   let passesFilter: boolean | undefined;
   let showStats: boolean | undefined;
@@ -330,21 +330,21 @@ export async function prd(args: string[]): Promise<void> {
 
   switch (subcommand) {
     case "add":
-      await add();
+      await prdAdd();
       break;
     case "list": {
       const { category, passesFilter, showStats } = parseListArgs(args.slice(1));
-      list(category, passesFilter, showStats);
+      prdList(category, passesFilter, showStats);
       break;
     }
     case "status":
-      status();
+      prdStatus();
       break;
     case "toggle":
-      toggle(args.slice(1));
+      prdToggle(args.slice(1));
       break;
     case "clean":
-      clean();
+      prdClean();
       break;
     default:
       console.error("Usage: ralph prd <add|list|status|toggle|clean>");

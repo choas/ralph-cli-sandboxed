@@ -24,7 +24,7 @@ ralph init
 ralph init
 
 # 2. Add requirements to your PRD
-ralph prd add
+ralph add
 
 # 3. Run a single iteration
 ralph once
@@ -40,12 +40,15 @@ ralph run 5
 | `ralph init` | Initialize ralph in current project |
 | `ralph once` | Run a single automation iteration |
 | `ralph run <n>` | Run n automation iterations |
-| `ralph prd add` | Add a new PRD entry (interactive) |
-| `ralph prd list` | List all PRD entries |
-| `ralph prd status` | Show PRD completion status |
-| `ralph prd toggle <n>` | Toggle passes status for entry n |
+| `ralph add` | Add a new PRD entry (interactive) |
+| `ralph list` | List all PRD entries |
+| `ralph status` | Show PRD completion status |
+| `ralph toggle <n>` | Toggle passes status for entry n |
+| `ralph clean` | Remove all passing entries from PRD |
 | `ralph docker` | Generate Docker sandbox environment |
 | `ralph help` | Show help message |
+
+> **Note:** `ralph prd <subcommand>` still works for compatibility (e.g., `ralph prd add`).
 
 ## Configuration
 
@@ -176,7 +179,7 @@ npm run dev -- <args>
 
 # Examples:
 npm run dev -- --version
-npm run dev -- prd list
+npm run dev -- list
 npm run dev -- once
 ```
 

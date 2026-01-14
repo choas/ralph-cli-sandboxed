@@ -7,7 +7,7 @@ import { help } from "./commands/help.js";
 import { init } from "./commands/init.js";
 import { once } from "./commands/once.js";
 import { run } from "./commands/run.js";
-import { prd } from "./commands/prd.js";
+import { prd, prdAdd, prdList, prdStatus, prdToggle, prdClean, parseListArgs } from "./commands/prd.js";
 import { docker } from "./commands/docker.js";
 import { prompt } from "./commands/prompt.js";
 
@@ -28,6 +28,15 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   prd,
   prompt,
   docker,
+  // Top-level PRD commands (shortcuts)
+  add: () => prdAdd(),
+  list: (args) => {
+    const { category, passesFilter, showStats } = parseListArgs(args);
+    prdList(category, passesFilter, showStats);
+  },
+  status: () => prdStatus(),
+  toggle: (args) => prdToggle(args),
+  clean: () => prdClean(),
 };
 
 async function main() {
