@@ -8,7 +8,6 @@ import { init } from "./commands/init.js";
 import { once } from "./commands/once.js";
 import { run } from "./commands/run.js";
 import { prd } from "./commands/prd.js";
-import { scripts } from "./commands/scripts.js";
 import { docker } from "./commands/docker.js";
 import { prompt } from "./commands/prompt.js";
 
@@ -28,7 +27,6 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   run,
   prd,
   prompt,
-  scripts,
   docker,
 };
 

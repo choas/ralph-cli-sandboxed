@@ -10,7 +10,6 @@ COMMANDS:
   run <n> [opts]    Run n automation iterations
   prd <subcommand>  Manage PRD entries
   prompt [opts]     Display resolved prompt (for testing in Claude Code)
-  scripts           Generate shell scripts (for sandboxed environments)
   docker            Generate Docker sandbox environment
   help              Show this help message
 
@@ -59,7 +58,6 @@ EXAMPLES:
   ralph prd status           # Show completion summary
   ralph prompt               # Display resolved prompt
   ralph prompt --raw         # Display template with $variables
-  ralph scripts              # Generate ralph.sh and ralph-once.sh
   ralph docker               # Generate Dockerfile for sandboxed env
   ralph docker --build       # Build Docker image
   ralph docker --build --clean  # Clean and rebuild from scratch

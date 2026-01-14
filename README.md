@@ -44,7 +44,6 @@ ralph run 5
 | `ralph prd list` | List all PRD entries |
 | `ralph prd status` | Show PRD completion status |
 | `ralph prd toggle <n>` | Toggle passes status for entry n |
-| `ralph scripts` | Generate shell scripts for sandboxed environments |
 | `ralph docker` | Generate Docker sandbox environment |
 | `ralph help` | Show help message |
 
@@ -118,16 +117,6 @@ Features:
 docker compose run -u root ralph apt-get update
 docker compose run -u root ralph apt-get install <package>
 ```
-
-## Shell Scripts
-
-For environments where the CLI isn't available:
-
-```bash
-ralph scripts
-```
-
-Generates `ralph.sh` and `ralph-once.sh` in your project root.
 
 ## How It Works
 
