@@ -16,5 +16,14 @@
       "Verify \"ralph-cli-sandboxed v0.1.0\""
     ],
     "passes": true
+  },
+  {
+    "category": "setup",
+    "description": "Add a README.md file",
+    "steps": [
+      "Read README.md file.",
+      "Verify that it has some documentation."
+    ],
+    "passes": true
   }
 ]
