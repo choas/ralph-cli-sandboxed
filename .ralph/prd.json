@@ -25,5 +25,15 @@
       "Verify that it has some documentation."
     ],
     "passes": true
+  },
+  {
+    "category": "setup",
+    "description": "Change to MIT license.",
+    "steps": [
+      "Read package.json",
+      "Read README.md",
+      "Verify that license shows \"MIT\""
+    ],
+    "passes": true
   }
 ]

@@ -17,3 +17,9 @@ Added README.md documentation file with:
 - Usage examples and CLI options
 - Development setup (prerequisites, build, typecheck, test commands)
 - License information
+
+## 2026-01-14: Changed License to MIT
+
+Updated the project license from ISC to MIT:
+- Modified package.json "license" field from "ISC" to "MIT"
+- Updated README.md license section from "ISC" to "MIT"
