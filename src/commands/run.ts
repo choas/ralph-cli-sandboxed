@@ -2,41 +2,8 @@ import { spawn } from "child_process";
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliConfig } from "../utils/config.js";
+import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliConfig, requireContainer } from "../utils/config.js";
 import { resolvePromptVariables } from "../templates/prompts.js";
-
-/**
- * Detects if we're running inside a container (Docker or Podman).
- * This is used to determine whether to pass --dangerously-skip-permissions to claude.
- */
-function isRunningInContainer(): boolean {
-  // Check DEVCONTAINER env var (set by ralph docker setup)
-  if (process.env.DEVCONTAINER === "true") {
-    return true;
-  }
-
-  // Check for /.dockerenv file (Docker creates this)
-  if (existsSync("/.dockerenv")) {
-    return true;
-  }
-
-  // Check /proc/1/cgroup for container hints (works for Docker and Podman)
-  try {
-    const cgroup = readFileSync("/proc/1/cgroup", "utf-8");
-    if (cgroup.includes("docker") || cgroup.includes("podman") || cgroup.includes("/lxc/") || cgroup.includes("containerd")) {
-      return true;
-    }
-  } catch {
-    // File doesn't exist or can't be read (not on Linux or not in container)
-  }
-
-  // Check for container environment variables set by various container runtimes
-  if (process.env.container === "podman" || process.env.container === "docker") {
-    return true;
-  }
-
-  return false;
-}
 
 interface PrdItem {
   category: string;
@@ -206,6 +173,7 @@ export async function run(args: string[]): Promise<void> {
     process.exit(1);
   }
 
+  requireContainer("run");
   checkFilesExist();
 
   const config = loadConfig();
@@ -219,8 +187,8 @@ export async function run(args: string[]): Promise<void> {
   const paths = getPaths();
   const cliConfig = getCliConfig(config);
 
-  // Check if we're running in a sandboxed container environment
-  const sandboxed = isRunningInContainer();
+  // Container is required, so always run with skip-permissions
+  const sandboxed = true;
 
   if (allMode) {
     const counts = countPrdItems(paths.prd, category);
@@ -235,9 +203,6 @@ export async function run(args: string[]): Promise<void> {
     console.log(`Filtering PRD items by category: ${category}`);
   }
   console.log();
-  if (sandboxed) {
-    console.log("Detected container environment - running with --dangerously-skip-permissions\n");
-  }
 
   // Track temp file for cleanup
   let filteredPrdPath: string | null = null;

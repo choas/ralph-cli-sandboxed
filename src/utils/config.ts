@@ -83,3 +83,52 @@ export function getPaths() {
     progress: join(ralphDir, PROGRESS_FILE),
   };
 }
+
+/**
+ * Detects if we're running inside a container (Docker or Podman).
+ * ralph run and once commands require container execution for security.
+ */
+export function isRunningInContainer(): boolean {
+  // Check DEVCONTAINER env var (set by ralph docker setup)
+  if (process.env.DEVCONTAINER === "true") {
+    return true;
+  }
+
+  // Check for /.dockerenv file (Docker creates this)
+  if (existsSync("/.dockerenv")) {
+    return true;
+  }
+
+  // Check /proc/1/cgroup for container hints (works for Docker and Podman)
+  try {
+    const cgroup = readFileSync("/proc/1/cgroup", "utf-8");
+    if (cgroup.includes("docker") || cgroup.includes("podman") || cgroup.includes("/lxc/") || cgroup.includes("containerd")) {
+      return true;
+    }
+  } catch {
+    // File doesn't exist or can't be read (not on Linux or not in container)
+  }
+
+  // Check for container environment variables set by various container runtimes
+  if (process.env.container === "podman" || process.env.container === "docker") {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Require container execution. Exits with error if not in container.
+ */
+export function requireContainer(commandName: string): void {
+  if (!isRunningInContainer()) {
+    console.error(`Error: 'ralph ${commandName}' must be run inside a Docker/Podman container.`);
+    console.error("");
+    console.error("For security, ralph executes AI agents only in isolated container environments.");
+    console.error("");
+    console.error("To set up a container:");
+    console.error("  ralph docker --build   # Build the container image");
+    console.error("  ralph docker --run     # Run ralph inside the container");
+    process.exit(1);
+  }
+}

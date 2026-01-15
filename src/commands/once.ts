@@ -1,8 +1,9 @@
 import { spawn } from "child_process";
-import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig } from "../utils/config.js";
+import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, requireContainer } from "../utils/config.js";
 import { resolvePromptVariables } from "../templates/prompts.js";
 
 export async function once(_args: string[]): Promise<void> {
+  requireContainer("once");
   checkFilesExist();
 
   const config = loadConfig();
