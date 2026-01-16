@@ -48,6 +48,18 @@
       "envVars": ["GOOGLE_API_KEY", "GEMINI_API_KEY"],
       "credentialMount": null
     },
+    "opencode": {
+      "name": "OpenCode",
+      "description": "Open source AI coding agent for the terminal",
+      "command": "opencode",
+      "defaultArgs": ["run"],
+      "yoloArgs": ["run"],
+      "docker": {
+        "install": "# Install OpenCode\nRUN npm install -g opencode-ai"
+      },
+      "envVars": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GOOGLE_API_KEY"],
+      "credentialMount": null
+    },
     "custom": {
       "name": "Custom CLI",
       "description": "Configure your own AI CLI tool",
