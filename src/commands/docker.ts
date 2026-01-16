@@ -36,7 +36,7 @@ function getCliProviderSnippet(cliProvider?: string): string {
 
   if (!provider || !provider.docker) {
     // Default to Claude Code CLI if provider not found
-    return "# Install Claude Code CLI\nRUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}";
+    return "# Install Claude Code CLI\nRUN curl -fsSL https://claude.ai/install.sh | bash";
   }
 
   return provider.docker.install;
@@ -54,7 +54,6 @@ FROM node:20-bookworm
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TZ=UTC
-ARG CLAUDE_CODE_VERSION="latest"
 ARG ZSH_IN_DOCKER_VERSION="1.2.1"
 
 # Set timezone
@@ -315,10 +314,10 @@ async function buildImage(ralphDir: string): Promise<void> {
     process.exit(1);
   }
 
-  console.log("Building Docker image (fetching latest Claude Code)...\n");
+  console.log("Building Docker image...\n");
 
   return new Promise((resolve, reject) => {
-    // Use --no-cache and --pull to ensure we always get the latest Claude Code version
+    // Use --no-cache and --pull to ensure we always get the latest CLI versions
     const proc = spawn("docker", ["compose", "build", "--no-cache", "--pull"], {
       cwd: dockerDir,
       stdio: "inherit",
@@ -606,7 +605,7 @@ ralph docker - Generate and manage Docker sandbox environment
 USAGE:
   ralph docker init         Generate Dockerfile and scripts
   ralph docker init -y      Generate files, overwrite without prompting
-  ralph docker build        Build image (always fetches latest Claude Code)
+  ralph docker build        Build image (fetches latest CLI versions)
   ralph docker build --clean  Clean existing image and rebuild from scratch
   ralph docker run          Run container (auto-init and build if needed)
   ralph docker clean        Remove Docker image and associated resources

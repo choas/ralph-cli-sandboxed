@@ -94,8 +94,9 @@ CLI CONFIGURATION:
     - claude: Claude Code (default)
     - aider: AI pair programming
     - codex: OpenAI Codex CLI
-    - gemini-cli: Google Gemini CLI
+    - gemini: Google Gemini CLI
     - opencode: Open source AI coding agent
+    - amp: Sourcegraph AMP CLI
     - custom: Configure your own CLI
 
   Customize 'command', 'args', and 'yoloArgs' for other AI CLIs.
