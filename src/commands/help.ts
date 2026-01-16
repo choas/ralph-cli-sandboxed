@@ -19,9 +19,11 @@ COMMANDS:
 
   prd <subcommand>  (Alias) Manage PRD entries - same as add/list/status/toggle/clean
 
-INIT OPTIONS:
-  --tech-stack, -t           Enable technology stack selection prompt
-  --cli, -c                  Enable CLI provider selection prompt
+INIT:
+  The init command uses interactive prompts with arrow key navigation:
+  1. Select AI CLI provider (Claude Code, Aider, OpenCode, etc.)
+  2. Select project language/runtime
+  3. Select technology stack (if available for the language)
 
 RUN OPTIONS:
   <n>                        Run exactly n iterations (overrides default --all behavior)
@@ -48,9 +50,7 @@ DOCKER SUBCOMMANDS:
   docker help       Show docker help message
 
 EXAMPLES:
-  ralph init                 # Initialize ralph (language selection only)
-  ralph init --tech-stack    # Initialize with technology stack selection
-  ralph init --cli           # Initialize with CLI provider selection
+  ralph init                 # Initialize ralph (interactive CLI, language, tech selection)
   ralph once                 # Run single iteration
   ralph run                  # Run until all tasks complete (default)
   ralph run 5                # Run exactly 5 iterations
@@ -80,7 +80,7 @@ CONFIGURATION:
   └── progress.txt     Progress tracking file
 
 CLI CONFIGURATION:
-  The CLI tool can be configured in .ralph/config.json:
+  The CLI tool is configured during 'ralph init' and stored in .ralph/config.json:
   {
     "cli": {
       "command": "claude",
@@ -90,14 +90,15 @@ CLI CONFIGURATION:
     "cliProvider": "claude"
   }
 
-  Available CLI providers (use 'ralph init --cli' to select):
+  Available CLI providers (selected during 'ralph init'):
     - claude: Claude Code (default)
     - aider: AI pair programming
     - codex: OpenAI Codex CLI
     - gemini-cli: Google Gemini CLI
+    - opencode: Open source AI coding agent
     - custom: Configure your own CLI
 
-  Default uses Claude Code. Customize 'command', 'args', and 'yoloArgs' for other AI CLIs.
+  Customize 'command', 'args', and 'yoloArgs' for other AI CLIs.
 `;
 
 export function help(_args: string[]): void {

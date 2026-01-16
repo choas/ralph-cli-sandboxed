@@ -20,6 +20,73 @@ export function createPrompt(): {
   };
 }
 
+export async function promptSelectWithArrows(message: string, options: string[]): Promise<string> {
+  return new Promise((resolve) => {
+    let selectedIndex = 0;
+
+    // Hide cursor and enable raw mode
+    process.stdout.write("\x1B[?25l"); // Hide cursor
+
+    const render = () => {
+      // Move cursor up to clear previous render (except first time)
+      if (selectedIndex >= 0) {
+        process.stdout.write(`\x1B[${options.length}A`); // Move up
+      }
+
+      options.forEach((opt, i) => {
+        const prefix = i === selectedIndex ? "\x1B[36m❯\x1B[0m" : " ";
+        const text = i === selectedIndex ? `\x1B[36m${opt}\x1B[0m` : opt;
+        process.stdout.write(`\x1B[2K${prefix} ${text}\n`); // Clear line and write
+      });
+    };
+
+    const initialRender = () => {
+      console.log(`\n${message}\n`);
+      options.forEach((opt, i) => {
+        const prefix = i === selectedIndex ? "\x1B[36m❯\x1B[0m" : " ";
+        const text = i === selectedIndex ? `\x1B[36m${opt}\x1B[0m` : opt;
+        console.log(`${prefix} ${text}`);
+      });
+    };
+
+    initialRender();
+
+    // Set up raw mode for key input
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+    }
+    process.stdin.resume();
+    process.stdin.setEncoding("utf8");
+
+    const onKeypress = (key: string) => {
+      // Handle arrow keys (escape sequences)
+      if (key === "\x1B[A" || key === "k") { // Up arrow or k
+        selectedIndex = (selectedIndex - 1 + options.length) % options.length;
+        render();
+      } else if (key === "\x1B[B" || key === "j") { // Down arrow or j
+        selectedIndex = (selectedIndex + 1) % options.length;
+        render();
+      } else if (key === "\r" || key === "\n" || key === " ") { // Enter or space
+        cleanup();
+        resolve(options[selectedIndex]);
+      } else if (key === "\x03") { // Ctrl+C
+        cleanup();
+        process.exit(0);
+      }
+    };
+
+    const cleanup = () => {
+      process.stdin.removeListener("data", onKeypress);
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(false);
+      }
+      process.stdout.write("\x1B[?25h"); // Show cursor
+    };
+
+    process.stdin.on("data", onKeypress);
+  });
+}
+
 export async function promptInput(message: string): Promise<string> {
   const prompt = createPrompt();
   const answer = await prompt.question(message);
@@ -114,4 +181,86 @@ export async function promptMultiSelect(message: string, options: string[]): Pro
       }
     }
   }
+}
+
+export async function promptMultiSelectWithArrows(message: string, options: string[]): Promise<string[]> {
+  return new Promise((resolve) => {
+    let selectedIndex = 0;
+    const selected: Set<number> = new Set();
+
+    // Add a "Done" option at the end
+    const allOptions = [...options, "[Done - press Enter]"];
+
+    // Hide cursor
+    process.stdout.write("\x1B[?25l");
+
+    const render = () => {
+      process.stdout.write(`\x1B[${allOptions.length}A`); // Move up
+
+      allOptions.forEach((opt, i) => {
+        const isLastOption = i === allOptions.length - 1;
+        const cursor = i === selectedIndex ? "\x1B[36m❯\x1B[0m" : " ";
+        const checkbox = isLastOption ? "" : (selected.has(i) ? "\x1B[32m[x]\x1B[0m" : "[ ]");
+        const text = i === selectedIndex ? `\x1B[36m${opt}\x1B[0m` : opt;
+        process.stdout.write(`\x1B[2K${cursor} ${checkbox} ${text}\n`);
+      });
+    };
+
+    const initialRender = () => {
+      console.log(`\n${message}`);
+      console.log("(Use arrow keys to navigate, Space to select, Enter to confirm)\n");
+      allOptions.forEach((opt, i) => {
+        const isLastOption = i === allOptions.length - 1;
+        const cursor = i === selectedIndex ? "\x1B[36m❯\x1B[0m" : " ";
+        const checkbox = isLastOption ? "" : (selected.has(i) ? "\x1B[32m[x]\x1B[0m" : "[ ]");
+        const text = i === selectedIndex ? `\x1B[36m${opt}\x1B[0m` : opt;
+        console.log(`${cursor} ${checkbox} ${text}`);
+      });
+    };
+
+    initialRender();
+
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+    }
+    process.stdin.resume();
+    process.stdin.setEncoding("utf8");
+
+    const onKeypress = (key: string) => {
+      if (key === "\x1B[A" || key === "k") { // Up
+        selectedIndex = (selectedIndex - 1 + allOptions.length) % allOptions.length;
+        render();
+      } else if (key === "\x1B[B" || key === "j") { // Down
+        selectedIndex = (selectedIndex + 1) % allOptions.length;
+        render();
+      } else if (key === " ") { // Space - toggle selection
+        const isLastOption = selectedIndex === allOptions.length - 1;
+        if (!isLastOption) {
+          if (selected.has(selectedIndex)) {
+            selected.delete(selectedIndex);
+          } else {
+            selected.add(selectedIndex);
+          }
+          render();
+        }
+      } else if (key === "\r" || key === "\n") { // Enter - confirm
+        cleanup();
+        const result = options.filter((_, i) => selected.has(i));
+        resolve(result);
+      } else if (key === "\x03") { // Ctrl+C
+        cleanup();
+        process.exit(0);
+      }
+    };
+
+    const cleanup = () => {
+      process.stdin.removeListener("data", onKeypress);
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(false);
+      }
+      process.stdout.write("\x1B[?25h"); // Show cursor
+    };
+
+    process.stdin.on("data", onKeypress);
+  });
 }
