@@ -203,6 +203,7 @@ export async function init(args: string[]): Promise<void> {
   console.log("\nNext steps:");
   console.log("  1. Read .ralph/HOW-TO-WRITE-PRDs.md for guidance on writing PRDs");
   console.log("  2. Edit .ralph/prd.json to add your project requirements");
-  console.log("  3. Run 'ralph once' to start the first iteration");
-  console.log("  4. Or run 'ralph run 5' for 5 automated iterations");
+  console.log("  3. Run 'ralph docker init' to generate Docker configuration");
+  console.log("  4. Run 'ralph docker build' to build the container");
+  console.log("  5. Run 'ralph docker run' to start ralph in the container");
 }
