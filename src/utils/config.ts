@@ -129,6 +129,7 @@ export function requireContainer(commandName: string): void {
     console.error("For security, ralph executes AI agents only in isolated container environments.");
     console.error("");
     console.error("To set up a container:");
+    console.error("  ralph docker init    # Generate Docker configuration files");
     console.error("  ralph docker build   # Build the container image");
     console.error("  ralph docker run     # Run ralph inside the container");
     process.exit(1);
