@@ -577,25 +577,26 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
   });
 
   console.log("\nDocker image and associated resources cleaned.");
-  console.log("Run 'ralph docker --build' to rebuild the image.");
+  console.log("Run 'ralph docker build' to rebuild the image.");
 }
 
 export async function docker(args: string[]): Promise<void> {
-  const hasFlag = (flag: string): boolean => args.includes(flag);
-  const flag = args[0];
+  const subcommand = args[0];
+  const subArgs = args.slice(1);
 
   // Show help without requiring init
-  if (flag === "--help" || flag === "-h") {
+  if (subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
     console.log(`
 ralph docker - Generate and manage Docker sandbox environment
 
 USAGE:
-  ralph docker              Generate Dockerfile and scripts
-  ralph docker -y           Generate files, overwrite without prompting
-  ralph docker --build      Build image (always fetches latest Claude Code)
-  ralph docker --build --clean  Clean existing image and rebuild from scratch
-  ralph docker --run        Run container (auto-init and build if needed)
-  ralph docker --clean      Remove Docker image and associated resources
+  ralph docker init         Generate Dockerfile and scripts
+  ralph docker init -y      Generate files, overwrite without prompting
+  ralph docker build        Build image (always fetches latest Claude Code)
+  ralph docker build --clean  Clean existing image and rebuild from scratch
+  ralph docker run          Run container (auto-init and build if needed)
+  ralph docker clean        Remove Docker image and associated resources
+  ralph docker help         Show this help message
 
 FILES GENERATED:
   .ralph/docker/
@@ -609,11 +610,11 @@ AUTHENTICATION:
   API key users: Uncomment ANTHROPIC_API_KEY in docker-compose.yml.
 
 EXAMPLES:
-  ralph docker                      # Generate files
-  ralph docker --build              # Build image
-  ralph docker --build --clean      # Clean and rebuild from scratch
-  ralph docker --run                # Start interactive shell
-  ralph docker --clean              # Remove image and volumes
+  ralph docker init               # Generate files
+  ralph docker build              # Build image
+  ralph docker build --clean      # Clean and rebuild from scratch
+  ralph docker run                # Start interactive shell
+  ralph docker clean              # Remove image and volumes
 
   # Or use docker compose directly:
   cd .ralph/docker && docker compose run --rm ralph
@@ -648,35 +649,50 @@ INSTALLING PACKAGES (works with Docker & Podman):
   // Get image name from config or generate default
   const imageName = config.imageName || `ralph-${basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 
-  // Handle --build --clean combination: clean first, then build
-  if (hasFlag("--build") && hasFlag("--clean")) {
-    await cleanImage(imageName, ralphDir);
-    console.log(""); // Add spacing between clean and build output
-    await buildImage(ralphDir);
-  } else if (hasFlag("--build")) {
-    await buildImage(ralphDir);
-  } else if (hasFlag("--run")) {
-    await runContainer(ralphDir, imageName, config.language, config.javaVersion);
-  } else if (hasFlag("--clean")) {
-    await cleanImage(imageName, ralphDir);
-  } else {
-    const force = flag === "-y" || flag === "--yes";
-    console.log(`Generating Docker files for: ${config.language}`);
-    if ((config.language === "java" || config.language === "kotlin") && config.javaVersion) {
-      console.log(`Java version: ${config.javaVersion}`);
-    }
-    console.log(`Image name: ${imageName}\n`);
-    await generateFiles(ralphDir, config.language, imageName, force, config.javaVersion);
+  const hasFlag = (flag: string): boolean => subArgs.includes(flag);
 
-    console.log(`
+  switch (subcommand) {
+    case "build":
+      // Handle build --clean combination: clean first, then build
+      if (hasFlag("--clean")) {
+        await cleanImage(imageName, ralphDir);
+        console.log(""); // Add spacing between clean and build output
+      }
+      await buildImage(ralphDir);
+      break;
+
+    case "run":
+      await runContainer(ralphDir, imageName, config.language, config.javaVersion);
+      break;
+
+    case "clean":
+      await cleanImage(imageName, ralphDir);
+      break;
+
+    case "init":
+    default: {
+      // Default to init if no subcommand or unrecognized subcommand
+      const force = subcommand === "init"
+        ? (subArgs[0] === "-y" || subArgs[0] === "--yes")
+        : (subcommand === "-y" || subcommand === "--yes");
+      console.log(`Generating Docker files for: ${config.language}`);
+      if ((config.language === "java" || config.language === "kotlin") && config.javaVersion) {
+        console.log(`Java version: ${config.javaVersion}`);
+      }
+      console.log(`Image name: ${imageName}\n`);
+      await generateFiles(ralphDir, config.language, imageName, force, config.javaVersion);
+
+      console.log(`
 Docker files generated in .ralph/docker/
 
 Next steps:
-  1. Build the image: ralph docker --build
-  2. Run container:    ralph docker --run
+  1. Build the image: ralph docker build
+  2. Run container:    ralph docker run
 
 Or use docker compose directly:
   cd .ralph/docker && docker compose run --rm ralph
 `);
+      break;
+    }
   }
 }

@@ -45,7 +45,7 @@ ralph run 5
 | `ralph status` | Show PRD completion status |
 | `ralph toggle <n>` | Toggle passes status for entry n |
 | `ralph clean` | Remove all passing entries from PRD |
-| `ralph docker` | Generate Docker sandbox environment |
+| `ralph docker <sub>` | Manage Docker sandbox environment |
 | `ralph help` | Show help message |
 
 > **Note:** `ralph prd <subcommand>` still works for compatibility (e.g., `ralph prd add`).
@@ -116,13 +116,13 @@ Run ralph in an isolated Docker container:
 
 ```bash
 # Generate Docker files
-ralph docker
+ralph docker init
 
 # Build the image
-ralph docker --build
+ralph docker build
 
 # Run container
-ralph docker --run
+ralph docker run
 ```
 
 Features:

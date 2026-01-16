@@ -14,7 +14,7 @@ COMMANDS:
   toggle <n>        Toggle passes status for entry n
   clean             Remove all passing entries from the PRD
   prompt [opts]     Display resolved prompt (for testing in Claude Code)
-  docker            Generate Docker sandbox environment
+  docker <sub>      Manage Docker sandbox environment
   help              Show this help message
 
   prd <subcommand>  (Alias) Manage PRD entries - same as add/list/status/toggle/clean
@@ -38,6 +38,13 @@ TOGGLE OPTIONS:
   <n> [n2] [n3]...           Toggle one or more entries by number
   --all, -a                  Toggle all PRD entries
 
+DOCKER SUBCOMMANDS:
+  docker init       Generate Dockerfile and scripts
+  docker build      Build image (always fetches latest Claude Code)
+  docker run        Run container (auto-init and build if needed)
+  docker clean      Remove Docker image and associated resources
+  docker help       Show docker help message
+
 EXAMPLES:
   ralph init                 # Initialize ralph (language selection only)
   ralph init --tech-stack    # Initialize with technology stack selection
@@ -57,9 +64,9 @@ EXAMPLES:
   ralph toggle --all         # Toggle all entries
   ralph clean                # Remove passing entries
   ralph prompt               # Display resolved prompt
-  ralph docker               # Generate Dockerfile for sandboxed env
-  ralph docker --build       # Build Docker image
-  ralph docker --run         # Run container (auto-init/build if needed)
+  ralph docker init          # Generate Dockerfile for sandboxed env
+  ralph docker build         # Build Docker image
+  ralph docker run           # Run container (auto-init/build if needed)
 
 CONFIGURATION:
   After running 'ralph init', you'll have:
