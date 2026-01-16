@@ -1,6 +1,0 @@
-{
-  "language": "node",
-  "checkCommand": "npm run typecheck",
-  "testCommand": "npm test",
-  "imageName": "ralph-ralph-cli-sandboxed"
-}

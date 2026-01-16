@@ -1,5 +1,0 @@
-# Docker ignore file
-node_modules
-dist
-.git
-*.log
