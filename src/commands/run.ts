@@ -134,7 +134,7 @@ export async function run(args: string[]): Promise<void> {
   // Parse flags
   let category: string | undefined;
   let loopMode = false;
-  let allMode = false;
+  let allModeExplicit = false;
   const filteredArgs: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -150,7 +150,7 @@ export async function run(args: string[]): Promise<void> {
     } else if (args[i] === "--loop" || args[i] === "-l") {
       loopMode = true;
     } else if (args[i] === "--all" || args[i] === "-a") {
-      allMode = true;
+      allModeExplicit = true;
     } else {
       filteredArgs.push(args[i]);
     }
@@ -163,17 +163,15 @@ export async function run(args: string[]): Promise<void> {
     process.exit(1);
   }
 
+  // Determine the mode:
+  // - If --loop is specified, use loop mode
+  // - If a specific number of iterations is provided, use that
+  // - Otherwise, default to --all mode (run until all tasks complete)
+  const hasIterationArg = filteredArgs.length > 0 && !isNaN(parseInt(filteredArgs[0])) && parseInt(filteredArgs[0]) >= 1;
+  const allMode = !loopMode && (allModeExplicit || !hasIterationArg);
+
   // In loop mode or all mode, iterations argument is optional (defaults to unlimited)
   const iterations = (loopMode || allMode) ? (parseInt(filteredArgs[0]) || Infinity) : parseInt(filteredArgs[0]);
-
-  if (!loopMode && !allMode && (!iterations || iterations < 1 || isNaN(iterations))) {
-    console.error("Usage: ralph run <iterations> [--category <category>]");
-    console.error("       ralph run --loop [--category <category>]");
-    console.error("       ralph run --all [--category <category>]");
-    console.error("  <iterations> must be a positive integer");
-    console.error(`  <category> must be one of: ${CATEGORIES.join(", ")}`);
-    process.exit(1);
-  }
 
   requireContainer("run");
   checkFilesExist();

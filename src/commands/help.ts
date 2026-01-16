@@ -7,7 +7,7 @@ USAGE:
 COMMANDS:
   init [opts]       Initialize ralph in current project
   once              Run a single automation iteration
-  run <n> [opts]    Run n automation iterations
+  run [n] [opts]    Run automation iterations (default: all tasks)
   add               Add a new PRD entry (interactive)
   list [opts]       List all PRD entries
   status            Show PRD completion status
@@ -24,7 +24,8 @@ INIT OPTIONS:
   --cli, -c                  Enable CLI provider selection prompt
 
 RUN OPTIONS:
-  --all, -a                  Run until all tasks are complete, showing progress
+  <n>                        Run exactly n iterations (overrides default --all behavior)
+  --all, -a                  Run until all tasks are complete (default behavior)
   --loop, -l                 Run continuously, waiting for new items when complete
   --category, -c <category>  Filter PRD items by category
                              Valid: ui, feature, bugfix, setup, development, testing, docs
@@ -51,9 +52,9 @@ EXAMPLES:
   ralph init --tech-stack    # Initialize with technology stack selection
   ralph init --cli           # Initialize with CLI provider selection
   ralph once                 # Run single iteration
-  ralph run 5                # Run 5 iterations
-  ralph run --all            # Run until all tasks complete (shows progress)
-  ralph run --all -c feature # Complete all feature tasks only
+  ralph run                  # Run until all tasks complete (default)
+  ralph run 5                # Run exactly 5 iterations
+  ralph run -c feature       # Complete all feature tasks only
   ralph run --loop           # Run continuously until interrupted
   ralph add                  # Add new PRD entry
   ralph list                 # Show all entries

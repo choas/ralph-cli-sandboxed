@@ -29,8 +29,8 @@ ralph add
 # 3. Run a single iteration
 ralph once
 
-# 4. Or run multiple iterations
-ralph run 5
+# 4. Or run until all tasks complete (default)
+ralph run
 ```
 
 ## Commands
@@ -39,7 +39,7 @@ ralph run 5
 |---------|-------------|
 | `ralph init` | Initialize ralph in current project |
 | `ralph once` | Run a single automation iteration |
-| `ralph run <n>` | Run n automation iterations |
+| `ralph run [n]` | Run automation iterations (default: all tasks) |
 | `ralph add` | Add a new PRD entry (interactive) |
 | `ralph list` | List all PRD entries |
 | `ralph status` | Show PRD completion status |
