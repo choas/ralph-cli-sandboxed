@@ -39,11 +39,35 @@ interface LanguagesJson {
   languages: Record<string, LanguageConfigJson>;
 }
 
+export interface CliProviderConfig {
+  name: string;
+  description: string;
+  command: string;
+  defaultArgs: string[];
+  yoloArgs: string[];
+  docker: {
+    install: string;
+  };
+  envVars: string[];
+  credentialMount: string | null;
+}
+
+interface CliProvidersJson {
+  providers: Record<string, CliProviderConfig>;
+}
+
 // Load languages from JSON config file
 function loadLanguagesConfig(): LanguagesJson {
   // In development: src/config/languages.json
   // In production: dist/config/languages.json
   const configPath = join(__dirname, "..", "config", "languages.json");
+  const content = readFileSync(configPath, "utf-8");
+  return JSON.parse(content);
+}
+
+// Load CLI providers from JSON config file
+function loadCliProvidersConfig(): CliProvidersJson {
+  const configPath = join(__dirname, "..", "config", "cli-providers.json");
   const content = readFileSync(configPath, "utf-8");
   return JSON.parse(content);
 }
@@ -62,12 +86,24 @@ function convertToLanguageConfig(config: LanguageConfigJson): LanguageConfig {
 // Lazy-load languages to avoid issues at import time
 let _languagesCache: Record<string, LanguageConfig> | null = null;
 let _languagesJsonCache: LanguagesJson | null = null;
+let _cliProvidersCache: CliProvidersJson | null = null;
 
 export function getLanguagesJson(): LanguagesJson {
   if (!_languagesJsonCache) {
     _languagesJsonCache = loadLanguagesConfig();
   }
   return _languagesJsonCache;
+}
+
+export function getCliProvidersJson(): CliProvidersJson {
+  if (!_cliProvidersCache) {
+    _cliProvidersCache = loadCliProvidersConfig();
+  }
+  return _cliProvidersCache;
+}
+
+export function getCliProviders(): Record<string, CliProviderConfig> {
+  return getCliProvidersJson().providers;
 }
 
 export function getLanguages(): Record<string, LanguageConfig> {

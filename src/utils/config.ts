@@ -4,6 +4,7 @@ import { join } from "path";
 export interface CliConfig {
   command: string;
   args?: string[];
+  yoloArgs?: string[];
 }
 
 export interface RalphConfig {
@@ -15,6 +16,7 @@ export interface RalphConfig {
   technologies?: string[];
   javaVersion?: number;
   cli?: CliConfig;
+  cliProvider?: string;
 }
 
 export const DEFAULT_CLI_CONFIG: CliConfig = {

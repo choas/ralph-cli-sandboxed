@@ -19,10 +19,12 @@ export async function once(_args: string[]): Promise<void> {
 
   console.log("Starting single ralph iteration...\n");
 
-  // Build CLI arguments: config args + runtime args
+  // Build CLI arguments: config args + yolo args + prompt args
+  // Use yoloArgs from config if available, otherwise default to Claude's --dangerously-skip-permissions
+  const yoloArgs = cliConfig.yoloArgs ?? ["--dangerously-skip-permissions"];
   const cliArgs = [
     ...(cliConfig.args ?? []),
-    "--dangerously-skip-permissions",
+    ...yoloArgs,
     "-p",
     `@${paths.prd} @${paths.progress} ${prompt}`,
   ];

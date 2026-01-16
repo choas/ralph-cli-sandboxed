@@ -21,6 +21,7 @@ COMMANDS:
 
 INIT OPTIONS:
   --tech-stack, -t           Enable technology stack selection prompt
+  --cli, -c                  Enable CLI provider selection prompt
 
 RUN OPTIONS:
   --all, -a                  Run until all tasks are complete, showing progress
@@ -48,6 +49,7 @@ DOCKER SUBCOMMANDS:
 EXAMPLES:
   ralph init                 # Initialize ralph (language selection only)
   ralph init --tech-stack    # Initialize with technology stack selection
+  ralph init --cli           # Initialize with CLI provider selection
   ralph once                 # Run single iteration
   ralph run 5                # Run 5 iterations
   ralph run --all            # Run until all tasks complete (shows progress)
@@ -81,11 +83,20 @@ CLI CONFIGURATION:
   {
     "cli": {
       "command": "claude",
-      "args": ["--permission-mode", "acceptEdits"]
-    }
+      "args": ["--permission-mode", "acceptEdits"],
+      "yoloArgs": ["--dangerously-skip-permissions"]
+    },
+    "cliProvider": "claude"
   }
 
-  Default uses Claude Code. Customize 'command' and 'args' for other AI CLIs.
+  Available CLI providers (use 'ralph init --cli' to select):
+    - claude: Claude Code (default)
+    - aider: AI pair programming
+    - codex: OpenAI Codex CLI
+    - gemini-cli: Google Gemini CLI
+    - custom: Configure your own CLI
+
+  Default uses Claude Code. Customize 'command', 'args', and 'yoloArgs' for other AI CLIs.
 `;
 
 export function help(_args: string[]): void {

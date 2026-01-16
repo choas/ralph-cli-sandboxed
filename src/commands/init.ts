@@ -1,9 +1,9 @@
 import { existsSync, writeFileSync, mkdirSync, copyFileSync } from "fs";
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
-import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, type LanguageConfig, type TechnologyStack } from "../templates/prompts.js";
+import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, getCliProviders, type LanguageConfig, type TechnologyStack, type CliProviderConfig } from "../templates/prompts.js";
 import { promptSelect, promptConfirm, promptInput, promptMultiSelect } from "../utils/prompt.js";
-import { DEFAULT_CLI_CONFIG } from "../utils/config.js";
+import { DEFAULT_CLI_CONFIG, type CliConfig } from "../utils/config.js";
 
 // Get package root directory (works for both dev and installed package)
 const __filename = fileURLToPath(import.meta.url);
@@ -25,6 +25,7 @@ export async function init(args: string[]): Promise<void> {
   const cwd = process.cwd();
   const ralphDir = join(cwd, RALPH_DIR);
   const showTechStack = hasFlag(args, "--tech-stack", "-t");
+  const showCliSelection = hasFlag(args, "--cli", "-c");
 
   console.log("Initializing ralph in current directory...\n");
 
@@ -90,6 +91,44 @@ export async function init(args: string[]): Promise<void> {
     testCommand,
   };
 
+  // Select CLI provider if --cli flag is provided
+  let cliConfig: CliConfig = DEFAULT_CLI_CONFIG;
+  let selectedCliProviderKey = "claude"; // Default to claude
+
+  if (showCliSelection) {
+    const CLI_PROVIDERS = getCliProviders();
+    const providerKeys = Object.keys(CLI_PROVIDERS);
+    const providerNames = providerKeys.map(k => `${CLI_PROVIDERS[k].name} - ${CLI_PROVIDERS[k].description}`);
+
+    const selectedProviderName = await promptSelect("Select your AI CLI provider:", providerNames);
+    const selectedProviderIndex = providerNames.indexOf(selectedProviderName);
+    selectedCliProviderKey = providerKeys[selectedProviderIndex];
+    const selectedProvider = CLI_PROVIDERS[selectedCliProviderKey];
+
+    // Handle custom CLI provider
+    if (selectedCliProviderKey === "custom") {
+      const customCommand = await promptInput("\nEnter your CLI command: ");
+      const customArgsInput = await promptInput("Enter default arguments (space-separated): ");
+      const customArgs = customArgsInput.trim() ? customArgsInput.trim().split(/\s+/) : [];
+      const customYoloArgsInput = await promptInput("Enter yolo/auto-approve arguments (space-separated): ");
+      const customYoloArgs = customYoloArgsInput.trim() ? customYoloArgsInput.trim().split(/\s+/) : [];
+
+      cliConfig = {
+        command: customCommand || "claude",
+        args: customArgs,
+        yoloArgs: customYoloArgs.length > 0 ? customYoloArgs : undefined,
+      };
+    } else {
+      cliConfig = {
+        command: selectedProvider.command,
+        args: selectedProvider.defaultArgs,
+        yoloArgs: selectedProvider.yoloArgs.length > 0 ? selectedProvider.yoloArgs : undefined,
+      };
+    }
+
+    console.log(`\nSelected CLI provider: ${CLI_PROVIDERS[selectedCliProviderKey].name}`);
+  }
+
   // Generate image name from directory name
   const projectName = basename(cwd).toLowerCase().replace(/[^a-z0-9-]/g, "-");
   const imageName = `ralph-${projectName}`;
@@ -100,7 +139,8 @@ export async function init(args: string[]): Promise<void> {
     checkCommand: finalConfig.checkCommand,
     testCommand: finalConfig.testCommand,
     imageName,
-    cli: DEFAULT_CLI_CONFIG,
+    cli: cliConfig,
+    cliProvider: selectedCliProviderKey,
   };
 
   // Add technologies if any were selected

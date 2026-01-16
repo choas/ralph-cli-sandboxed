@@ -3,7 +3,7 @@ import { join, basename } from "path";
 import { spawn } from "child_process";
 import { loadConfig, getRalphDir } from "../utils/config.js";
 import { promptConfirm } from "../utils/prompt.js";
-import { getLanguagesJson } from "../templates/prompts.js";
+import { getLanguagesJson, getCliProvidersJson } from "../templates/prompts.js";
 
 const DOCKER_DIR = "docker";
 
@@ -28,8 +28,23 @@ function getLanguageSnippet(language: string, javaVersion?: number): string {
   return "\n" + snippet + "\n";
 }
 
-function generateDockerfile(language: string, javaVersion?: number): string {
+// Get CLI provider Docker snippet from config
+function getCliProviderSnippet(cliProvider?: string): string {
+  const cliProvidersJson = getCliProvidersJson();
+  const providerKey = cliProvider || "claude";
+  const provider = cliProvidersJson.providers[providerKey];
+
+  if (!provider || !provider.docker) {
+    // Default to Claude Code CLI if provider not found
+    return "# Install Claude Code CLI\nRUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}";
+  }
+
+  return provider.docker.install;
+}
+
+function generateDockerfile(language: string, javaVersion?: number, cliProvider?: string): string {
   const languageSnippet = getLanguageSnippet(language, javaVersion);
+  const cliSnippet = getCliProviderSnippet(cliProvider);
 
   return `# Ralph CLI Sandbox Environment
 # Based on Claude Code devcontainer
@@ -99,8 +114,7 @@ RUN cp -r /root/.oh-my-zsh /home/node/.oh-my-zsh && chown -R node:node /home/nod
     echo '  echo ""' >> /home/node/.zshrc && \\
     echo 'fi' >> /home/node/.zshrc
 
-# Install Claude Code CLI
-RUN npm install -g @anthropic-ai/claude-code@\${CLAUDE_CODE_VERSION}
+${cliSnippet}
 
 # Install ralph-cli-sandboxed from npm registry
 RUN npm install -g ralph-cli-sandboxed
@@ -256,7 +270,7 @@ dist
 *.log
 `;
 
-async function generateFiles(ralphDir: string, language: string, imageName: string, force: boolean = false, javaVersion?: number): Promise<void> {
+async function generateFiles(ralphDir: string, language: string, imageName: string, force: boolean = false, javaVersion?: number, cliProvider?: string): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
 
   // Create docker directory
@@ -266,7 +280,7 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
   }
 
   const files = [
-    { name: "Dockerfile", content: generateDockerfile(language, javaVersion) },
+    { name: "Dockerfile", content: generateDockerfile(language, javaVersion, cliProvider) },
     { name: "init-firewall.sh", content: FIREWALL_SCRIPT },
     { name: "docker-compose.yml", content: generateDockerCompose(imageName) },
     { name: ".dockerignore", content: DOCKERIGNORE },
@@ -347,7 +361,7 @@ async function imageExists(imageName: string): Promise<boolean> {
   });
 }
 
-async function runContainer(ralphDir: string, imageName: string, language: string, javaVersion?: number): Promise<void> {
+async function runContainer(ralphDir: string, imageName: string, language: string, javaVersion?: number, cliProvider?: string): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
   const dockerfileExists = existsSync(join(dockerDir, "Dockerfile"));
   const hasImage = await imageExists(imageName);
@@ -356,7 +370,7 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
   if (!dockerfileExists || !hasImage) {
     if (!dockerfileExists) {
       console.log("Docker folder not found. Initializing docker setup...\n");
-      await generateFiles(ralphDir, language, imageName, true, javaVersion);
+      await generateFiles(ralphDir, language, imageName, true, javaVersion, cliProvider);
       console.log("");
     }
 
@@ -662,7 +676,7 @@ INSTALLING PACKAGES (works with Docker & Podman):
       break;
 
     case "run":
-      await runContainer(ralphDir, imageName, config.language, config.javaVersion);
+      await runContainer(ralphDir, imageName, config.language, config.javaVersion, config.cliProvider);
       break;
 
     case "clean":
@@ -679,8 +693,11 @@ INSTALLING PACKAGES (works with Docker & Podman):
       if ((config.language === "java" || config.language === "kotlin") && config.javaVersion) {
         console.log(`Java version: ${config.javaVersion}`);
       }
+      if (config.cliProvider && config.cliProvider !== "claude") {
+        console.log(`CLI provider: ${config.cliProvider}`);
+      }
       console.log(`Image name: ${imageName}\n`);
-      await generateFiles(ralphDir, config.language, imageName, force, config.javaVersion);
+      await generateFiles(ralphDir, config.language, imageName, force, config.javaVersion, config.cliProvider);
 
       console.log(`
 Docker files generated in .ralph/docker/

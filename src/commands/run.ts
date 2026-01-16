@@ -43,14 +43,16 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
   return new Promise((resolve, reject) => {
     let output = "";
 
-    // Build CLI arguments: config args + runtime args
+    // Build CLI arguments: config args + yolo args + prompt args
     const cliArgs = [
       ...(cliConfig.args ?? []),
     ];
 
-    // Only add --dangerously-skip-permissions when running in a container
+    // Only add yolo args when running in a container
+    // Use yoloArgs from config if available, otherwise default to Claude's --dangerously-skip-permissions
     if (sandboxed) {
-      cliArgs.push("--dangerously-skip-permissions");
+      const yoloArgs = cliConfig.yoloArgs ?? ["--dangerously-skip-permissions"];
+      cliArgs.push(...yoloArgs);
     }
 
     // Use the filtered PRD (only incomplete items) for the prompt
