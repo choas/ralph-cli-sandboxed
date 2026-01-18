@@ -316,9 +316,14 @@ async function buildImage(ralphDir: string): Promise<void> {
 
   console.log("Building Docker image...\n");
 
+  // Get image name for compose project name
+  const config = loadConfig();
+  const imageName = config.imageName || `ralph-${basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
+
   return new Promise((resolve, reject) => {
     // Use --no-cache and --pull to ensure we always get the latest CLI versions
-    const proc = spawn("docker", ["compose", "build", "--no-cache", "--pull"], {
+    // Use -p to set unique project name per ralph project
+    const proc = spawn("docker", ["compose", "-p", imageName, "build", "--no-cache", "--pull"], {
       cwd: dockerDir,
       stdio: "inherit",
     });
@@ -436,7 +441,8 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
   console.log("");
 
   return new Promise((resolve, reject) => {
-    const proc = spawn("docker", ["compose", "run", "--rm", "ralph"], {
+    // Use -p to set unique project name per ralph project
+    const proc = spawn("docker", ["compose", "-p", imageName, "run", "--rm", "ralph"], {
       cwd: dockerDir,
       stdio: "inherit",
     });
@@ -463,8 +469,9 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
   // First, stop any running containers via docker compose
   if (existsSync(join(dockerDir, "docker-compose.yml"))) {
     // Stop running containers first
+    // Use -p to target only this project's resources
     await new Promise<void>((resolve) => {
-      const proc = spawn("docker", ["compose", "stop", "--timeout", "5"], {
+      const proc = spawn("docker", ["compose", "-p", imageName, "stop", "--timeout", "5"], {
         cwd: dockerDir,
         stdio: "inherit",
       });
@@ -479,8 +486,9 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     });
 
     // Remove containers, volumes, networks, and local images
+    // Use -p to target only this project's resources
     await new Promise<void>((resolve) => {
-      const proc = spawn("docker", ["compose", "down", "--rmi", "local", "-v", "--remove-orphans", "--timeout", "5"], {
+      const proc = spawn("docker", ["compose", "-p", imageName, "down", "--rmi", "local", "-v", "--remove-orphans", "--timeout", "5"], {
         cwd: dockerDir,
         stdio: "inherit",
       });
@@ -496,9 +504,10 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     });
   }
 
-  // Find and forcibly remove any containers using volumes with our image name pattern
+  // Find and forcibly remove any containers using volumes with our project name pattern
   // This handles orphaned containers from previous runs or pods
-  const volumePattern = `docker_${imageName}`;
+  // Project name is now imageName (via -p flag), so volumes are named ${imageName}_*
+  const volumePattern = imageName;
   await new Promise<void>((resolve) => {
     // List all containers (including stopped) and filter by volume name pattern
     const proc = spawn("docker", ["ps", "-aq", "--filter", `volume=${volumePattern}`], {
@@ -626,8 +635,8 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     });
   });
 
-  // Clean up project-specific network (named after imageName, not generic docker_default)
-  const networkName = `docker_${imageName}_default`;
+  // Clean up project-specific network (project name is imageName via -p flag)
+  const networkName = `${imageName}_default`;
   await new Promise<void>((resolve) => {
     const proc = spawn("docker", ["network", "rm", networkName], {
       stdio: ["ignore", "ignore", "ignore"], // Suppress output - network may not exist
