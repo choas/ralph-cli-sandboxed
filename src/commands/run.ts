@@ -211,7 +211,10 @@ export async function run(args: string[]): Promise<void> {
   let filteredPrdPath: string | null = null;
 
   const POLL_INTERVAL_MS = 30000; // 30 seconds between checks when waiting for new items
+  const MAX_CONSECUTIVE_FAILURES = 3; // Stop after this many consecutive failures
   const startTime = Date.now();
+  let consecutiveFailures = 0;
+  let lastExitCode = 0;
 
   try {
     for (let i = 1; i <= iterations; i++) {
@@ -294,7 +297,27 @@ export async function run(args: string[]): Promise<void> {
 
       if (exitCode !== 0) {
         console.error(`\n${cliConfig.command} exited with code ${exitCode}`);
+
+        // Track consecutive failures to detect persistent errors (e.g., missing API key)
+        if (exitCode === lastExitCode) {
+          consecutiveFailures++;
+        } else {
+          consecutiveFailures = 1;
+          lastExitCode = exitCode;
+        }
+
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          console.error(`\nStopping: ${cliConfig.command} failed ${consecutiveFailures} times in a row with exit code ${exitCode}.`);
+          console.error("This usually indicates a configuration error (e.g., missing API key).");
+          console.error("Please check your CLI configuration and try again.");
+          break;
+        }
+
         console.log("Continuing to next iteration...");
+      } else {
+        // Reset failure tracking on success
+        consecutiveFailures = 0;
+        lastExitCode = 0;
       }
 
       // Check for completion signal
