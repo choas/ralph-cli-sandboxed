@@ -413,29 +413,26 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
   console.log("Starting Docker container...\n");
 
   // Show note about yolo mode and credentials
-  console.log("╭─────────────────────────────────────────────────────────────────╮");
-  console.log("│                     IMPORTANT: Getting Started                  │");
-  console.log("├─────────────────────────────────────────────────────────────────┤");
-  console.log("│                                                                 │");
-  console.log("│  To run ralph automation, you need to activate YOLO mode       │");
-  console.log("│  which allows the AI to execute commands without prompts.      │");
-  console.log("│                                                                 │");
-  console.log(`│  CLI Provider: ${cliConfig.name.padEnd(48)}│`);
-  console.log(`│  Yolo command: ${yoloCommand.padEnd(48)}│`);
-  console.log("│                                                                 │");
-  console.log("│  Before running 'ralph run' or 'ralph once', ensure your       │");
-  console.log("│  credentials are configured:                                   │");
-  console.log("│                                                                 │");
+  console.log("IMPORTANT: Getting Started");
+  console.log("-".repeat(40));
+  console.log("");
+  console.log("To run ralph automation, you need to activate YOLO mode");
+  console.log("which allows the AI to execute commands without prompts.");
+  console.log("");
+  console.log(`CLI Provider: ${cliConfig.name}`);
+  console.log(`Yolo command: ${yoloCommand}`);
+  console.log("");
+  console.log("Before running 'ralph run' or 'ralph once', ensure your");
+  console.log("credentials are configured:");
+  console.log("");
   if (cliConfig.envVars.length > 0) {
-    console.log("│  Required environment variables:                               │");
+    console.log("Required environment variables:");
     for (const envVar of cliConfig.envVars) {
-      console.log(`│    - ${envVar.padEnd(57)}│`);
+      console.log(`  - ${envVar}`);
     }
   }
-  console.log("│                                                                 │");
-  console.log("│  Set them in docker-compose.yml or export before running.      │");
-  console.log("│                                                                 │");
-  console.log("╰─────────────────────────────────────────────────────────────────╯");
+  console.log("");
+  console.log("Set them in docker-compose.yml or export before running.");
   console.log("");
 
   return new Promise((resolve, reject) => {
