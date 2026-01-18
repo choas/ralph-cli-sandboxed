@@ -23,10 +23,35 @@ export interface RalphConfig {
 export const DEFAULT_CLI_CONFIG: CliConfig = {
   command: "claude",
   args: ["--permission-mode", "acceptEdits"],
+  promptArgs: ["-p"],
 };
 
+// Lazy import to avoid circular dependency
+let _getCliProviders: (() => Record<string, { promptArgs?: string[] }>) | null = null;
+
 export function getCliConfig(config: RalphConfig): CliConfig {
-  return config.cli ?? DEFAULT_CLI_CONFIG;
+  const cliConfig = config.cli ?? DEFAULT_CLI_CONFIG;
+
+  // If promptArgs is already set, use it
+  if (cliConfig.promptArgs !== undefined) {
+    return cliConfig;
+  }
+
+  // Look up promptArgs from cliProvider if available
+  if (config.cliProvider) {
+    if (!_getCliProviders) {
+      // Dynamic import to avoid circular dependency
+      _getCliProviders = require("../templates/prompts.js").getCliProviders;
+    }
+    const providers = _getCliProviders!();
+    const provider = providers[config.cliProvider];
+    if (provider?.promptArgs) {
+      return { ...cliConfig, promptArgs: provider.promptArgs };
+    }
+  }
+
+  // Default to -p for backwards compatibility
+  return { ...cliConfig, promptArgs: ["-p"] };
 }
 
 const RALPH_DIR = ".ralph";
