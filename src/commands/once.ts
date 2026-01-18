@@ -22,11 +22,13 @@ export async function once(_args: string[]): Promise<void> {
   // Build CLI arguments: config args + yolo args + prompt args
   // Use yoloArgs from config if available, otherwise default to Claude's --dangerously-skip-permissions
   const yoloArgs = cliConfig.yoloArgs ?? ["--dangerously-skip-permissions"];
+  const promptArgs = cliConfig.promptArgs ?? ["-p"];
+  const promptValue = `@${paths.prd} @${paths.progress} ${prompt}`;
   const cliArgs = [
     ...(cliConfig.args ?? []),
     ...yoloArgs,
-    "-p",
-    `@${paths.prd} @${paths.progress} ${prompt}`,
+    ...promptArgs,
+    promptValue,
   ];
 
   return new Promise((resolve, reject) => {
