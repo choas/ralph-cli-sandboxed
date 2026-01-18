@@ -48,7 +48,7 @@
         "install": "# Install Google Gemini CLI\nRUN npm install -g @google/gemini-cli",
         "note": "Check 'gemini --help' for available flags"
       },
-      "envVars": ["GOOGLE_API_KEY", "GEMINI_API_KEY"],
+      "envVars": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
       "credentialMount": "~/.gemini:/home/node/.gemini"
     },
     "opencode": {

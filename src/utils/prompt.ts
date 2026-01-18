@@ -80,6 +80,7 @@ export async function promptSelectWithArrows(message: string, options: string[])
       if (process.stdin.isTTY) {
         process.stdin.setRawMode(false);
       }
+      process.stdin.pause();
       process.stdout.write("\x1B[?25h"); // Show cursor
     };
 
@@ -258,6 +259,7 @@ export async function promptMultiSelectWithArrows(message: string, options: stri
       if (process.stdin.isTTY) {
         process.stdin.setRawMode(false);
       }
+      process.stdin.pause();
       process.stdout.write("\x1B[?25h"); // Show cursor
     };
 
