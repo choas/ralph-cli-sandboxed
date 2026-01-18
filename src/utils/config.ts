@@ -45,7 +45,7 @@ export function getCliConfig(config: RalphConfig): CliConfig {
     }
     const providers = _getCliProviders!();
     const provider = providers[config.cliProvider];
-    if (provider?.promptArgs) {
+    if (provider?.promptArgs !== undefined) {
       return { ...cliConfig, promptArgs: provider.promptArgs };
     }
   }
