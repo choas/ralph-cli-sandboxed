@@ -6,6 +6,7 @@
       "command": "claude",
       "defaultArgs": ["--permission-mode", "acceptEdits"],
       "yoloArgs": ["--dangerously-skip-permissions"],
+      "promptArgs": ["-p"],
       "docker": {
         "install": "# Install Claude Code CLI\nRUN curl -fsSL https://claude.ai/install.sh | bash"
       },
@@ -18,6 +19,7 @@
       "command": "aider",
       "defaultArgs": ["--yes"],
       "yoloArgs": ["--yes-always"],
+      "promptArgs": ["--message"],
       "docker": {
         "install": "# Install Aider (requires Python)\nRUN apt-get update && apt-get install -y python3 python3-pip && rm -rf /var/lib/apt/lists/* \\\n    && pip3 install --break-system-packages --no-cache-dir aider-chat",
         "note": "Check 'aider --help' for available flags"
@@ -31,6 +33,7 @@
       "command": "codex",
       "defaultArgs": ["--approval-mode", "suggest"],
       "yoloArgs": ["--approval-mode", "full-auto"],
+      "promptArgs": [],
       "docker": {
         "install": "# Install OpenAI Codex CLI\nRUN npm install -g @openai/codex",
         "note": "Check 'codex --help' for available flags"
@@ -44,6 +47,7 @@
       "command": "gemini",
       "defaultArgs": [],
       "yoloArgs": ["-y"],
+      "promptArgs": [],
       "docker": {
         "install": "# Install Google Gemini CLI\nRUN npm install -g @google/gemini-cli",
         "note": "Check 'gemini --help' for available flags"
@@ -57,6 +61,7 @@
       "command": "opencode",
       "defaultArgs": [],
       "yoloArgs": ["--yolo"],
+      "promptArgs": [],
       "docker": {
         "install": "# Install OpenCode\nRUN curl -fsSL https://opencode.ai/install | bash \\\n    && echo 'export PATH=\"$HOME/.opencode/bin:$PATH\"' >> /home/node/.zshrc",
         "note": "Check 'opencode --help' for available flags"
@@ -70,6 +75,7 @@
       "command": "amp",
       "defaultArgs": [],
       "yoloArgs": ["--yolo"],
+      "promptArgs": [],
       "docker": {
         "install": "# Install AMP CLI\nRUN curl -fsSL https://ampcode.com/install.sh | bash \\\n    && echo 'export PATH=\"$HOME/.amp/bin:$PATH\"' >> /home/node/.zshrc",
         "note": "Check 'amp --help' for available flags"
@@ -83,6 +89,7 @@
       "command": "",
       "defaultArgs": [],
       "yoloArgs": [],
+      "promptArgs": [],
       "docker": {
         "install": "# Custom CLI - add your installation commands here"
       },

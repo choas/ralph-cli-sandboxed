@@ -5,6 +5,7 @@ export interface CliConfig {
   command: string;
   args?: string[];
   yoloArgs?: string[];
+  promptArgs?: string[];
 }
 
 export interface RalphConfig {

@@ -56,7 +56,10 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
     }
 
     // Use the filtered PRD (only incomplete items) for the prompt
-    cliArgs.push("-p", `@${filteredPrdPath} @${paths.progress} ${prompt}`);
+    // promptArgs specifies flags to use (e.g., ["-p"] for Claude, [] for positional)
+    const promptArgs = cliConfig.promptArgs ?? ["-p"];
+    const promptValue = `@${filteredPrdPath} @${paths.progress} ${prompt}`;
+    cliArgs.push(...promptArgs, promptValue);
 
     const proc = spawn(
       cliConfig.command,

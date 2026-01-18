@@ -54,17 +54,21 @@ export async function init(_args: string[]): Promise<void> {
     const customArgs = customArgsInput.trim() ? customArgsInput.trim().split(/\s+/) : [];
     const customYoloArgsInput = await promptInput("Enter yolo/auto-approve arguments (space-separated): ");
     const customYoloArgs = customYoloArgsInput.trim() ? customYoloArgsInput.trim().split(/\s+/) : [];
+    const customPromptArgsInput = await promptInput("Enter prompt arguments (e.g., -p for flag-based, leave empty for positional): ");
+    const customPromptArgs = customPromptArgsInput.trim() ? customPromptArgsInput.trim().split(/\s+/) : [];
 
     cliConfig = {
       command: customCommand || "claude",
       args: customArgs,
       yoloArgs: customYoloArgs.length > 0 ? customYoloArgs : undefined,
+      promptArgs: customPromptArgs,
     };
   } else {
     cliConfig = {
       command: selectedProvider.command,
       args: selectedProvider.defaultArgs,
       yoloArgs: selectedProvider.yoloArgs.length > 0 ? selectedProvider.yoloArgs : undefined,
+      promptArgs: selectedProvider.promptArgs ?? [],
     };
   }
 

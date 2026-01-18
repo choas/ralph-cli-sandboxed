@@ -45,6 +45,7 @@ export interface CliProviderConfig {
   command: string;
   defaultArgs: string[];
   yoloArgs: string[];
+  promptArgs: string[];
   docker: {
     install: string;
   };
