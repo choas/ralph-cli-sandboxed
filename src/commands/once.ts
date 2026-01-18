@@ -34,7 +34,6 @@ export async function once(_args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const proc = spawn(cliConfig.command, cliArgs, {
       stdio: "inherit",
-      shell: true,
     });
 
     proc.on("close", (code) => {
