@@ -66,7 +66,7 @@
         "install": "# Install OpenCode (as node user)\nRUN su - node -c 'curl -fsSL https://opencode.ai/install | bash' \\\n    && echo 'export PATH=\"$HOME/.opencode/bin:$PATH\"' >> /home/node/.zshrc",
         "note": "Check 'opencode --help' for available flags"
       },
-      "envVars": ["GOOGLE_GENERATIVE_AI_API_KEY"],
+      "envVars": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
       "credentialMount": null
     },
     "amp": {
