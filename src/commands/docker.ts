@@ -421,7 +421,7 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
   console.log("IMPORTANT: Getting Started");
   console.log("-".repeat(40));
   console.log("");
-  console.log("To run ralph automation, you need to activate YOLO mode");
+  console.log("To run ralph automation, you might need to activate YOLO mode");
   console.log("which allows the AI to execute commands without prompts.");
   console.log("");
   console.log(`CLI Provider: ${cliConfig.name}`);
