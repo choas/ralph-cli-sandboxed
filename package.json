@@ -4,7 +4,7 @@
   "description": "AI-driven development automation CLI for Claude Code",
   "type": "module",
   "bin": {
-    "ralph": "./dist/index.js"
+    "ralph": "dist/index.js"
   },
   "main": "./dist/index.js",
   "files": [
@@ -13,10 +13,10 @@
     "README.md"
   ],
   "scripts": {
-    "build": "./node_modules/.bin/tsc && npm run copy-config",
+    "build": "tsc && npm run copy-config",
     "copy-config": "mkdir -p dist/config && cp src/config/*.json dist/config/",
     "dev": "npx tsx src/index.ts",
-    "typecheck": "./node_modules/.bin/tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
     "prepare": "npm run build"
   },
