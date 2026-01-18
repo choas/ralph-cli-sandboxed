@@ -13,10 +13,10 @@
     "README.md"
   ],
   "scripts": {
-    "build": "npx --package=typescript tsc && npm run copy-config",
+    "build": "./node_modules/.bin/tsc && npm run copy-config",
     "copy-config": "mkdir -p dist/config && cp src/config/*.json dist/config/",
     "dev": "npx tsx src/index.ts",
-    "typecheck": "npx --package=typescript tsc --noEmit",
+    "typecheck": "./node_modules/.bin/tsc --noEmit",
     "prepublishOnly": "npm run build",
     "prepare": "npm run build"
   },
