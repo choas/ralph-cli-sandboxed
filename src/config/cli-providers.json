@@ -8,7 +8,7 @@
       "yoloArgs": ["--dangerously-skip-permissions"],
       "promptArgs": ["-p"],
       "docker": {
-        "install": "# Install Claude Code CLI\nRUN curl -fsSL https://claude.ai/install.sh | bash"
+        "install": "# Install Claude Code CLI\nRUN curl -fsSL https://claude.ai/install.sh | bash \\\n    && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> /home/node/.zshrc"
       },
       "envVars": ["ANTHROPIC_API_KEY"],
       "credentialMount": "~/.claude:/home/node/.claude"
