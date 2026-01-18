@@ -360,6 +360,30 @@ async function imageExists(imageName: string): Promise<boolean> {
   });
 }
 
+// Get CLI provider configuration
+function getCliProviderConfig(cliProvider?: string): { name: string; command: string; yoloArgs: string[]; envVars: string[] } {
+  const cliProvidersJson = getCliProvidersJson();
+  const providerKey = cliProvider || "claude";
+  const provider = cliProvidersJson.providers[providerKey];
+
+  if (!provider) {
+    // Default to Claude Code CLI if provider not found
+    return {
+      name: "Claude Code",
+      command: "claude",
+      yoloArgs: ["--dangerously-skip-permissions"],
+      envVars: ["ANTHROPIC_API_KEY"],
+    };
+  }
+
+  return {
+    name: provider.name,
+    command: provider.command,
+    yoloArgs: provider.yoloArgs || [],
+    envVars: provider.envVars || [],
+  };
+}
+
 async function runContainer(ralphDir: string, imageName: string, language: string, javaVersion?: number, cliProvider?: string): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
   const dockerfileExists = existsSync(join(dockerDir, "Dockerfile"));
@@ -380,7 +404,39 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
     }
   }
 
+  // Get CLI provider info for the startup note
+  const cliConfig = getCliProviderConfig(cliProvider);
+  const yoloCommand = cliConfig.yoloArgs.length > 0
+    ? `${cliConfig.command} ${cliConfig.yoloArgs.join(" ")}`
+    : cliConfig.command;
+
   console.log("Starting Docker container...\n");
+
+  // Show note about yolo mode and credentials
+  console.log("╭─────────────────────────────────────────────────────────────────╮");
+  console.log("│                     IMPORTANT: Getting Started                  │");
+  console.log("├─────────────────────────────────────────────────────────────────┤");
+  console.log("│                                                                 │");
+  console.log("│  To run ralph automation, you need to activate YOLO mode       │");
+  console.log("│  which allows the AI to execute commands without prompts.      │");
+  console.log("│                                                                 │");
+  console.log(`│  CLI Provider: ${cliConfig.name.padEnd(48)}│`);
+  console.log(`│  Yolo command: ${yoloCommand.padEnd(48)}│`);
+  console.log("│                                                                 │");
+  console.log("│  Before running 'ralph run' or 'ralph once', ensure your       │");
+  console.log("│  credentials are configured:                                   │");
+  console.log("│                                                                 │");
+  if (cliConfig.envVars.length > 0) {
+    console.log("│  Required environment variables:                               │");
+    for (const envVar of cliConfig.envVars) {
+      console.log(`│    - ${envVar.padEnd(57)}│`);
+    }
+  }
+  console.log("│                                                                 │");
+  console.log("│  Set them in docker-compose.yml or export before running.      │");
+  console.log("│                                                                 │");
+  console.log("╰─────────────────────────────────────────────────────────────────╯");
+  console.log("");
 
   return new Promise((resolve, reject) => {
     const proc = spawn("docker", ["compose", "run", "--rm", "ralph"], {
