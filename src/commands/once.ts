@@ -2,7 +2,9 @@ import { spawn } from "child_process";
 import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, requireContainer } from "../utils/config.js";
 import { resolvePromptVariables } from "../templates/prompts.js";
 
-export async function once(_args: string[]): Promise<void> {
+export async function once(args: string[]): Promise<void> {
+  const debug = args.includes("--debug") || args.includes("-d");
+
   requireContainer("once");
   checkFilesExist();
 
@@ -30,6 +32,10 @@ export async function once(_args: string[]): Promise<void> {
     ...promptArgs,
     promptValue,
   ];
+
+  if (debug) {
+    console.log(`[debug] ${cliConfig.command} ${cliArgs.map(a => a.includes(" ") ? `"${a}"` : a).join(" ")}\n`);
+  }
 
   return new Promise((resolve, reject) => {
     const proc = spawn(cliConfig.command, cliArgs, {

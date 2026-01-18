@@ -39,7 +39,7 @@ function createFilteredPrd(prdPath: string, category?: string): { tempPath: stri
   };
 }
 
-async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string, cliConfig: CliConfig): Promise<{ exitCode: number; output: string }> {
+async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string, cliConfig: CliConfig, debug: boolean): Promise<{ exitCode: number; output: string }> {
   return new Promise((resolve, reject) => {
     let output = "";
 
@@ -60,6 +60,10 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
     const promptArgs = cliConfig.promptArgs ?? ["-p"];
     const promptValue = `@${filteredPrdPath} @${paths.progress} ${prompt}`;
     cliArgs.push(...promptArgs, promptValue);
+
+    if (debug) {
+      console.log(`[debug] ${cliConfig.command} ${cliArgs.map(a => a.includes(" ") ? `"${a}"` : a).join(" ")}\n`);
+    }
 
     const proc = spawn(
       cliConfig.command,
@@ -138,6 +142,7 @@ export async function run(args: string[]): Promise<void> {
   let category: string | undefined;
   let loopMode = false;
   let allModeExplicit = false;
+  let debug = false;
   const filteredArgs: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -154,6 +159,8 @@ export async function run(args: string[]): Promise<void> {
       loopMode = true;
     } else if (args[i] === "--all" || args[i] === "-a") {
       allModeExplicit = true;
+    } else if (args[i] === "--debug" || args[i] === "-d") {
+      debug = true;
     } else {
       filteredArgs.push(args[i]);
     }
@@ -285,7 +292,7 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath, cliConfig);
+      const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath, cliConfig, debug);
 
       // Clean up temp file after each iteration
       try {
