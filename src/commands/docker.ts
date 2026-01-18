@@ -36,7 +36,7 @@ function getCliProviderSnippet(cliProvider?: string): string {
 
   if (!provider || !provider.docker) {
     // Default to Claude Code CLI if provider not found
-    return "# Install Claude Code CLI\nRUN curl -fsSL https://claude.ai/install.sh | bash \\\n    && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> /home/node/.zshrc";
+    return "# Install Claude Code CLI (as node user so it installs to /home/node/.local/bin)\nRUN su - node -c 'curl -fsSL https://claude.ai/install.sh | bash' \\\n    && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> /home/node/.zshrc";
   }
 
   return provider.docker.install;

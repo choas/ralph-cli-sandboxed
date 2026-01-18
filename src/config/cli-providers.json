@@ -8,7 +8,7 @@
       "yoloArgs": ["--dangerously-skip-permissions"],
       "promptArgs": ["-p"],
       "docker": {
-        "install": "# Install Claude Code CLI\nRUN curl -fsSL https://claude.ai/install.sh | bash \\\n    && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> /home/node/.zshrc"
+        "install": "# Install Claude Code CLI (as node user so it installs to /home/node/.local/bin)\nRUN su - node -c 'curl -fsSL https://claude.ai/install.sh | bash' \\\n    && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> /home/node/.zshrc"
       },
       "envVars": ["ANTHROPIC_API_KEY"],
       "credentialMount": "~/.claude:/home/node/.claude"
@@ -63,7 +63,7 @@
       "yoloArgs": ["--yolo"],
       "promptArgs": [],
       "docker": {
-        "install": "# Install OpenCode\nRUN curl -fsSL https://opencode.ai/install | bash \\\n    && echo 'export PATH=\"$HOME/.opencode/bin:$PATH\"' >> /home/node/.zshrc",
+        "install": "# Install OpenCode (as node user)\nRUN su - node -c 'curl -fsSL https://opencode.ai/install | bash' \\\n    && echo 'export PATH=\"$HOME/.opencode/bin:$PATH\"' >> /home/node/.zshrc",
         "note": "Check 'opencode --help' for available flags"
       },
       "envVars": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GOOGLE_API_KEY"],
@@ -77,7 +77,7 @@
       "yoloArgs": ["--yolo"],
       "promptArgs": [],
       "docker": {
-        "install": "# Install AMP CLI\nRUN curl -fsSL https://ampcode.com/install.sh | bash \\\n    && echo 'export PATH=\"$HOME/.amp/bin:$PATH\"' >> /home/node/.zshrc",
+        "install": "# Install AMP CLI (as node user)\nRUN su - node -c 'curl -fsSL https://ampcode.com/install.sh | bash' \\\n    && echo 'export PATH=\"$HOME/.amp/bin:$PATH\"' >> /home/node/.zshrc",
         "note": "Check 'amp --help' for available flags"
       },
       "envVars": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"],
