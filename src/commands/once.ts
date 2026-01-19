@@ -3,7 +3,23 @@ import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, requir
 import { resolvePromptVariables } from "../templates/prompts.js";
 
 export async function once(args: string[]): Promise<void> {
-  const debug = args.includes("--debug") || args.includes("-d");
+  // Parse flags
+  let debug = false;
+  let model: string | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--debug" || args[i] === "-d") {
+      debug = true;
+    } else if (args[i] === "--model" || args[i] === "-m") {
+      if (i + 1 < args.length) {
+        model = args[i + 1];
+        i++; // Skip the model value
+      } else {
+        console.error("Error: --model requires a value");
+        process.exit(1);
+      }
+    }
+  }
 
   requireContainer("once");
   checkFilesExist();
@@ -21,7 +37,7 @@ export async function once(args: string[]): Promise<void> {
 
   console.log("Starting single ralph iteration...\n");
 
-  // Build CLI arguments: config args + yolo args + prompt args
+  // Build CLI arguments: config args + yolo args + model args + prompt args
   // Use yoloArgs from config if available, otherwise default to Claude's --dangerously-skip-permissions
   const yoloArgs = cliConfig.yoloArgs ?? ["--dangerously-skip-permissions"];
   const promptArgs = cliConfig.promptArgs ?? ["-p"];
@@ -29,9 +45,14 @@ export async function once(args: string[]): Promise<void> {
   const cliArgs = [
     ...(cliConfig.args ?? []),
     ...yoloArgs,
-    ...promptArgs,
-    promptValue,
   ];
+
+  // Add model args if model is specified
+  if (model && cliConfig.modelArgs) {
+    cliArgs.push(...cliConfig.modelArgs, model);
+  }
+
+  cliArgs.push(...promptArgs, promptValue);
 
   if (debug) {
     console.log(`[debug] ${cliConfig.command} ${cliArgs.map(a => a.includes(" ") ? `"${a}"` : a).join(" ")}\n`);

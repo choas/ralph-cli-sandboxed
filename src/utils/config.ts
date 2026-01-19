@@ -6,6 +6,7 @@ export interface CliConfig {
   args?: string[];
   yoloArgs?: string[];
   promptArgs?: string[];
+  modelArgs?: string[];
 }
 
 export interface RalphConfig {
@@ -27,17 +28,12 @@ export const DEFAULT_CLI_CONFIG: CliConfig = {
 };
 
 // Lazy import to avoid circular dependency
-let _getCliProviders: (() => Record<string, { promptArgs?: string[] }>) | null = null;
+let _getCliProviders: (() => Record<string, { promptArgs?: string[]; modelArgs?: string[] }>) | null = null;
 
 export function getCliConfig(config: RalphConfig): CliConfig {
   const cliConfig = config.cli ?? DEFAULT_CLI_CONFIG;
 
-  // If promptArgs is already set, use it
-  if (cliConfig.promptArgs !== undefined) {
-    return cliConfig;
-  }
-
-  // Look up promptArgs from cliProvider if available
+  // Look up promptArgs and modelArgs from cliProvider if available
   if (config.cliProvider) {
     if (!_getCliProviders) {
       // Dynamic import to avoid circular dependency
@@ -45,13 +41,29 @@ export function getCliConfig(config: RalphConfig): CliConfig {
     }
     const providers = _getCliProviders!();
     const provider = providers[config.cliProvider];
-    if (provider?.promptArgs !== undefined) {
-      return { ...cliConfig, promptArgs: provider.promptArgs };
+
+    const result = { ...cliConfig };
+
+    // Use provider's promptArgs if not already set
+    if (result.promptArgs === undefined && provider?.promptArgs !== undefined) {
+      result.promptArgs = provider.promptArgs;
     }
+
+    // Use provider's modelArgs if not already set
+    if (result.modelArgs === undefined && provider?.modelArgs !== undefined) {
+      result.modelArgs = provider.modelArgs;
+    }
+
+    // Default promptArgs for backwards compatibility
+    if (result.promptArgs === undefined) {
+      result.promptArgs = ["-p"];
+    }
+
+    return result;
   }
 
   // Default to -p for backwards compatibility
-  return { ...cliConfig, promptArgs: ["-p"] };
+  return { ...cliConfig, promptArgs: cliConfig.promptArgs ?? ["-p"] };
 }
 
 const RALPH_DIR = ".ralph";

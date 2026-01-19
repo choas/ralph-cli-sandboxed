@@ -39,11 +39,11 @@ function createFilteredPrd(prdPath: string, category?: string): { tempPath: stri
   };
 }
 
-async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string, cliConfig: CliConfig, debug: boolean): Promise<{ exitCode: number; output: string }> {
+async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string, cliConfig: CliConfig, debug: boolean, model?: string): Promise<{ exitCode: number; output: string }> {
   return new Promise((resolve, reject) => {
     let output = "";
 
-    // Build CLI arguments: config args + yolo args + prompt args
+    // Build CLI arguments: config args + yolo args + model args + prompt args
     const cliArgs = [
       ...(cliConfig.args ?? []),
     ];
@@ -53,6 +53,11 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
     if (sandboxed) {
       const yoloArgs = cliConfig.yoloArgs ?? ["--dangerously-skip-permissions"];
       cliArgs.push(...yoloArgs);
+    }
+
+    // Add model args if model is specified
+    if (model && cliConfig.modelArgs) {
+      cliArgs.push(...cliConfig.modelArgs, model);
     }
 
     // Use the filtered PRD (only incomplete items) for the prompt
@@ -140,6 +145,7 @@ function countPrdItems(prdPath: string, category?: string): { total: number; inc
 export async function run(args: string[]): Promise<void> {
   // Parse flags
   let category: string | undefined;
+  let model: string | undefined;
   let loopMode = false;
   let allModeExplicit = false;
   let debug = false;
@@ -153,6 +159,14 @@ export async function run(args: string[]): Promise<void> {
       } else {
         console.error("Error: --category requires a value");
         console.error(`Valid categories: ${CATEGORIES.join(", ")}`);
+        process.exit(1);
+      }
+    } else if (args[i] === "--model" || args[i] === "-m") {
+      if (i + 1 < args.length) {
+        model = args[i + 1];
+        i++; // Skip the model value
+      } else {
+        console.error("Error: --model requires a value");
         process.exit(1);
       }
     } else if (args[i] === "--loop" || args[i] === "-l") {
@@ -292,7 +306,7 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath, cliConfig, debug);
+      const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath, cliConfig, debug, model);
 
       // Clean up temp file after each iteration
       try {

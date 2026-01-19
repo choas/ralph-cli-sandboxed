@@ -11,7 +11,12 @@
         "install": "# Install Claude Code CLI (as node user so it installs to /home/node/.local/bin)\nRUN su - node -c 'curl -fsSL https://claude.ai/install.sh | bash' \\\n    && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> /home/node/.zshrc"
       },
       "envVars": ["ANTHROPIC_API_KEY"],
-      "credentialMount": "~/.claude:/home/node/.claude"
+      "credentialMount": "~/.claude:/home/node/.claude",
+      "modelConfig": {
+        "envVar": "CLAUDE_MODEL",
+        "note": "Or use: ralph run --model <model>"
+      },
+      "modelArgs": ["--model"]
     },
     "aider": {
       "name": "Aider",
@@ -25,7 +30,12 @@
         "note": "Check 'aider --help' for available flags"
       },
       "envVars": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"],
-      "credentialMount": null
+      "credentialMount": null,
+      "modelConfig": {
+        "envVar": "AIDER_MODEL",
+        "note": "Or use: ralph run --model <model>"
+      },
+      "modelArgs": ["--model"]
     },
     "codex": {
       "name": "OpenAI Codex CLI",
@@ -39,7 +49,12 @@
         "note": "Check 'codex --help' for available flags"
       },
       "envVars": ["OPENAI_API_KEY"],
-      "credentialMount": null
+      "credentialMount": null,
+      "modelConfig": {
+        "envVar": "CODEX_MODEL",
+        "note": "Or use: ralph run --model <model>"
+      },
+      "modelArgs": ["--model"]
     },
     "gemini": {
       "name": "Gemini CLI",
@@ -53,7 +68,12 @@
         "note": "Check 'gemini --help' for available flags"
       },
       "envVars": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
-      "credentialMount": "~/.gemini:/home/node/.gemini"
+      "credentialMount": "~/.gemini:/home/node/.gemini",
+      "modelConfig": {
+        "envVar": "GEMINI_MODEL",
+        "note": "Or use: ralph run --model <model>"
+      },
+      "modelArgs": ["--model"]
     },
     "opencode": {
       "name": "OpenCode",
@@ -67,7 +87,11 @@
         "note": "Check 'opencode --help' for available flags"
       },
       "envVars": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
-      "credentialMount": null
+      "credentialMount": null,
+      "modelConfig": {
+        "note": "Or use: ralph run --model <model>"
+      },
+      "modelArgs": ["--model"]
     },
     "amp": {
       "name": "AMP CLI",
@@ -81,7 +105,11 @@
         "note": "Check 'amp --help' for available flags"
       },
       "envVars": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"],
-      "credentialMount": null
+      "credentialMount": null,
+      "modelConfig": {
+        "note": "Or use: ralph run --model <model>"
+      },
+      "modelArgs": ["--model"]
     },
     "custom": {
       "name": "Custom CLI",

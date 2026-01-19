@@ -366,7 +366,7 @@ async function imageExists(imageName: string): Promise<boolean> {
 }
 
 // Get CLI provider configuration
-function getCliProviderConfig(cliProvider?: string): { name: string; command: string; yoloArgs: string[]; envVars: string[] } {
+function getCliProviderConfig(cliProvider?: string): { name: string; command: string; yoloArgs: string[]; envVars: string[]; modelConfig?: { envVar?: string; note?: string } } {
   const cliProvidersJson = getCliProvidersJson();
   const providerKey = cliProvider || "claude";
   const provider = cliProvidersJson.providers[providerKey];
@@ -378,6 +378,7 @@ function getCliProviderConfig(cliProvider?: string): { name: string; command: st
       command: "claude",
       yoloArgs: ["--dangerously-skip-permissions"],
       envVars: ["ANTHROPIC_API_KEY"],
+      modelConfig: { envVar: "CLAUDE_MODEL", note: "Or use --model flag" },
     };
   }
 
@@ -386,6 +387,7 @@ function getCliProviderConfig(cliProvider?: string): { name: string; command: st
     command: provider.command,
     yoloArgs: provider.yoloArgs || [],
     envVars: provider.envVars || [],
+    modelConfig: provider.modelConfig,
   };
 }
 
@@ -437,6 +439,19 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
     }
   }
   console.log("");
+
+  // Display model configuration info if available
+  if (cliConfig.modelConfig) {
+    console.log("Model configuration (optional):");
+    if (cliConfig.modelConfig.envVar) {
+      const note = cliConfig.modelConfig.note ? ` - ${cliConfig.modelConfig.note}` : "";
+      console.log(`  ${cliConfig.modelConfig.envVar}${note}`);
+    } else if (cliConfig.modelConfig.note) {
+      console.log(`  ${cliConfig.modelConfig.note}`);
+    }
+    console.log("");
+  }
+
   console.log("Set them in docker-compose.yml or export before running.");
   console.log("");
 

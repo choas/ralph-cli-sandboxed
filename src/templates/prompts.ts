@@ -46,11 +46,16 @@ export interface CliProviderConfig {
   defaultArgs: string[];
   yoloArgs: string[];
   promptArgs: string[];
+  modelArgs?: string[];
   docker: {
     install: string;
   };
   envVars: string[];
   credentialMount: string | null;
+  modelConfig?: {
+    envVar?: string;
+    note?: string;
+  };
 }
 
 interface CliProvidersJson {
