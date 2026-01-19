@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync, readdirSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, basename } from "path";
 
 export interface PrdEntry {
   category: string;
@@ -415,17 +415,21 @@ export function findLatestBackup(prdPath: string): string | null {
 
 /**
  * Creates a PRD template with a recovery entry that instructs the LLM to fix the PRD.
+ * Uses @{filename} syntax to include backup content when expanded.
  * @param backupPath - Path to the backup file containing the corrupted PRD
  */
 export function createTemplatePrd(backupPath?: string): PrdEntry[] {
   if (backupPath) {
+    // Extract just the filename for the @{} reference
+    const backupFilename = basename(backupPath);
+
     return [
       {
         category: "setup",
         description: "Fix the PRD entries",
         steps: [
-          `Based on the ${backupPath} file, add new entries to .ralph/prd.json`,
-          "Verify that .ralph/prd.json has the correct format: category (string), description (string), steps (array of strings), passes (boolean)"
+          `Recreate PRD entries based on this corrupted backup content:\n\n@{${backupFilename}}`,
+          "Write valid entries to .ralph/prd.json with format: category (string), description (string), steps (array of strings), passes (boolean)"
         ],
         passes: false,
       }
@@ -464,4 +468,42 @@ export function readPrdFile(prdPath: string): { content: unknown; raw: string } 
  */
 export function writePrd(prdPath: string, entries: PrdEntry[]): void {
   writeFileSync(prdPath, JSON.stringify(entries, null, 2) + "\n");
+}
+
+/**
+ * Expands @{filepath} patterns in a string with actual file contents.
+ * Similar to curl's @ syntax for including file contents.
+ * Paths are resolved relative to the .ralph directory.
+ */
+export function expandFileReferences(text: string, baseDir: string): string {
+  // Match @{filepath} patterns
+  const pattern = /@\{([^}]+)\}/g;
+
+  return text.replace(pattern, (match, filepath) => {
+    // Resolve path relative to baseDir (typically .ralph/)
+    const fullPath = filepath.startsWith("/") ? filepath : join(baseDir, filepath);
+
+    if (!existsSync(fullPath)) {
+      return `[File not found: ${filepath}]`;
+    }
+
+    try {
+      const content = readFileSync(fullPath, "utf-8");
+      return content;
+    } catch {
+      return `[Error reading: ${filepath}]`;
+    }
+  });
+}
+
+/**
+ * Expands file references in all string fields of PRD entries.
+ * Returns a new array with expanded content.
+ */
+export function expandPrdFileReferences(entries: PrdEntry[], baseDir: string): PrdEntry[] {
+  return entries.map(entry => ({
+    ...entry,
+    description: expandFileReferences(entry.description, baseDir),
+    steps: entry.steps.map(step => expandFileReferences(step, baseDir)),
+  }));
 }

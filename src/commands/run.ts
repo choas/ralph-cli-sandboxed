@@ -4,7 +4,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliConfig, requireContainer } from "../utils/config.js";
 import { resolvePromptVariables } from "../templates/prompts.js";
-import { validatePrd, smartMerge, readPrdFile, writePrd, PrdEntry } from "../utils/prd-validator.js";
+import { validatePrd, smartMerge, readPrdFile, writePrd, expandPrdFileReferences, PrdEntry } from "../utils/prd-validator.js";
 
 interface PrdItem {
   category: string;
@@ -18,9 +18,10 @@ const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing"
 /**
  * Creates a filtered PRD file containing only incomplete items (passes: false).
  * Optionally filters by category if specified.
+ * Expands @{filepath} references to include file contents.
  * Returns the path to the temp file, or null if all items pass.
  */
-function createFilteredPrd(prdPath: string, category?: string): { tempPath: string; hasIncomplete: boolean } {
+function createFilteredPrd(prdPath: string, baseDir: string, category?: string): { tempPath: string; hasIncomplete: boolean } {
   const content = readFileSync(prdPath, "utf-8");
   const items: PrdItem[] = JSON.parse(content);
 
@@ -31,8 +32,11 @@ function createFilteredPrd(prdPath: string, category?: string): { tempPath: stri
     filteredItems = filteredItems.filter(item => item.category === category);
   }
 
+  // Expand @{filepath} references in description and steps
+  const expandedItems = expandPrdFileReferences(filteredItems, baseDir);
+
   const tempPath = join(tmpdir(), `ralph-prd-filtered-${Date.now()}.json`);
-  writeFileSync(tempPath, JSON.stringify(filteredItems, null, 2));
+  writeFileSync(tempPath, JSON.stringify(expandedItems, null, 2));
 
   return {
     tempPath,
@@ -308,7 +312,7 @@ export async function run(args: string[]): Promise<void> {
       const validPrd = loadValidPrd(paths.prd);
 
       // Create a fresh filtered PRD for each iteration (in case items were completed)
-      const { tempPath, hasIncomplete } = createFilteredPrd(paths.prd, category);
+      const { tempPath, hasIncomplete } = createFilteredPrd(paths.prd, paths.dir, category);
       filteredPrdPath = tempPath;
 
       if (!hasIncomplete) {
@@ -334,7 +338,7 @@ export async function run(args: string[]): Promise<void> {
           // Poll for new items
           while (true) {
             await sleep(POLL_INTERVAL_MS);
-            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, category);
+            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, paths.dir, category);
             if (newItems) {
               console.log("\nNew incomplete item(s) detected! Resuming...");
               break;
@@ -413,7 +417,7 @@ export async function run(args: string[]): Promise<void> {
           // Poll for new items
           while (true) {
             await sleep(POLL_INTERVAL_MS);
-            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, category);
+            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, paths.dir, category);
             if (newItems) {
               console.log("\nNew incomplete item(s) detected! Resuming...");
               break;
