@@ -10,6 +10,7 @@ import { run } from "./commands/run.js";
 import { prd, prdAdd, prdList, prdStatus, prdToggle, prdClean, parseListArgs } from "./commands/prd.js";
 import { docker } from "./commands/docker.js";
 import { prompt } from "./commands/prompt.js";
+import { fixPrd } from "./commands/fix-prd.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,6 +29,7 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   prd,
   prompt,
   docker,
+  "fix-prd": (args) => fixPrd(args),
   // Top-level PRD commands (shortcuts)
   add: () => prdAdd(),
   list: (args) => {

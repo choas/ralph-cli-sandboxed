@@ -4,6 +4,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliConfig, requireContainer } from "../utils/config.js";
 import { resolvePromptVariables } from "../templates/prompts.js";
+import { validatePrd, smartMerge, readPrdFile, writePrd, PrdEntry } from "../utils/prd-validator.js";
 
 interface PrdItem {
   category: string;
@@ -142,6 +143,59 @@ function countPrdItems(prdPath: string, category?: string): { total: number; inc
   };
 }
 
+/**
+ * Validates the PRD after an iteration and recovers if corrupted.
+ * Uses the validPrd as the source of truth and merges passes flags from the current file.
+ * Returns true if the PRD was corrupted and recovered.
+ */
+function validateAndRecoverPrd(prdPath: string, validPrd: PrdEntry[]): { recovered: boolean; itemsUpdated: number } {
+  const parsed = readPrdFile(prdPath);
+
+  // If we can't even parse the JSON, restore from valid copy
+  if (!parsed) {
+    console.log("\n\x1b[33mWarning: PRD corrupted (invalid JSON) - restored from memory.\x1b[0m");
+    writePrd(prdPath, validPrd);
+    return { recovered: true, itemsUpdated: 0 };
+  }
+
+  // Validate the structure
+  const validation = validatePrd(parsed.content);
+
+  if (validation.valid) {
+    // PRD is valid, no recovery needed
+    return { recovered: false, itemsUpdated: 0 };
+  }
+
+  // PRD is corrupted - use smart merge to extract passes flags
+  console.log("\n\x1b[33mWarning: PRD format corrupted by LLM - recovering...\x1b[0m");
+
+  const mergeResult = smartMerge(validPrd, parsed.content);
+
+  // Write the valid structure back
+  writePrd(prdPath, mergeResult.merged);
+
+  if (mergeResult.itemsUpdated > 0) {
+    console.log(`\x1b[32mRecovered: merged ${mergeResult.itemsUpdated} passes flag(s) into valid PRD structure.\x1b[0m`);
+  } else {
+    console.log("\x1b[32mRecovered: restored valid PRD structure.\x1b[0m");
+  }
+
+  if (mergeResult.warnings.length > 0) {
+    mergeResult.warnings.forEach(w => console.log(`  \x1b[33m${w}\x1b[0m`));
+  }
+
+  return { recovered: true, itemsUpdated: mergeResult.itemsUpdated };
+}
+
+/**
+ * Loads a valid copy of the PRD to keep in memory.
+ * Returns the validated PRD entries.
+ */
+function loadValidPrd(prdPath: string): PrdEntry[] {
+  const content = readFileSync(prdPath, "utf-8");
+  return JSON.parse(content);
+}
+
 export async function run(args: string[]): Promise<void> {
   // Parse flags
   let category: string | undefined;
@@ -250,6 +304,9 @@ export async function run(args: string[]): Promise<void> {
       }
       console.log(`${"=".repeat(50)}\n`);
 
+      // Load a valid copy of the PRD before handing to the LLM
+      const validPrd = loadValidPrd(paths.prd);
+
       // Create a fresh filtered PRD for each iteration (in case items were completed)
       const { tempPath, hasIncomplete } = createFilteredPrd(paths.prd, category);
       filteredPrdPath = tempPath;
@@ -315,6 +372,9 @@ export async function run(args: string[]): Promise<void> {
         // Ignore cleanup errors
       }
       filteredPrdPath = null;
+
+      // Validate and recover PRD if the LLM corrupted it
+      validateAndRecoverPrd(paths.prd, validPrd);
 
       if (exitCode !== 0) {
         console.error(`\n${cliConfig.command} exited with code ${exitCode}`);

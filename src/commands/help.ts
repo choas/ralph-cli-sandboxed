@@ -13,6 +13,7 @@ COMMANDS:
   status            Show PRD completion status
   toggle <n>        Toggle passes status for entry n
   clean             Remove all passing entries from the PRD
+  fix-prd [opts]    Validate and recover corrupted PRD file
   prompt [opts]     Display resolved prompt (for testing in Claude Code)
   docker <sub>      Manage Docker sandbox environment
   help              Show this help message
@@ -42,6 +43,10 @@ TOGGLE OPTIONS:
   <n> [n2] [n3]...           Toggle one or more entries by number
   --all, -a                  Toggle all PRD entries
 
+FIX-PRD OPTIONS:
+  <backup-file>              Restore PRD from a specific backup file
+  --verify, -v               Only verify format, don't attempt to fix
+
 DOCKER SUBCOMMANDS:
   docker init       Generate Dockerfile and scripts
   docker build      Build image (always fetches latest Claude Code)
@@ -66,6 +71,9 @@ EXAMPLES:
   ralph toggle 1 2 3         # Toggle multiple entries
   ralph toggle --all         # Toggle all entries
   ralph clean                # Remove passing entries
+  ralph fix-prd              # Validate/recover corrupted PRD file
+  ralph fix-prd --verify     # Check PRD format without fixing
+  ralph fix-prd backup.prd.2024-01-15.json  # Restore from specific backup
   ralph prompt               # Display resolved prompt
   ralph docker init          # Generate Dockerfile for sandboxed env
   ralph docker build         # Build Docker image
