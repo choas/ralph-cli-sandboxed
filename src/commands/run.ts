@@ -267,22 +267,11 @@ export async function run(args: string[]): Promise<void> {
   const paths = getPaths();
   const cliConfig = getCliConfig(config);
 
-  // Calculate iteration limit: incomplete items + 3 (safety margin)
-  // Loop mode has no limit, other modes are capped
-  const initialCounts = countPrdItems(paths.prd, category);
-  const maxIterations = initialCounts.incomplete + 3;
+  // Safety margin for iteration limit (recalculated dynamically each iteration)
+  const ITERATION_SAFETY_MARGIN = 3;
 
-  let iterations: number;
-  if (loopMode) {
-    // Loop mode: no automatic limit
-    iterations = parseInt(filteredArgs[0]) || Infinity;
-  } else if (allMode) {
-    // All mode: cap at maxIterations
-    iterations = maxIterations;
-  } else {
-    // Explicit count: cap at maxIterations
-    iterations = Math.min(parseInt(filteredArgs[0]), maxIterations);
-  }
+  // Get requested iteration count (may be adjusted dynamically)
+  const requestedIterations = parseInt(filteredArgs[0]) || Infinity;
 
   // Container is required, so always run with skip-permissions
   const sandboxed = true;
@@ -291,11 +280,10 @@ export async function run(args: string[]): Promise<void> {
     const counts = countPrdItems(paths.prd, category);
     console.log("Starting ralph in --all mode (runs until all tasks complete)...");
     console.log(`PRD Status: ${counts.complete}/${counts.total} complete, ${counts.incomplete} remaining`);
-    console.log(`Max iterations: ${maxIterations}`);
   } else if (loopMode) {
     console.log("Starting ralph in loop mode (runs until interrupted)...");
   } else {
-    console.log(`Starting ${iterations} ralph iteration(s)... (max: ${maxIterations})`);
+    console.log(`Starting ralph iterations (requested: ${requestedIterations})...`);
   }
   if (category) {
     console.log(`Filtering PRD items by category: ${category}`);
@@ -310,17 +298,36 @@ export async function run(args: string[]): Promise<void> {
   const startTime = Date.now();
   let consecutiveFailures = 0;
   let lastExitCode = 0;
+  let iterationCount = 0;
 
   try {
-    for (let i = 1; i <= iterations; i++) {
+    while (true) {
+      iterationCount++;
+
+      // Dynamic iteration limit: recalculate based on current incomplete count
+      // This allows the limit to expand if tasks are added during the run
+      const currentCounts = countPrdItems(paths.prd, category);
+      const dynamicMaxIterations = currentCounts.incomplete + ITERATION_SAFETY_MARGIN;
+
+      // Check if we should stop (not in loop mode)
+      if (!loopMode) {
+        if (allMode && iterationCount > dynamicMaxIterations) {
+          console.log(`\nStopping: reached iteration limit (${dynamicMaxIterations}) with ${currentCounts.incomplete} tasks remaining.`);
+          console.log("This may indicate tasks are not completing. Check the PRD and progress.");
+          break;
+        }
+        if (!allMode && iterationCount > Math.min(requestedIterations, dynamicMaxIterations)) {
+          break;
+        }
+      }
+
       console.log(`\n${"=".repeat(50)}`);
       if (allMode) {
-        const counts = countPrdItems(paths.prd, category);
-        console.log(`Iteration ${i} | Progress: ${counts.complete}/${counts.total} complete`);
-      } else if (loopMode && iterations === Infinity) {
-        console.log(`Iteration ${i}`);
+        console.log(`Iteration ${iterationCount} | Progress: ${currentCounts.complete}/${currentCounts.total} complete`);
+      } else if (loopMode) {
+        console.log(`Iteration ${iterationCount}`);
       } else {
-        console.log(`Iteration ${i} of ${iterations}`);
+        console.log(`Iteration ${iterationCount} of ${Math.min(requestedIterations, dynamicMaxIterations)}`);
       }
       console.log(`${"=".repeat(50)}\n`);
 
@@ -360,8 +367,8 @@ export async function run(args: string[]): Promise<void> {
               break;
             }
           }
-          // Decrement i so we don't skip an iteration count
-          i--;
+          // Decrement so we don't count waiting as an iteration
+          iterationCount--;
           continue;
         } else {
           console.log("\n" + "=".repeat(50));
