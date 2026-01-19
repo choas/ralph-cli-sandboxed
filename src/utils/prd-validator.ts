@@ -415,20 +415,20 @@ export function findLatestBackup(prdPath: string): string | null {
 
 /**
  * Creates a PRD template with a recovery entry that instructs the LLM to fix the PRD.
- * Uses @{filename} syntax to include backup content when expanded.
- * @param backupPath - Path to the backup file containing the corrupted PRD
+ * Uses @{filepath} syntax to include backup content when expanded.
+ * @param backupPath - Absolute path to the backup file containing the corrupted PRD
  */
 export function createTemplatePrd(backupPath?: string): PrdEntry[] {
   if (backupPath) {
-    // Extract just the filename for the @{} reference
-    const backupFilename = basename(backupPath);
+    // Use absolute path in @{} reference to avoid path resolution issues
+    const absolutePath = backupPath.startsWith("/") ? backupPath : join(process.cwd(), backupPath);
 
     return [
       {
         category: "setup",
         description: "Fix the PRD entries",
         steps: [
-          `Recreate PRD entries based on this corrupted backup content:\n\n@{${backupFilename}}`,
+          `Recreate PRD entries based on this corrupted backup content:\n\n@{${absolutePath}}`,
           "Write valid entries to .ralph/prd.json with format: category (string), description (string), steps (array of strings), passes (boolean)"
         ],
         passes: false,
@@ -484,14 +484,14 @@ export function expandFileReferences(text: string, baseDir: string): string {
     const fullPath = filepath.startsWith("/") ? filepath : join(baseDir, filepath);
 
     if (!existsSync(fullPath)) {
-      return `[File not found: ${filepath}]`;
+      return `[File not found: ${fullPath}]`;
     }
 
     try {
       const content = readFileSync(fullPath, "utf-8");
       return content;
     } catch {
-      return `[Error reading: ${filepath}]`;
+      return `[Error reading: ${fullPath}]`;
     }
   });
 }
