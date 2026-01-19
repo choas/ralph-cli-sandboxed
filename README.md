@@ -20,24 +20,21 @@ ralph init
 ## Quick Start
 
 ```bash
-# 1. Initialize ralph in your project
+# 1. Initialize ralph in your project (creates config AND Docker files)
 ralph init
 
-# 2. Add requirements to your PRD
+# 2. Edit .ralph/prd.json with your requirements, or use:
 ralph add
 
-# 3. Run a single iteration
-ralph once
-
-# 4. Or run until all tasks complete (default)
-ralph run
+# 3. Run in Docker sandbox (auto-builds image on first run)
+ralph docker run
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `ralph init` | Initialize ralph in current project |
+| `ralph init` | Initialize ralph in current project (config + Docker files) |
 | `ralph once` | Run a single automation iteration |
 | `ralph run [n]` | Run automation iterations (default: all tasks) |
 | `ralph add` | Add a new PRD entry (interactive) |
@@ -45,10 +42,29 @@ ralph run
 | `ralph status` | Show PRD completion status |
 | `ralph toggle <n>` | Toggle passes status for entry n |
 | `ralph clean` | Remove all passing entries from PRD |
+| `ralph fix-prd [opts]` | Validate and recover corrupted PRD file |
+| `ralph prompt [opts]` | Display resolved prompt |
 | `ralph docker <sub>` | Manage Docker sandbox environment |
 | `ralph help` | Show help message |
 
 > **Note:** `ralph prd <subcommand>` still works for compatibility (e.g., `ralph prd add`).
+
+### Run Options
+
+```bash
+ralph run --model claude-sonnet-4-20250514  # Use specific model
+ralph run -m claude-sonnet-4-20250514       # Short form
+```
+
+The `--model` flag is passed to the underlying CLI provider. Support depends on your CLI configuration (see [CLI Configuration](#cli-configuration)).
+
+### fix-prd Options
+
+```bash
+ralph fix-prd              # Validate and auto-fix corrupted PRD
+ralph fix-prd --verify     # Check only, don't fix
+ralph fix-prd <backup>     # Restore from specific backup file
+```
 
 ## Configuration
 
@@ -56,10 +72,15 @@ After running `ralph init`, you'll have:
 
 ```
 .ralph/
-├── config.json      # Project configuration
-├── prompt.md        # Shared prompt template
-├── prd.json         # Product requirements document
-└── progress.txt     # Progress tracking file
+├── config.json          # Project configuration
+├── prompt.md            # Shared prompt template
+├── prd.json             # Product requirements document
+├── progress.txt         # Progress tracking file
+├── HOW-TO-WRITE-PRDs.md # PRD writing guide
+└── docker/              # Docker sandbox files
+    ├── Dockerfile
+    ├── docker-compose.yml
+    └── ...
 ```
 
 ### Supported Languages
@@ -93,15 +114,19 @@ Ralph can be configured to use different AI CLI tools. By default, it uses Claud
 {
   "cli": {
     "command": "claude",
-    "args": ["--permission-mode", "acceptEdits"]
+    "args": ["--permission-mode", "acceptEdits"],
+    "modelArgs": ["--model"],
+    "promptArgs": ["-p"]
   }
 }
 ```
 
 - `command`: The CLI executable name (must be in PATH)
 - `args`: Default arguments passed to the CLI
+- `modelArgs`: Arguments for passing model (e.g., `["--model"]`). Required for `--model` flag support.
+- `promptArgs`: Arguments for passing prompt (e.g., `["-p"]` or `[]` for positional)
 
-The `-p` flag with PRD/prompt content and `--dangerously-skip-permissions` (in containers) are added automatically at runtime.
+The prompt content and `--dangerously-skip-permissions` (in containers) are added automatically at runtime.
 
 ## PRD Format
 
@@ -124,20 +149,41 @@ The PRD (`prd.json`) is an array of requirements:
 
 Categories: `ui`, `feature`, `bugfix`, `setup`, `development`, `testing`, `docs`
 
+### Advanced: File References
+
+PRD steps can include file contents using the `@{filepath}` syntax:
+
+```json
+{
+  "steps": ["Based on content: @{backup.prd.2024-01-15.json}"]
+}
+```
+
+File paths are resolved relative to the project root. Absolute paths are also supported.
+
+## PRD Protection
+
+Ralph includes automatic PRD protection to handle cases where the LLM corrupts the PRD structure:
+
+- **Automatic backup**: Before each run, the PRD is backed up
+- **Validation**: After each iteration, the PRD structure is validated
+- **Smart recovery**: If corrupted, ralph attempts to extract `passes: true` flags from the corrupted PRD and merge them into the backup
+- **Manual recovery**: Use `ralph fix-prd` to validate, auto-fix, or restore from a specific backup
+
+### Dynamic Iteration Limits
+
+To prevent runaway loops, `ralph run` limits iterations to `incomplete_tasks + 3`. This limit adjusts dynamically if new tasks are added during execution.
+
 ## Docker Sandbox
 
 Run ralph in an isolated Docker container:
 
 ```bash
-# Generate Docker files
-ralph docker init
-
-# Build the image
-ralph docker build
-
-# Run container
+# Run container (auto-builds image on first run)
 ralph docker run
 ```
+
+> **Note:** `ralph init` auto-creates Docker files in `.ralph/docker/`. Use `ralph docker init` to regenerate them if needed.
 
 Features:
 - Based on [Claude Code devcontainer](https://github.com/anthropics/claude-code/tree/main/.devcontainer)
