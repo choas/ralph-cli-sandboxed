@@ -59,9 +59,9 @@
       "name": "OpenCode",
       "description": "Open source AI coding agent for the terminal",
       "command": "opencode",
-      "defaultArgs": ["run"],
+      "defaultArgs": [],
       "yoloArgs": ["--yolo"],
-      "promptArgs": [],
+      "promptArgs": ["run"],
       "docker": {
         "install": "# Install OpenCode (as node user)\nRUN su - node -c 'curl -fsSL https://opencode.ai/install | bash' \\\n    && echo 'export PATH=\"$HOME/.opencode/bin:$PATH\"' >> /home/node/.zshrc",
         "note": "Check 'opencode --help' for available flags"
