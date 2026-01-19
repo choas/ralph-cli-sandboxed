@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
+import { getCliProviders } from "../templates/prompts.js";
 
 export interface CliConfig {
   command: string;
@@ -27,19 +28,12 @@ export const DEFAULT_CLI_CONFIG: CliConfig = {
   promptArgs: ["-p"],
 };
 
-// Lazy import to avoid circular dependency
-let _getCliProviders: (() => Record<string, { promptArgs?: string[]; modelArgs?: string[] }>) | null = null;
-
 export function getCliConfig(config: RalphConfig): CliConfig {
   const cliConfig = config.cli ?? DEFAULT_CLI_CONFIG;
 
   // Look up promptArgs and modelArgs from cliProvider if available
   if (config.cliProvider) {
-    if (!_getCliProviders) {
-      // Dynamic import to avoid circular dependency
-      _getCliProviders = require("../templates/prompts.js").getCliProviders;
-    }
-    const providers = _getCliProviders!();
+    const providers = getCliProviders();
     const provider = providers[config.cliProvider];
 
     const result = { ...cliConfig };
