@@ -252,9 +252,6 @@ export async function run(args: string[]): Promise<void> {
   const hasIterationArg = filteredArgs.length > 0 && !isNaN(parseInt(filteredArgs[0])) && parseInt(filteredArgs[0]) >= 1;
   const allMode = !loopMode && (allModeExplicit || !hasIterationArg);
 
-  // In loop mode or all mode, iterations argument is optional (defaults to unlimited)
-  const iterations = (loopMode || allMode) ? (parseInt(filteredArgs[0]) || Infinity) : parseInt(filteredArgs[0]);
-
   requireContainer("run");
   checkFilesExist();
 
@@ -269,6 +266,23 @@ export async function run(args: string[]): Promise<void> {
   const paths = getPaths();
   const cliConfig = getCliConfig(config);
 
+  // Calculate iteration limit: incomplete items + 3 (safety margin)
+  // Loop mode has no limit, other modes are capped
+  const initialCounts = countPrdItems(paths.prd, category);
+  const maxIterations = initialCounts.incomplete + 3;
+
+  let iterations: number;
+  if (loopMode) {
+    // Loop mode: no automatic limit
+    iterations = parseInt(filteredArgs[0]) || Infinity;
+  } else if (allMode) {
+    // All mode: cap at maxIterations
+    iterations = maxIterations;
+  } else {
+    // Explicit count: cap at maxIterations
+    iterations = Math.min(parseInt(filteredArgs[0]), maxIterations);
+  }
+
   // Container is required, so always run with skip-permissions
   const sandboxed = true;
 
@@ -276,10 +290,11 @@ export async function run(args: string[]): Promise<void> {
     const counts = countPrdItems(paths.prd, category);
     console.log("Starting ralph in --all mode (runs until all tasks complete)...");
     console.log(`PRD Status: ${counts.complete}/${counts.total} complete, ${counts.incomplete} remaining`);
+    console.log(`Max iterations: ${maxIterations}`);
   } else if (loopMode) {
     console.log("Starting ralph in loop mode (runs until interrupted)...");
   } else {
-    console.log(`Starting ${iterations} ralph iteration(s)...`);
+    console.log(`Starting ${iterations} ralph iteration(s)... (max: ${maxIterations})`);
   }
   if (category) {
     console.log(`Filtering PRD items by category: ${category}`);
