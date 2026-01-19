@@ -71,6 +71,20 @@ After running `ralph init`, you'll have:
 - **Rust** - `cargo check`, `cargo test`
 - **Custom** - Define your own commands
 
+### Supported CLI Providers
+
+Ralph supports multiple AI CLI tools. Select your provider during `ralph init`:
+
+| CLI | Status | Environment Variables | Notes |
+|-----|--------|----------------------|-------|
+| [Claude Code](https://github.com/anthropics/claude-code) | Working | `ANTHROPIC_API_KEY` | Default provider. Also supports ~/.claude OAuth credentials |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Working | `GEMINI_API_KEY`, `GOOGLE_API_KEY` | |
+| [OpenCode](https://github.com/anomalyco/opencode) | Working | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` | Requires [PR #9073](https://github.com/anomalyco/opencode/pull/9073) |
+| [Aider](https://github.com/paul-gauthier/aider) | Untested | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | |
+| [Codex CLI](https://github.com/openai/codex) | Untested | `OPENAI_API_KEY` | |
+| [AMP](https://ampcode.com/) | Untested | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | |
+| Custom | - | User-defined | Configure your own CLI |
+
 ### CLI Configuration
 
 Ralph can be configured to use different AI CLI tools. By default, it uses Claude Code. Configure in `.ralph/config.json`:
@@ -221,8 +235,8 @@ podman run -v $(pwd):/workspace -v /workspace/node_modules your-image
 ## Requirements
 
 - Node.js 18+
-- [Claude Code CLI](https://github.com/anthropics/claude-code) installed
-- Claude Pro/Max subscription or Anthropic API key
+- A supported AI CLI tool installed (see [Supported CLI Providers](#supported-cli-providers))
+- API key or subscription for your chosen provider
 
 ## License
 
