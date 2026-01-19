@@ -260,9 +260,9 @@ export function parseListArgs(args: string[]): { category?: string; passesFilter
         console.error(`Valid categories: ${CATEGORIES.join(", ")}`);
         process.exit(1);
       }
-    } else if (args[i] === "--passes") {
+    } else if (args[i] === "--passes" || args[i] === "--passed") {
       passesFilter = true;
-    } else if (args[i] === "--no-passes") {
+    } else if (args[i] === "--no-passes" || args[i] === "--no-passed" || args[i] === "--not-passed" || args[i] === "--not-passes") {
       passesFilter = false;
     }
   }
