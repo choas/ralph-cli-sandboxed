@@ -670,6 +670,40 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
   console.log("Run 'ralph docker build' to rebuild the image.");
 }
 
+/**
+ * Initialize Docker files. Can be called directly from other commands.
+ * @param silent - If true, suppress the "Next steps" message
+ */
+export async function dockerInit(silent: boolean = false): Promise<void> {
+  const config = loadConfig();
+  const ralphDir = getRalphDir();
+  const imageName = config.imageName ?? `ralph-${basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
+
+  console.log(`\nGenerating Docker files for: ${config.language}`);
+  if ((config.language === "java" || config.language === "kotlin") && config.javaVersion) {
+    console.log(`Java version: ${config.javaVersion}`);
+  }
+  if (config.cliProvider && config.cliProvider !== "claude") {
+    console.log(`CLI provider: ${config.cliProvider}`);
+  }
+  console.log(`Image name: ${imageName}\n`);
+
+  await generateFiles(ralphDir, config.language, imageName, true, config.javaVersion, config.cliProvider);
+
+  if (!silent) {
+    console.log(`
+Docker files generated in .ralph/docker/
+
+Next steps:
+  1. Build the image: ralph docker build
+  2. Run container:    ralph docker run
+
+Or use docker compose directly:
+  cd .ralph/docker && docker compose run --rm ralph
+`);
+  }
+}
+
 export async function docker(args: string[]): Promise<void> {
   const subcommand = args[0];
   const subArgs = args.slice(1);

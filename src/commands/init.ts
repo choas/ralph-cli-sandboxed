@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, getCliProviders, type LanguageConfig } from "../templates/prompts.js";
 import { promptSelectWithArrows, promptConfirm, promptInput, promptMultiSelectWithArrows } from "../utils/prompt.js";
 import { type CliConfig } from "../utils/config.js";
+import { dockerInit } from "./docker.js";
 
 // Get package root directory (works for both dev and installed package)
 const __filename = fileURLToPath(import.meta.url);
@@ -196,11 +197,14 @@ export async function init(_args: string[]): Promise<void> {
     console.log(`Skipped ${RALPH_DIR}/${PRD_GUIDE_FILE} (already exists)`);
   }
 
+  // Generate Docker files automatically
+  await dockerInit(true);
+  console.log("Created .ralph/docker/ files");
+
   console.log("\nRalph initialized successfully!");
   console.log("\nNext steps:");
-  console.log("  1. Read .ralph/HOW-TO-WRITE-PRDs.md for guidance on writing PRDs");
-  console.log("  2. Edit .ralph/prd.json to add your project requirements");
-  console.log("  3. Run 'ralph docker init' to generate Docker configuration");
-  console.log("  4. Run 'ralph docker build' to build the container");
-  console.log("  5. Run 'ralph docker run' to start ralph in the container");
+  console.log("  1. Edit .ralph/prd.json to add your project requirements");
+  console.log("  2. Run 'ralph docker run' to start (auto-builds image on first run)");
+  console.log("\nSee .ralph/HOW-TO-WRITE-PRDs.md for guidance on writing PRDs");
+  console.log("To regenerate Docker files: ralph docker init");
 }
