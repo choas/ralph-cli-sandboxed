@@ -35,7 +35,8 @@ function createFilteredPrd(prdPath: string, baseDir: string, category?: string):
   // Expand @{filepath} references in description and steps
   const expandedItems = expandPrdFileReferences(filteredItems, baseDir);
 
-  const tempPath = join(tmpdir(), `ralph-prd-filtered-${Date.now()}.json`);
+  // Write to .ralph/prd-tasks.json so LLMs see a sensible path
+  const tempPath = join(baseDir, "prd-tasks.json");
   writeFileSync(tempPath, JSON.stringify(expandedItems, null, 2));
 
   return {
