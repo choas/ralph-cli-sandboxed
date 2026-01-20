@@ -98,8 +98,8 @@
       "description": "Sourcegraph's AMP coding agent",
       "command": "amp",
       "defaultArgs": [],
-      "yoloArgs": ["--yolo"],
-      "promptArgs": [],
+      "yoloArgs": ["--dangerously-allow-all"],
+      "promptArgs": ["-x"],
       "docker": {
         "install": "# Install AMP CLI (as node user)\nRUN su - node -c 'curl -fsSL https://ampcode.com/install.sh | bash' \\\n    && echo 'export PATH=\"$HOME/.amp/bin:$PATH\"' >> /home/node/.zshrc",
         "note": "Check 'amp --help' for available flags"
