@@ -121,7 +121,13 @@
         { "name": "SQLx", "description": "Async SQL toolkit" },
         { "name": "Tokio", "description": "Async runtime" },
         { "name": "Serde", "description": "Serialization framework" },
-        { "name": "PostgreSQL", "description": "Advanced SQL database" }
+        { "name": "Tauri", "description": "Desktop app framework" },
+        { "name": "SeaORM", "description": "Async ORM for Rust" },
+        { "name": "Clap", "description": "Command-line argument parser" },
+        { "name": "Tracing", "description": "Application-level tracing framework" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "Redis", "description": "In-memory data store" },
+        { "name": "MongoDB", "description": "NoSQL document database" }
       ]
     },
     "java": {
