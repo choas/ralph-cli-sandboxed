@@ -45,6 +45,57 @@ function createFilteredPrd(prdPath: string, baseDir: string, category?: string):
   };
 }
 
+/**
+ * Syncs passes flags from prd-tasks.json back to prd.json.
+ * If the LLM marked any item as passes: true in prd-tasks.json,
+ * find the matching item in prd.json and update it.
+ * Returns the number of items synced.
+ */
+function syncPassesFromTasks(tasksPath: string, prdPath: string): number {
+  // Check if tasks file exists
+  if (!existsSync(tasksPath)) {
+    return 0;
+  }
+
+  try {
+    const tasksContent = readFileSync(tasksPath, "utf-8");
+    const tasks: PrdItem[] = JSON.parse(tasksContent);
+
+    const prdContent = readFileSync(prdPath, "utf-8");
+    const prd: PrdItem[] = JSON.parse(prdContent);
+
+    let synced = 0;
+
+    // Find tasks that were marked as passing
+    for (const task of tasks) {
+      if (task.passes === true) {
+        // Find matching item in prd by description
+        const match = prd.find(item =>
+          item.description === task.description ||
+          item.description.includes(task.description) ||
+          task.description.includes(item.description)
+        );
+
+        if (match && !match.passes) {
+          match.passes = true;
+          synced++;
+        }
+      }
+    }
+
+    // Write back if any items were synced
+    if (synced > 0) {
+      writeFileSync(prdPath, JSON.stringify(prd, null, 2) + "\n");
+      console.log(`\x1b[32mSynced ${synced} completed item(s) from prd-tasks.json to prd.json\x1b[0m`);
+    }
+
+    return synced;
+  } catch {
+    // Ignore errors - the validation step will handle any issues
+    return 0;
+  }
+}
+
 async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string, cliConfig: CliConfig, debug: boolean, model?: string): Promise<{ exitCode: number; output: string }> {
   return new Promise((resolve, reject) => {
     let output = "";
@@ -391,6 +442,10 @@ export async function run(args: string[]): Promise<void> {
       }
 
       const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath, cliConfig, debug, model);
+
+      // Sync any completed items from prd-tasks.json back to prd.json
+      // This catches cases where the LLM updated prd-tasks.json instead of prd.json
+      syncPassesFromTasks(filteredPrdPath, paths.prd);
 
       // Clean up temp file after each iteration
       try {
