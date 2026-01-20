@@ -66,7 +66,15 @@
         { "name": "SQLAlchemy", "description": "SQL toolkit and ORM" },
         { "name": "Pydantic", "description": "Data validation library" },
         { "name": "Celery", "description": "Distributed task queue" },
+        { "name": "LangChain", "description": "Framework for LLM applications" },
+        { "name": "Alembic", "description": "Database migration tool" },
+        { "name": "Poetry", "description": "Dependency management and packaging" },
+        { "name": "Ruff", "description": "Fast Python linter and formatter" },
+        { "name": "Uvicorn", "description": "ASGI web server" },
+        { "name": "Typer", "description": "CLI application framework" },
+        { "name": "Polars", "description": "Fast DataFrame library" },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "MySQL", "description": "Popular SQL database" },
         { "name": "Redis", "description": "In-memory data store" },
         { "name": "pytest", "description": "Testing framework" }
       ]
