@@ -185,6 +185,27 @@
         { "name": "Sidekiq", "description": "Background job processor" }
       ]
     },
+    "php": {
+      "name": "PHP",
+      "description": "PHP with Composer",
+      "checkCommand": "composer validate && php -l",
+      "testCommand": "vendor/bin/phpunit",
+      "docker": {
+        "install": "# Install PHP and Composer\nRUN apt-get update && apt-get install -y \\\n    php \\\n    php-cli \\\n    php-mbstring \\\n    php-xml \\\n    php-curl \\\n    php-zip \\\n    php-pgsql \\\n    php-mysql \\\n    php-redis \\\n    unzip \\\n    && rm -rf /var/lib/apt/lists/*\n# Install Composer\nRUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer"
+      },
+      "technologies": [
+        { "name": "Laravel", "description": "Full-stack PHP framework" },
+        { "name": "Symfony", "description": "Modular PHP framework" },
+        { "name": "Slim", "description": "Micro framework for PHP" },
+        { "name": "Doctrine ORM", "description": "PHP database abstraction" },
+        { "name": "Eloquent", "description": "Laravel's ORM" },
+        { "name": "PHPUnit", "description": "Testing framework for PHP" },
+        { "name": "Pest", "description": "Elegant PHP testing framework" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "MySQL", "description": "Popular SQL database" },
+        { "name": "Redis", "description": "In-memory data store" }
+      ]
+    },
     "none": {
       "name": "None (custom)",
       "description": "Custom configuration",
