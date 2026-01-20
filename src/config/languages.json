@@ -163,6 +163,28 @@
         { "name": "MongoDB", "description": "NoSQL document database" }
       ]
     },
+    "ruby": {
+      "name": "Ruby",
+      "description": "Ruby with Bundler",
+      "checkCommand": "bundle exec rubocop --fail-level error",
+      "testCommand": "bundle exec rspec",
+      "docker": {
+        "install": "# Install Ruby via rbenv\nRUN apt-get update && apt-get install -y \\\n    rbenv \\\n    ruby-build \\\n    && rm -rf /var/lib/apt/lists/*\nRUN rbenv install 3.3.0 && rbenv global 3.3.0\nENV PATH=\"/root/.rbenv/shims:/root/.rbenv/bin:$PATH\"\nRUN gem install bundler"
+      },
+      "technologies": [
+        { "name": "Ruby on Rails", "description": "Full-stack web framework" },
+        { "name": "Sinatra", "description": "Lightweight web framework" },
+        { "name": "Hanami", "description": "Modern Ruby web framework" },
+        { "name": "ActiveRecord", "description": "ORM for Ruby" },
+        { "name": "Sequel", "description": "Database toolkit for Ruby" },
+        { "name": "RSpec", "description": "BDD testing framework" },
+        { "name": "Minitest", "description": "Testing framework" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "MySQL", "description": "Popular SQL database" },
+        { "name": "Redis", "description": "In-memory data store" },
+        { "name": "Sidekiq", "description": "Background job processor" }
+      ]
+    },
     "none": {
       "name": "None (custom)",
       "description": "Custom configuration",
