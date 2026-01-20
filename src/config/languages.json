@@ -73,6 +73,7 @@
         { "name": "Uvicorn", "description": "ASGI web server" },
         { "name": "Typer", "description": "CLI application framework" },
         { "name": "Polars", "description": "Fast DataFrame library" },
+        { "name": "uv", "description": "Fast Python package installer and resolver" },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
         { "name": "MySQL", "description": "Popular SQL database" },
         { "name": "Redis", "description": "In-memory data store" },
