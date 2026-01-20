@@ -318,8 +318,8 @@ export async function run(args: string[]): Promise<void> {
   const paths = getPaths();
   const cliConfig = getCliConfig(config);
 
-  // Safety margin for iteration limit (recalculated dynamically each iteration)
-  const ITERATION_SAFETY_MARGIN = 3;
+  // Progress tracking: stop only if no tasks complete after N iterations
+  const MAX_ITERATIONS_WITHOUT_PROGRESS = 3;
 
   // Get requested iteration count (may be adjusted dynamically)
   const requestedIterations = parseInt(filteredArgs[0]) || Infinity;
@@ -351,23 +351,22 @@ export async function run(args: string[]): Promise<void> {
   let lastExitCode = 0;
   let iterationCount = 0;
 
+  // Progress tracking for --all mode
+  // Progress = tasks completed OR new tasks added (allows ralph to expand the PRD)
+  const initialCounts = countPrdItems(paths.prd, category);
+  let lastCompletedCount = initialCounts.complete;
+  let lastTotalCount = initialCounts.total;
+  let iterationsWithoutProgress = 0;
+
   try {
     while (true) {
       iterationCount++;
 
-      // Dynamic iteration limit: recalculate based on current incomplete count
-      // This allows the limit to expand if tasks are added during the run
       const currentCounts = countPrdItems(paths.prd, category);
-      const dynamicMaxIterations = currentCounts.incomplete + ITERATION_SAFETY_MARGIN;
 
       // Check if we should stop (not in loop mode)
-      if (!loopMode) {
-        if (allMode && iterationCount > dynamicMaxIterations) {
-          console.log(`\nStopping: reached iteration limit (${dynamicMaxIterations}) with ${currentCounts.incomplete} tasks remaining.`);
-          console.log("This may indicate tasks are not completing. Check the PRD and progress.");
-          break;
-        }
-        if (!allMode && iterationCount > Math.min(requestedIterations, dynamicMaxIterations)) {
+      if (!loopMode && !allMode) {
+        if (iterationCount > requestedIterations) {
           break;
         }
       }
@@ -378,7 +377,7 @@ export async function run(args: string[]): Promise<void> {
       } else if (loopMode) {
         console.log(`Iteration ${iterationCount}`);
       } else {
-        console.log(`Iteration ${iterationCount} of ${Math.min(requestedIterations, dynamicMaxIterations)}`);
+        console.log(`Iteration ${iterationCount} of ${requestedIterations}`);
       }
       console.log(`${"=".repeat(50)}\n`);
 
@@ -457,6 +456,31 @@ export async function run(args: string[]): Promise<void> {
 
       // Validate and recover PRD if the LLM corrupted it
       validateAndRecoverPrd(paths.prd, validPrd);
+
+      // Track progress for --all mode: stop if no progress after N iterations
+      // Progress = tasks completed OR new tasks added (allows ralph to expand the PRD)
+      if (allMode) {
+        const progressCounts = countPrdItems(paths.prd, category);
+        const tasksCompleted = progressCounts.complete > lastCompletedCount;
+        const tasksAdded = progressCounts.total > lastTotalCount;
+
+        if (tasksCompleted || tasksAdded) {
+          // Progress made - reset counter
+          iterationsWithoutProgress = 0;
+          lastCompletedCount = progressCounts.complete;
+          lastTotalCount = progressCounts.total;
+        } else {
+          iterationsWithoutProgress++;
+        }
+
+        if (iterationsWithoutProgress >= MAX_ITERATIONS_WITHOUT_PROGRESS) {
+          console.log(`\nStopping: no progress after ${MAX_ITERATIONS_WITHOUT_PROGRESS} consecutive iterations.`);
+          console.log(`(No tasks completed and no new tasks added)`);
+          console.log(`Status: ${progressCounts.complete}/${progressCounts.total} complete, ${progressCounts.incomplete} remaining.`);
+          console.log("Check the PRD and task definitions for issues.");
+          break;
+        }
+      }
 
       if (exitCode !== 0) {
         console.error(`\n${cliConfig.command} exited with code ${exitCode}`);
