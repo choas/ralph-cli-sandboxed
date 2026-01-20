@@ -24,6 +24,10 @@ export interface RalphConfig {
     ports?: string[];
     volumes?: string[];
     environment?: Record<string, string>;
+    git?: {
+      name?: string;
+      email?: string;
+    };
   };
 }
 

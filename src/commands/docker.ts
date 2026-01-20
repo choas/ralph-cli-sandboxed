@@ -42,9 +42,25 @@ function getCliProviderSnippet(cliProvider?: string): string {
   return provider.docker.install;
 }
 
-function generateDockerfile(language: string, javaVersion?: number, cliProvider?: string): string {
+function generateDockerfile(language: string, javaVersion?: number, cliProvider?: string, dockerConfig?: RalphConfig['docker']): string {
   const languageSnippet = getLanguageSnippet(language, javaVersion);
   const cliSnippet = getCliProviderSnippet(cliProvider);
+
+  // Build git config section if configured
+  let gitConfigSection = '';
+  if (dockerConfig?.git && (dockerConfig.git.name || dockerConfig.git.email)) {
+    const gitCommands: string[] = [];
+    if (dockerConfig.git.name) {
+      gitCommands.push(`git config --global user.name "${dockerConfig.git.name}"`);
+    }
+    if (dockerConfig.git.email) {
+      gitCommands.push(`git config --global user.email "${dockerConfig.git.email}"`);
+    }
+    gitConfigSection = `
+# Configure git identity
+RUN ${gitCommands.join(' \\\n    && ')}
+`;
+  }
 
   return `# Ralph CLI Sandbox Environment
 # Based on Claude Code devcontainer
@@ -143,6 +159,7 @@ RUN echo 'alias ll="ls -la"' >> /etc/bash.bashrc && \\
 
 # Switch to non-root user
 USER node
+${gitConfigSection}
 WORKDIR /workspace
 
 # Default to zsh
@@ -309,7 +326,7 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
   }
 
   const files = [
-    { name: "Dockerfile", content: generateDockerfile(language, javaVersion, cliProvider) },
+    { name: "Dockerfile", content: generateDockerfile(language, javaVersion, cliProvider, dockerConfig) },
     { name: "init-firewall.sh", content: FIREWALL_SCRIPT },
     { name: "docker-compose.yml", content: generateDockerCompose(imageName, dockerConfig) },
     { name: ".dockerignore", content: DOCKERIGNORE },
