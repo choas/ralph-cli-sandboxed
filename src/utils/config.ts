@@ -20,6 +20,11 @@ export interface RalphConfig {
   javaVersion?: number;
   cli?: CliConfig;
   cliProvider?: string;
+  docker?: {
+    ports?: string[];
+    volumes?: string[];
+    environment?: Record<string, string>;
+  };
 }
 
 export const DEFAULT_CLI_CONFIG: CliConfig = {
