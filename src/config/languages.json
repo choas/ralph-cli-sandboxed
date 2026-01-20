@@ -225,6 +225,24 @@
         { "name": "Redis", "description": "In-memory data store" }
       ]
     },
+    "elixir": {
+      "name": "Elixir",
+      "description": "Elixir with Mix build tool",
+      "checkCommand": "mix compile --warnings-as-errors",
+      "testCommand": "mix test",
+      "docker": {
+        "install": "# Install Erlang and Elixir\nRUN apt-get update && apt-get install -y \\\n    erlang \\\n    elixir \\\n    && rm -rf /var/lib/apt/lists/*\nRUN mix local.hex --force && mix local.rebar --force"
+      },
+      "technologies": [
+        { "name": "Phoenix", "description": "Web framework for Elixir" },
+        { "name": "Ecto", "description": "Database wrapper and query generator" },
+        { "name": "LiveView", "description": "Real-time server-rendered HTML" },
+        { "name": "Oban", "description": "Background job processing" },
+        { "name": "ExUnit", "description": "Built-in testing framework" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "Redis", "description": "In-memory data store" }
+      ]
+    },
     "none": {
       "name": "None (custom)",
       "description": "Custom configuration",
