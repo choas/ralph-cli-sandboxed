@@ -146,9 +146,16 @@
         { "name": "Micronaut", "description": "Modern JVM framework" },
         { "name": "Hibernate", "description": "ORM framework" },
         { "name": "JPA", "description": "Java Persistence API" },
+        { "name": "Gradle", "description": "Build automation tool" },
+        { "name": "Lombok", "description": "Boilerplate code reduction library" },
+        { "name": "MapStruct", "description": "Bean mapping code generator" },
+        { "name": "Flyway", "description": "Database migration tool" },
+        { "name": "Testcontainers", "description": "Integration testing with containers" },
         { "name": "JUnit", "description": "Testing framework" },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
-        { "name": "MySQL", "description": "Popular SQL database" }
+        { "name": "MySQL", "description": "Popular SQL database" },
+        { "name": "Redis", "description": "In-memory data store" },
+        { "name": "MongoDB", "description": "NoSQL document database" }
       ]
     },
     "kotlin": {
