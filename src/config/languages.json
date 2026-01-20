@@ -13,6 +13,10 @@
         { "name": "Hono", "description": "Lightweight web framework" },
         { "name": "Drizzle ORM", "description": "TypeScript ORM" },
         { "name": "Prisma", "description": "Type-safe database ORM" },
+        { "name": "React", "description": "UI component library" },
+        { "name": "Tailwind CSS", "description": "Utility-first CSS framework" },
+        { "name": "tRPC", "description": "End-to-end typesafe APIs" },
+        { "name": "Zod", "description": "TypeScript-first schema validation" },
         { "name": "SQLite", "description": "Embedded SQL database" },
         { "name": "PostgreSQL", "description": "Advanced SQL database" }
       ]
