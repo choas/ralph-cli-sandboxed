@@ -178,7 +178,13 @@
         { "name": "Kotest", "description": "Kotlin testing framework" },
         { "name": "kotlinx.coroutines", "description": "Coroutines for async programming" },
         { "name": "kotlinx.serialization", "description": "Multiplatform serialization" },
+        { "name": "Arrow", "description": "Functional companion to Kotlin's standard library" },
+        { "name": "Mockk", "description": "Mocking library for Kotlin" },
+        { "name": "Flyway", "description": "Database migration tool" },
+        { "name": "Compose Multiplatform", "description": "Declarative UI framework for Kotlin" },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "MySQL", "description": "Popular SQL database" },
+        { "name": "Redis", "description": "In-memory data store" },
         { "name": "MongoDB", "description": "NoSQL document database" }
       ]
     },
