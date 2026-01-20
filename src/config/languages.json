@@ -297,6 +297,26 @@
         { "name": "PostgreSQL", "description": "Advanced SQL database" }
       ]
     },
+    "clojure": {
+      "name": "Clojure",
+      "description": "Clojure with Leiningen build tool",
+      "checkCommand": "lein check",
+      "testCommand": "lein test",
+      "docker": {
+        "install": "# Install Java and Leiningen\nRUN apt-get update && apt-get install -y \\\n    openjdk-17-jdk \\\n    && rm -rf /var/lib/apt/lists/*\nENV JAVA_HOME=\"/usr/lib/jvm/java-17-openjdk-$(dpkg --print-architecture)\"\n# Install Leiningen\nRUN curl -fsSL https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein -o /usr/local/bin/lein && \\\n    chmod +x /usr/local/bin/lein && \\\n    lein"
+      },
+      "technologies": [
+        { "name": "Ring", "description": "HTTP server abstraction" },
+        { "name": "Compojure", "description": "Routing library for Ring" },
+        { "name": "Pedestal", "description": "Server-side web framework" },
+        { "name": "next.jdbc", "description": "Modern Clojure JDBC wrapper" },
+        { "name": "HoneySQL", "description": "SQL as Clojure data structures" },
+        { "name": "clojure.test", "description": "Built-in testing framework" },
+        { "name": "Midje", "description": "Testing framework with mocking" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "Datomic", "description": "Immutable database system" }
+      ]
+    },
     "none": {
       "name": "None (custom)",
       "description": "Custom configuration",
