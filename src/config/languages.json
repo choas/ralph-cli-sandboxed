@@ -317,6 +317,25 @@
         { "name": "Datomic", "description": "Immutable database system" }
       ]
     },
+    "deno": {
+      "name": "Deno (TypeScript)",
+      "description": "Deno runtime with TypeScript",
+      "checkCommand": "deno check **/*.ts",
+      "testCommand": "deno test",
+      "docker": {
+        "install": "# Install Deno\nRUN curl -fsSL https://deno.land/install.sh | sh\nENV DENO_INSTALL=\"/root/.deno\"\nENV PATH=\"${DENO_INSTALL}/bin:${PATH}\""
+      },
+      "technologies": [
+        { "name": "Fresh", "description": "Next-gen web framework for Deno" },
+        { "name": "Oak", "description": "Middleware framework for Deno" },
+        { "name": "Hono", "description": "Lightweight web framework" },
+        { "name": "Drizzle ORM", "description": "TypeScript ORM" },
+        { "name": "Deno KV", "description": "Built-in key-value database" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "SQLite", "description": "Embedded SQL database" },
+        { "name": "Redis", "description": "In-memory data store" }
+      ]
+    },
     "none": {
       "name": "None (custom)",
       "description": "Custom configuration",
