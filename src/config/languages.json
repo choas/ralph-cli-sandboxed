@@ -142,6 +142,27 @@
         { "name": "MongoDB", "description": "NoSQL document database" }
       ]
     },
+    "csharp": {
+      "name": "C#/.NET",
+      "description": "C# with .NET SDK",
+      "checkCommand": "dotnet build",
+      "testCommand": "dotnet test",
+      "docker": {
+        "install": "# Install .NET SDK 8.0\nRUN apt-get update && apt-get install -y dotnet-sdk-8.0 && rm -rf /var/lib/apt/lists/*"
+      },
+      "technologies": [
+        { "name": "ASP.NET Core", "description": "Web framework for .NET" },
+        { "name": "Blazor", "description": "Web UI framework using C#" },
+        { "name": "Entity Framework Core", "description": "Modern ORM for .NET" },
+        { "name": "Dapper", "description": "Simple object mapper for .NET" },
+        { "name": "xUnit", "description": "Unit testing framework" },
+        { "name": "NUnit", "description": "Testing framework for .NET" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "SQL Server", "description": "Microsoft SQL database" },
+        { "name": "Redis", "description": "In-memory data store" },
+        { "name": "MongoDB", "description": "NoSQL document database" }
+      ]
+    },
     "none": {
       "name": "None (custom)",
       "description": "Custom configuration",
