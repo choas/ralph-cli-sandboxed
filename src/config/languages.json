@@ -264,6 +264,20 @@
         { "name": "Spark", "description": "Unified analytics engine" }
       ]
     },
+    "zig": {
+      "name": "Zig",
+      "description": "Zig programming language",
+      "checkCommand": "zig build",
+      "testCommand": "zig build test",
+      "docker": {
+        "install": "# Install Zig compiler\nRUN ARCH=$(dpkg --print-architecture) && \\\n    if [ \"$ARCH\" = \"amd64\" ]; then ZIG_ARCH=\"x86_64\"; else ZIG_ARCH=\"aarch64\"; fi && \\\n    curl -fsSL https://ziglang.org/download/0.11.0/zig-linux-${ZIG_ARCH}-0.11.0.tar.xz | tar -xJ -C /opt && \\\n    ln -s /opt/zig-linux-${ZIG_ARCH}-0.11.0/zig /usr/local/bin/zig"
+      },
+      "technologies": [
+        { "name": "std.http", "description": "Zig standard library HTTP server/client" },
+        { "name": "SQLite", "description": "Embedded SQL database" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" }
+      ]
+    },
     "none": {
       "name": "None (custom)",
       "description": "Custom configuration",
