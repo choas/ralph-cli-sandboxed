@@ -94,7 +94,14 @@
         { "name": "Fiber", "description": "Express-inspired web framework" },
         { "name": "GORM", "description": "ORM library for Go" },
         { "name": "sqlx", "description": "SQL extensions for Go" },
+        { "name": "Chi", "description": "Lightweight, idiomatic HTTP router" },
+        { "name": "Cobra", "description": "CLI application framework" },
+        { "name": "Viper", "description": "Configuration management library" },
+        { "name": "Wire", "description": "Compile-time dependency injection" },
+        { "name": "testify", "description": "Testing toolkit with assertions and mocks" },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "MongoDB", "description": "NoSQL document database" },
+        { "name": "MySQL", "description": "Popular SQL database" },
         { "name": "Redis", "description": "In-memory data store" }
       ]
     },
