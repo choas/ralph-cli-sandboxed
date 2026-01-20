@@ -206,6 +206,25 @@
         { "name": "Redis", "description": "In-memory data store" }
       ]
     },
+    "swift": {
+      "name": "Swift",
+      "description": "Swift with Swift Package Manager",
+      "checkCommand": "swift build",
+      "testCommand": "swift test",
+      "docker": {
+        "install": "# Install Swift toolchain\nRUN apt-get update && apt-get install -y \\\n    binutils \\\n    git \\\n    gnupg2 \\\n    libc6-dev \\\n    libcurl4-openssl-dev \\\n    libedit2 \\\n    libgcc-11-dev \\\n    libpython3-dev \\\n    libsqlite3-0 \\\n    libstdc++-11-dev \\\n    libxml2-dev \\\n    libz3-dev \\\n    pkg-config \\\n    tzdata \\\n    unzip \\\n    zlib1g-dev \\\n    && rm -rf /var/lib/apt/lists/*\nRUN ARCH=$(dpkg --print-architecture) && \\\n    if [ \"$ARCH\" = \"amd64\" ]; then SWIFT_ARCH=\"x86_64\"; else SWIFT_ARCH=\"aarch64\"; fi && \\\n    curl -fsSL https://download.swift.org/swift-5.10-release/ubuntu2204/swift-5.10-RELEASE/swift-5.10-RELEASE-ubuntu22.04-${SWIFT_ARCH}.tar.gz | tar -xz -C /opt\nENV PATH=\"/opt/swift-5.10-RELEASE-ubuntu22.04/usr/bin:$PATH\""
+      },
+      "technologies": [
+        { "name": "Vapor", "description": "Server-side Swift web framework" },
+        { "name": "Hummingbird", "description": "Lightweight Swift web framework" },
+        { "name": "Fluent ORM", "description": "Swift ORM for Vapor" },
+        { "name": "SwiftNIO", "description": "Event-driven network framework" },
+        { "name": "XCTest", "description": "Swift testing framework" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" },
+        { "name": "SQLite", "description": "Embedded SQL database" },
+        { "name": "Redis", "description": "In-memory data store" }
+      ]
+    },
     "none": {
       "name": "None (custom)",
       "description": "Custom configuration",
