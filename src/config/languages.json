@@ -278,6 +278,25 @@
         { "name": "PostgreSQL", "description": "Advanced SQL database" }
       ]
     },
+    "haskell": {
+      "name": "Haskell",
+      "description": "Haskell with Stack build tool",
+      "checkCommand": "stack build",
+      "testCommand": "stack test",
+      "docker": {
+        "install": "# Install GHC and Stack\nRUN apt-get update && apt-get install -y \\\n    curl \\\n    gcc \\\n    g++ \\\n    make \\\n    libffi-dev \\\n    libgmp-dev \\\n    libtinfo-dev \\\n    zlib1g-dev \\\n    && rm -rf /var/lib/apt/lists/*\n# Install Stack\nRUN curl -sSL https://get.haskellstack.org/ | sh\n# Setup GHC via Stack\nRUN stack setup"
+      },
+      "technologies": [
+        { "name": "Servant", "description": "Type-level web API framework" },
+        { "name": "Yesod", "description": "Full-stack Haskell web framework" },
+        { "name": "Scotty", "description": "Lightweight web framework" },
+        { "name": "Persistent", "description": "Type-safe database access" },
+        { "name": "Esqueleto", "description": "Type-safe EDSL for SQL queries" },
+        { "name": "HSpec", "description": "BDD-style testing framework" },
+        { "name": "QuickCheck", "description": "Property-based testing library" },
+        { "name": "PostgreSQL", "description": "Advanced SQL database" }
+      ]
+    },
     "none": {
       "name": "None (custom)",
       "description": "Custom configuration",
