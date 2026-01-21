@@ -28,6 +28,12 @@ export interface RalphConfig {
       name?: string;
       email?: string;
     };
+    packages?: string[];
+    buildCommands?: {
+      root?: string[];
+      node?: string[];
+    };
+    startCommand?: string;
   };
 }
 
