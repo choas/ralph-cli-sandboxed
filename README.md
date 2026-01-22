@@ -85,12 +85,28 @@ After running `ralph init`, you'll have:
 
 ### Supported Languages
 
-- **Bun** (TypeScript) - `bun check`, `bun test`
-- **Node.js** (TypeScript) - `npm run typecheck`, `npm test`
-- **Python** - `mypy .`, `pytest`
-- **Go** - `go build ./...`, `go test ./...`
-- **Rust** - `cargo check`, `cargo test`
-- **Custom** - Define your own commands
+Ralph supports 18 programming languages with pre-configured build/test commands:
+
+| Language | Check Command | Test Command |
+|----------|--------------|--------------|
+| Bun (TypeScript) | `bun check` | `bun test` |
+| Node.js (TypeScript) | `npm run typecheck` | `npm test` |
+| Python | `mypy .` | `pytest` |
+| Go | `go build ./...` | `go test ./...` |
+| Rust | `cargo check` | `cargo test` |
+| Java | `mvn compile` | `mvn test` |
+| Kotlin | `gradle build` | `gradle test` |
+| C#/.NET | `dotnet build` | `dotnet test` |
+| Ruby | `bundle exec rubocop` | `bundle exec rspec` |
+| PHP | `composer validate` | `vendor/bin/phpunit` |
+| Swift | `swift build` | `swift test` |
+| Elixir | `mix compile` | `mix test` |
+| Scala | `sbt compile` | `sbt test` |
+| Zig | `zig build` | `zig build test` |
+| Haskell | `stack build` | `stack test` |
+| Clojure | `lein check` | `lein test` |
+| Deno (TypeScript) | `deno check **/*.ts` | `deno test` |
+| Custom | User-defined | User-defined |
 
 ### Supported CLI Providers
 
@@ -147,7 +163,7 @@ The PRD (`prd.json`) is an array of requirements:
 ]
 ```
 
-Categories: `ui`, `feature`, `bugfix`, `setup`, `development`, `testing`, `docs`
+Categories: `setup`, `feature`, `bugfix`, `refactor`, `docs`, `test`, `release`, `config`, `ui`
 
 ### Advanced: File References
 
@@ -191,13 +207,7 @@ Features:
 - Your `~/.claude` credentials mounted automatically (Pro/Max OAuth)
 - Language-specific tooling pre-installed
 
-### Installing packages in container
-
-```bash
-# Run as root to install packages
-docker compose run -u root ralph apt-get update
-docker compose run -u root ralph apt-get install <package>
-```
+See [docs/DOCKER.md](docs/DOCKER.md) for detailed Docker configuration, customization, and troubleshooting.
 
 ## How It Works
 
@@ -212,71 +222,24 @@ When all PRD items pass, Claude outputs `<promise>COMPLETE</promise>` and stops.
 
 ## Security
 
-### Container Requirement
+**It is strongly recommended to run ralph inside a Docker container for security.** The Ralph Wiggum technique involves running an AI agent autonomously with elevated permissions.
 
-**It is strongly recommended to run ralph inside a Docker container for security.** The Ralph Wiggum technique involves running an AI agent autonomously, which means granting it elevated permissions to execute code and modify files without manual approval for each action.
+When running inside a container, ralph automatically passes `--dangerously-skip-permissions` to Claude Code, allowing autonomous operation. This flag is only enabled in containers for safety.
 
-### The `--dangerously-skip-permissions` Flag
-
-When running inside a container, ralph automatically passes the `--dangerously-skip-permissions` flag to Claude Code. This flag:
-
-- Allows Claude to execute commands and modify files without prompting for permission
-- Is **only** enabled when ralph detects it's running inside a container
-- Is required for autonomous operation (otherwise Claude would pause for approval on every action)
-
-**Warning:** The `--dangerously-skip-permissions` flag gives the AI agent full control over the environment. This is why container isolation is critical:
-
-- The container provides a sandbox boundary
-- Network access is restricted to essential services (GitHub, npm, Anthropic API)
-- Your host system remains protected even if something goes wrong
-
-### Container Detection
-
-Ralph detects container environments by checking:
-- `DEVCONTAINER` environment variable
-- Presence of `/.dockerenv` file
-- Container indicators in `/proc/1/cgroup`
-- `container` environment variable
-
-If you're running outside a container and need autonomous mode, use `ralph docker` to set up a safe sandbox environment first.
+See [docs/SECURITY.md](docs/SECURITY.md) for detailed security information, container detection, and best practices.
 
 ## Development
 
 To contribute or test changes to ralph locally:
 
 ```bash
-# Clone the repository
 git clone https://github.com/choas/ralph-cli-sandboxed
 cd ralph-cli-sandboxed
-
-# Install dependencies
 npm install
-
-# Run ralph in development mode (without building)
-npm run dev -- <args>
-
-# Examples:
-npm run dev -- --version
-npm run dev -- list
-npm run dev -- once
+npm run dev -- <args>  # Run from TypeScript source
 ```
 
-The `npm run dev -- <args>` command runs ralph directly from TypeScript source using `tsx`, allowing you to test changes without rebuilding.
-
-### Platform-Specific Dependencies
-
-The `node_modules` folder contains platform-specific binaries (e.g., esbuild). If you switch between running on your host machine and inside a Docker/Podman container, you'll need to reinstall dependencies:
-
-```bash
-# When switching environments (host <-> container)
-rm -rf node_modules && npm install
-```
-
-Alternatively, when mounting your project into a container, use a separate volume for node_modules to keep host and container dependencies isolated:
-
-```bash
-podman run -v $(pwd):/workspace -v /workspace/node_modules your-image
-```
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed development setup, project structure, and contribution guidelines.
 
 ## Requirements
 

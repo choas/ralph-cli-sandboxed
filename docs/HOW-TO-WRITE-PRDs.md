@@ -30,9 +30,11 @@ Use consistent categories to organize your PRD:
 | `bugfix` | Fixing broken behavior |
 | `refactor` | Code improvements without behavior change |
 | `docs` | Documentation updates |
+| `test` | Adding or updating tests |
 | `release` | Version bumps, changelog updates |
 | `config` | Configuration file changes |
-| `test` | Adding or updating tests |
+| `ui` | User interface changes |
+| `integration` | Connecting components, wiring, orchestration |
 
 ## Writing Good Descriptions
 
@@ -200,7 +202,7 @@ Break large features into smaller, independently completable items. Each item sh
 
 ```json
 {
-  "category": "feature|bugfix|docs|release|setup|refactor|config|test",
+  "category": "setup|feature|bugfix|refactor|docs|test|release|config|ui|integration",
   "description": "Imperative verb + specific what + where (context)",
   "steps": [
     "Concrete action with `commands` and file paths",
