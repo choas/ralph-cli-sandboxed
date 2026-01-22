@@ -27,7 +27,6 @@ export interface AsciinemaConfig {
   enabled: boolean;           // Install asciinema in Docker container
   autoRecord?: boolean;       // Auto-start recording on container start
   outputDir?: string;         // Directory for recordings (default: .recordings)
-  serverUrl?: string;         // Self-hosted asciinema server URL (e.g., "https://asciinema.mycompany.com")
 }
 
 export interface RalphConfig {
@@ -55,6 +54,9 @@ export interface RalphConfig {
     };
     startCommand?: string;
     asciinema?: AsciinemaConfig;
+    firewall?: {
+      allowedDomains?: string[];
+    };
   };
   claude?: {
     mcpServers?: Record<string, McpServerConfig>;

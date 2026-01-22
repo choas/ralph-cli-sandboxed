@@ -192,7 +192,9 @@ export async function init(args: string[]): Promise<void> {
         enabled: false,
         autoRecord: false,
         outputDir: ".recordings",
-        serverUrl: "",
+      },
+      firewall: {
+        allowedDomains: [],
       },
     },
 

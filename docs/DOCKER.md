@@ -93,6 +93,79 @@ Then regenerate: `ralph docker init`
 }
 ```
 
+### Asciinema Recording
+
+Record terminal sessions inside the container for demos, debugging, or sharing AI coding sessions. Recordings are saved as `.cast` files that can be played back with `asciinema play` or uploaded to asciinema.org.
+
+```json
+{
+  "docker": {
+    "asciinema": {
+      "enabled": true,
+      "autoRecord": true,
+      "outputDir": ".recordings"
+    }
+  }
+}
+```
+
+| Setting | Description |
+|---------|-------------|
+| `enabled` | Install asciinema in the container |
+| `autoRecord` | Automatically start recording when container starts |
+| `outputDir` | Directory for recordings (default: `.recordings`) |
+
+After enabling, regenerate Docker files: `ralph docker init`
+
+**Where recordings are stored:**
+
+Recordings are saved to the mounted workspace directory (e.g., `.recordings/`). They never leave the container automatically - no network access is needed.
+
+To upload recordings:
+1. Exit the container
+2. From your host machine: `asciinema upload .recordings/session-*.cast`
+3. Or set `ASCIINEMA_SERVER_URL` environment variable before uploading to use a self-hosted server
+
+**Manual recording** (when `autoRecord: false`):
+
+```bash
+# Inside the container
+asciinema rec .recordings/session.cast     # Start recording
+exit                                        # Stop recording
+
+# After exiting the container, from your host machine:
+asciinema play .recordings/session.cast    # Playback
+asciinema upload .recordings/session.cast  # Upload to asciinema.org
+```
+
+**Auto-recording** (when `autoRecord: true`):
+
+Sessions are automatically recorded to `<outputDir>/session-YYYYMMDD-HHMMSS.cast` when the container starts. Recording stops when you exit the container. Files are available on your host machine in the configured output directory.
+
+### Firewall Configuration
+
+The container firewall allows only specific domains by default: GitHub, npm registry, and Anthropic API. To allow additional domains (e.g., PyPI, internal registries), configure `firewall.allowedDomains`:
+
+```json
+{
+  "docker": {
+    "firewall": {
+      "allowedDomains": ["pypi.org", "files.pythonhosted.org"]
+    }
+  }
+}
+```
+
+After adding domains, regenerate Docker files: `ralph docker init`
+
+The firewall script resolves domains to IPs at container startup using `dig`. Common use cases:
+
+| Use Case | Domains |
+|----------|---------|
+| Python/PyPI | `pypi.org`, `files.pythonhosted.org` |
+| Maven Central | `repo1.maven.org`, `repo.maven.apache.org` |
+| Internal registry | `registry.mycompany.com` |
+
 ## Installing Packages
 
 To install additional packages inside the container, run as root:

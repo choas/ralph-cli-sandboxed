@@ -208,7 +208,25 @@ CMD ["zsh"]
 `;
 }
 
-const FIREWALL_SCRIPT = `#!/bin/bash
+function generateFirewallScript(customDomains: string[] = []): string {
+  // Generate custom domains section if any are configured
+  let customDomainsSection = '';
+  if (customDomains.length > 0) {
+    const domainList = customDomains.join(' ');
+    customDomainsSection = `
+# Custom allowed domains (from config)
+for ip in $(dig +short ${domainList}); do
+    ipset add allowed_ips $ip 2>/dev/null || true
+done
+`;
+  }
+
+  // Generate echo line with custom domains if configured
+  const allowedList = customDomains.length > 0
+    ? `GitHub, npm, Anthropic API, local network, ${customDomains.join(', ')}`
+    : 'GitHub, npm, Anthropic API, local network';
+
+  return `#!/bin/bash
 # Firewall initialization script for Ralph sandbox
 # Based on Claude Code devcontainer firewall
 
@@ -264,7 +282,7 @@ done
 for ip in $(dig +short api.anthropic.com); do
     ipset add allowed_ips $ip 2>/dev/null || true
 done
-
+${customDomainsSection}
 # Allow host network (for mounted volumes, etc.)
 HOST_NETWORK=$(ip route | grep default | awk '{print $3}' | head -1)
 if [ -n "$HOST_NETWORK" ]; then
@@ -285,8 +303,9 @@ iptables -I OUTPUT -p tcp --dport 443 -m set --match-set allowed_ips dst -j ACCE
 iptables -I OUTPUT -p tcp --dport 80 -m set --match-set allowed_ips dst -j ACCEPT
 
 echo "Firewall initialized. Only allowed destinations are accessible."
-echo "Allowed: GitHub, npm, Anthropic API, local network"
+echo "Allowed: ${allowedList}"
 `;
+}
 
 function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig['docker']): string {
   // Build ports section if configured
@@ -321,11 +340,6 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig['do
     for (const [key, value] of Object.entries(dockerConfig.environment)) {
       envEntries.push(`      - ${key}=${value}`);
     }
-  }
-
-  // Add asciinema server URL if configured
-  if (dockerConfig?.asciinema?.serverUrl) {
-    envEntries.push(`      - ASCIINEMA_SERVER_URL=${dockerConfig.asciinema.serverUrl}`);
   }
 
   if (envEntries.length > 0) {
@@ -405,9 +419,10 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
     console.log(`Created ${DOCKER_DIR}/`);
   }
 
+  const customDomains = dockerConfig?.firewall?.allowedDomains || [];
   const files = [
     { name: "Dockerfile", content: generateDockerfile(language, javaVersion, cliProvider, dockerConfig) },
-    { name: "init-firewall.sh", content: FIREWALL_SCRIPT },
+    { name: "init-firewall.sh", content: generateFirewallScript(customDomains) },
     { name: "docker-compose.yml", content: generateDockerCompose(imageName, dockerConfig) },
     { name: ".dockerignore", content: DOCKERIGNORE },
   ];
