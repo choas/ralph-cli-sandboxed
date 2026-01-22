@@ -23,6 +23,13 @@ export interface SkillConfig {
   userInvocable?: boolean;  // defaults to true
 }
 
+export interface AsciinemaConfig {
+  enabled: boolean;           // Install asciinema in Docker container
+  autoRecord?: boolean;       // Auto-start recording on container start
+  outputDir?: string;         // Directory for recordings (default: .recordings)
+  serverUrl?: string;         // Self-hosted asciinema server URL (e.g., "https://asciinema.mycompany.com")
+}
+
 export interface RalphConfig {
   language: string;
   checkCommand: string;
@@ -47,6 +54,7 @@ export interface RalphConfig {
       node?: string[];
     };
     startCommand?: string;
+    asciinema?: AsciinemaConfig;
   };
   claude?: {
     mcpServers?: Record<string, McpServerConfig>;
