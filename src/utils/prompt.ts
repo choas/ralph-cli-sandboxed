@@ -114,12 +114,19 @@ export async function promptSelect(message: string, options: string[]): Promise<
   }
 }
 
-export async function promptConfirm(message: string): Promise<boolean> {
+export async function promptConfirm(message: string, defaultValue: boolean = true): Promise<boolean> {
   const prompt = createPrompt();
+  const hint = defaultValue ? "(Y/n)" : "(y/N)";
 
   while (true) {
-    const answer = await prompt.question(`${message} (y/n): `);
+    const answer = await prompt.question(`${message} ${hint}: `);
     const normalized = answer.trim().toLowerCase();
+
+    // Empty input returns default
+    if (normalized === "") {
+      prompt.close();
+      return defaultValue;
+    }
     if (normalized === "y" || normalized === "yes") {
       prompt.close();
       return true;

@@ -56,6 +56,7 @@ DOCKER SUBCOMMANDS:
 
 EXAMPLES:
   ralph init                 # Initialize ralph (interactive CLI, language, tech selection)
+  ralph init -y              # Initialize with defaults (Claude + Node.js, no prompts)
   ralph once                 # Run single iteration
   ralph run                  # Run until all tasks complete (default)
   ralph run 5                # Run exactly 5 iterations

@@ -18,111 +18,136 @@ const PRD_FILE = "prd.json";
 const PROGRESS_FILE = "progress.txt";
 const PRD_GUIDE_FILE = "HOW-TO-WRITE-PRDs.md";
 
-export async function init(_args: string[]): Promise<void> {
+export async function init(args: string[]): Promise<void> {
   const cwd = process.cwd();
   const ralphDir = join(cwd, RALPH_DIR);
+  const useDefaults = args.includes("-y") || args.includes("--yes");
 
   console.log("Initializing ralph in current directory...\n");
 
   // Check for existing .ralph directory
   if (existsSync(ralphDir)) {
-    const reinit = await promptConfirm(".ralph/ directory already exists. Re-initialize?");
-    if (!reinit) {
-      console.log("Aborted.");
-      return;
+    if (!useDefaults) {
+      const reinit = await promptConfirm(".ralph/ directory already exists. Re-initialize?");
+      if (!reinit) {
+        console.log("Aborted.");
+        return;
+      }
     }
   } else {
     mkdirSync(ralphDir, { recursive: true });
     console.log(`Created ${RALPH_DIR}/`);
   }
 
-  // Step 1: Select CLI provider (first)
   const CLI_PROVIDERS = getCliProviders();
-  const providerKeys = Object.keys(CLI_PROVIDERS);
-  const providerNames = providerKeys.map(k => `${CLI_PROVIDERS[k].name} - ${CLI_PROVIDERS[k].description}`);
-
-  const selectedProviderName = await promptSelectWithArrows("Select your AI CLI provider:", providerNames);
-  const selectedProviderIndex = providerNames.indexOf(selectedProviderName);
-  const selectedCliProviderKey = providerKeys[selectedProviderIndex];
-  const selectedProvider = CLI_PROVIDERS[selectedCliProviderKey];
-
-  let cliConfig: CliConfig;
-
-  // Handle custom CLI provider
-  if (selectedCliProviderKey === "custom") {
-    const customCommand = await promptInput("\nEnter your CLI command: ");
-    const customArgsInput = await promptInput("Enter default arguments (space-separated): ");
-    const customArgs = customArgsInput.trim() ? customArgsInput.trim().split(/\s+/) : [];
-    const customYoloArgsInput = await promptInput("Enter yolo/auto-approve arguments (space-separated): ");
-    const customYoloArgs = customYoloArgsInput.trim() ? customYoloArgsInput.trim().split(/\s+/) : [];
-    const customPromptArgsInput = await promptInput("Enter prompt arguments (e.g., -p for flag-based, leave empty for positional): ");
-    const customPromptArgs = customPromptArgsInput.trim() ? customPromptArgsInput.trim().split(/\s+/) : [];
-
-    cliConfig = {
-      command: customCommand || "claude",
-      args: customArgs,
-      yoloArgs: customYoloArgs.length > 0 ? customYoloArgs : undefined,
-      promptArgs: customPromptArgs,
-    };
-  } else {
-    cliConfig = {
-      command: selectedProvider.command,
-      args: selectedProvider.defaultArgs,
-      yoloArgs: selectedProvider.yoloArgs.length > 0 ? selectedProvider.yoloArgs : undefined,
-      promptArgs: selectedProvider.promptArgs ?? [],
-    };
-  }
-
-  console.log(`\nSelected CLI provider: ${CLI_PROVIDERS[selectedCliProviderKey].name}`);
-
-  // Step 2: Select language (second)
   const LANGUAGES = getLanguages();
-  const languageKeys = Object.keys(LANGUAGES);
-  const languageNames = languageKeys.map(k => `${LANGUAGES[k].name} - ${LANGUAGES[k].description}`);
 
-  const selectedName = await promptSelectWithArrows("Select your project language/runtime:", languageNames);
-  const selectedIndex = languageNames.indexOf(selectedName);
-  const selectedKey = languageKeys[selectedIndex];
-  const config = LANGUAGES[selectedKey];
-
-  console.log(`\nSelected language: ${config.name}`);
-
-  // Step 3: Select technology stack if available (third)
+  let selectedCliProviderKey: string;
+  let cliConfig: CliConfig;
+  let selectedKey: string;
   let selectedTechnologies: string[] = [];
+  let checkCommand: string;
+  let testCommand: string;
 
-  if (config.technologies && config.technologies.length > 0) {
-    const techOptions = config.technologies.map(t => `${t.name} - ${t.description}`);
-    const techNames = config.technologies.map(t => t.name);
+  if (useDefaults) {
+    // Use defaults: Claude CLI + Node.js
+    selectedCliProviderKey = "claude";
+    const provider = CLI_PROVIDERS[selectedCliProviderKey];
+    cliConfig = {
+      command: provider.command,
+      args: provider.defaultArgs,
+      yoloArgs: provider.yoloArgs.length > 0 ? provider.yoloArgs : undefined,
+      promptArgs: provider.promptArgs ?? [],
+    };
+    selectedKey = "node";
+    const config = LANGUAGES[selectedKey];
+    checkCommand = config.checkCommand;
+    testCommand = config.testCommand;
 
-    selectedTechnologies = await promptMultiSelectWithArrows(
-      "Select your technology stack (optional):",
-      techOptions
-    );
+    console.log(`Using defaults: ${CLI_PROVIDERS[selectedCliProviderKey].name} + ${LANGUAGES[selectedKey].name}`);
+  } else {
+    // Step 1: Select CLI provider (first)
+    const providerKeys = Object.keys(CLI_PROVIDERS);
+    const providerNames = providerKeys.map(k => `${CLI_PROVIDERS[k].name} - ${CLI_PROVIDERS[k].description}`);
 
-    // Convert display names back to just technology names for predefined options
-    selectedTechnologies = selectedTechnologies.map(sel => {
-      const idx = techOptions.indexOf(sel);
-      return idx >= 0 ? techNames[idx] : sel;
-    });
+    const selectedProviderName = await promptSelectWithArrows("Select your AI CLI provider:", providerNames);
+    const selectedProviderIndex = providerNames.indexOf(selectedProviderName);
+    selectedCliProviderKey = providerKeys[selectedProviderIndex];
+    const selectedProvider = CLI_PROVIDERS[selectedCliProviderKey];
 
-    if (selectedTechnologies.length > 0) {
-      console.log(`\nSelected technologies: ${selectedTechnologies.join(", ")}`);
+    // Handle custom CLI provider
+    if (selectedCliProviderKey === "custom") {
+      const customCommand = await promptInput("\nEnter your CLI command: ");
+      const customArgsInput = await promptInput("Enter default arguments (space-separated): ");
+      const customArgs = customArgsInput.trim() ? customArgsInput.trim().split(/\s+/) : [];
+      const customYoloArgsInput = await promptInput("Enter yolo/auto-approve arguments (space-separated): ");
+      const customYoloArgs = customYoloArgsInput.trim() ? customYoloArgsInput.trim().split(/\s+/) : [];
+      const customPromptArgsInput = await promptInput("Enter prompt arguments (e.g., -p for flag-based, leave empty for positional): ");
+      const customPromptArgs = customPromptArgsInput.trim() ? customPromptArgsInput.trim().split(/\s+/) : [];
+
+      cliConfig = {
+        command: customCommand || "claude",
+        args: customArgs,
+        yoloArgs: customYoloArgs.length > 0 ? customYoloArgs : undefined,
+        promptArgs: customPromptArgs,
+      };
     } else {
-      console.log("\nNo technologies selected.");
+      cliConfig = {
+        command: selectedProvider.command,
+        args: selectedProvider.defaultArgs,
+        yoloArgs: selectedProvider.yoloArgs.length > 0 ? selectedProvider.yoloArgs : undefined,
+        promptArgs: selectedProvider.promptArgs ?? [],
+      };
+    }
+
+    console.log(`\nSelected CLI provider: ${CLI_PROVIDERS[selectedCliProviderKey].name}`);
+
+    // Step 2: Select language (second)
+    const languageKeys = Object.keys(LANGUAGES);
+    const languageNames = languageKeys.map(k => `${LANGUAGES[k].name} - ${LANGUAGES[k].description}`);
+
+    const selectedName = await promptSelectWithArrows("Select your project language/runtime:", languageNames);
+    const selectedIndex = languageNames.indexOf(selectedName);
+    selectedKey = languageKeys[selectedIndex];
+    const config = LANGUAGES[selectedKey];
+
+    console.log(`\nSelected language: ${config.name}`);
+
+    // Step 3: Select technology stack if available (third)
+    if (config.technologies && config.technologies.length > 0) {
+      const techOptions = config.technologies.map(t => `${t.name} - ${t.description}`);
+      const techNames = config.technologies.map(t => t.name);
+
+      selectedTechnologies = await promptMultiSelectWithArrows(
+        "Select your technology stack (optional):",
+        techOptions
+      );
+
+      // Convert display names back to just technology names for predefined options
+      selectedTechnologies = selectedTechnologies.map(sel => {
+        const idx = techOptions.indexOf(sel);
+        return idx >= 0 ? techNames[idx] : sel;
+      });
+
+      if (selectedTechnologies.length > 0) {
+        console.log(`\nSelected technologies: ${selectedTechnologies.join(", ")}`);
+      } else {
+        console.log("\nNo technologies selected.");
+      }
+    }
+
+    // Allow custom commands for "none" language
+    checkCommand = config.checkCommand;
+    testCommand = config.testCommand;
+
+    if (selectedKey === "none") {
+      checkCommand = await promptInput("\nEnter your type/build check command: ") || checkCommand;
+      testCommand = await promptInput("Enter your test command: ") || testCommand;
     }
   }
 
-  // Allow custom commands for "none" language
-  let checkCommand = config.checkCommand;
-  let testCommand = config.testCommand;
-
-  if (selectedKey === "none") {
-    checkCommand = await promptInput("\nEnter your type/build check command: ") || checkCommand;
-    testCommand = await promptInput("Enter your test command: ") || testCommand;
-  }
-
   const finalConfig: LanguageConfig = {
-    ...config,
+    ...LANGUAGES[selectedKey],
     checkCommand,
     testCommand,
   };
@@ -131,20 +156,52 @@ export async function init(_args: string[]): Promise<void> {
   const projectName = basename(cwd).toLowerCase().replace(/[^a-z0-9-]/g, "-");
   const imageName = `ralph-${projectName}`;
 
-  // Write config file
+  // Write config file with all available options (defaults or empty values)
   const configData: Record<string, unknown> = {
+    // Required fields
     language: selectedKey,
     checkCommand: finalConfig.checkCommand,
     testCommand: finalConfig.testCommand,
     imageName,
+
+    // CLI configuration
     cli: cliConfig,
     cliProvider: selectedCliProviderKey,
-  };
 
-  // Add technologies if any were selected
-  if (selectedTechnologies.length > 0) {
-    configData.technologies = selectedTechnologies;
-  }
+    // Optional fields with defaults/empty values for discoverability
+    notifyCommand: "",
+    technologies: selectedTechnologies.length > 0 ? selectedTechnologies : [],
+    javaVersion: selectedKey === "java" ? 21 : null,
+
+    // Docker configuration options
+    docker: {
+      ports: [],
+      volumes: [],
+      environment: {},
+      git: {
+        name: "",
+        email: "",
+      },
+      packages: [],
+      buildCommands: {
+        root: [],
+        node: [],
+      },
+      startCommand: "",
+      asciinema: {
+        enabled: false,
+        autoRecord: false,
+        outputDir: ".recordings",
+        serverUrl: "",
+      },
+    },
+
+    // Claude-specific configuration (MCP servers and skills)
+    claude: {
+      mcpServers: {},
+      skills: [],
+    },
+  };
 
   const configPath = join(ralphDir, CONFIG_FILE);
   writeFileSync(configPath, JSON.stringify(configData, null, 2) + "\n");
@@ -154,7 +211,7 @@ export async function init(_args: string[]): Promise<void> {
   const prompt = generatePromptTemplate();
   const promptPath = join(ralphDir, PROMPT_FILE);
 
-  if (existsSync(promptPath)) {
+  if (existsSync(promptPath) && !useDefaults) {
     const overwritePrompt = await promptConfirm(`${RALPH_DIR}/${PROMPT_FILE} already exists. Overwrite?`);
     if (overwritePrompt) {
       writeFileSync(promptPath, prompt + "\n");
@@ -164,7 +221,7 @@ export async function init(_args: string[]): Promise<void> {
     }
   } else {
     writeFileSync(promptPath, prompt + "\n");
-    console.log(`Created ${RALPH_DIR}/${PROMPT_FILE}`);
+    console.log(`${existsSync(promptPath) ? "Updated" : "Created"} ${RALPH_DIR}/${PROMPT_FILE}`);
   }
 
   // Create PRD if not exists
