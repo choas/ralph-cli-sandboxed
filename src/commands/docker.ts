@@ -1,11 +1,51 @@
-import { existsSync, writeFileSync, mkdirSync, chmodSync } from "fs";
+import { existsSync, writeFileSync, readFileSync, mkdirSync, chmodSync } from "fs";
 import { join, basename } from "path";
 import { spawn } from "child_process";
+import { createHash } from "crypto";
 import { loadConfig, getRalphDir, RalphConfig, McpServerConfig, SkillConfig, AsciinemaConfig } from "../utils/config.js";
 import { promptConfirm } from "../utils/prompt.js";
 import { getLanguagesJson, getCliProvidersJson } from "../templates/prompts.js";
 
 const DOCKER_DIR = "docker";
+const CONFIG_HASH_FILE = ".config-hash";
+
+// Compute hash of docker-relevant config fields
+function computeConfigHash(config: RalphConfig): string {
+  const relevantConfig = {
+    language: config.language,
+    javaVersion: config.javaVersion,
+    cliProvider: config.cliProvider,
+    docker: config.docker,
+    claude: config.claude,
+  };
+  const content = JSON.stringify(relevantConfig, null, 2);
+  return createHash('sha256').update(content).digest('hex').substring(0, 16);
+}
+
+// Save config hash to docker directory
+function saveConfigHash(dockerDir: string, hash: string): void {
+  writeFileSync(join(dockerDir, CONFIG_HASH_FILE), hash + '\n');
+}
+
+// Load saved config hash, returns null if not found
+function loadConfigHash(dockerDir: string): string | null {
+  const hashPath = join(dockerDir, CONFIG_HASH_FILE);
+  if (!existsSync(hashPath)) {
+    return null;
+  }
+  return readFileSync(hashPath, 'utf-8').trim();
+}
+
+// Check if config has changed since last docker init
+function hasConfigChanged(ralphDir: string, config: RalphConfig): boolean {
+  const dockerDir = join(ralphDir, DOCKER_DIR);
+  const savedHash = loadConfigHash(dockerDir);
+  if (!savedHash) {
+    return false; // No hash file means docker init hasn't run yet
+  }
+  const currentHash = computeConfigHash(config);
+  return savedHash !== currentHash;
+}
 
 // Get language Docker snippet from config, with version substitution
 function getLanguageSnippet(language: string, javaVersion?: number): string {
@@ -357,7 +397,7 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig['do
     // Wrap with asciinema recording
     const outputDir = dockerConfig.asciinema.outputDir || '.recordings';
     const innerCommand = dockerConfig.startCommand || 'zsh';
-    commandSection = `    command: bash -c "asciinema rec -c '${innerCommand}' /workspace/${outputDir}/session-\\$(date +%Y%m%d-%H%M%S).cast"\n`;
+    commandSection = `    command: bash -c "asciinema rec -c '${innerCommand}' /workspace/${outputDir}/session-$$(date +%Y%m%d-%H%M%S).cast"\n`;
   } else if (dockerConfig?.startCommand) {
     commandSection = `    command: ${dockerConfig.startCommand}\n`;
   } else {
@@ -488,6 +528,19 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
       console.log(`Created .claude/commands/${skill.name}.md`);
     }
   }
+
+  // Save config hash for change detection
+  const configForHash: RalphConfig = {
+    language,
+    checkCommand: '',
+    testCommand: '',
+    javaVersion,
+    cliProvider,
+    docker: dockerConfig,
+    claude: claudeConfig,
+  };
+  const hash = computeConfigHash(configForHash);
+  saveConfigHash(dockerDir, hash);
 }
 
 async function buildImage(ralphDir: string): Promise<void> {
@@ -498,10 +551,19 @@ async function buildImage(ralphDir: string): Promise<void> {
     process.exit(1);
   }
 
-  console.log("Building Docker image...\n");
-
-  // Get image name for compose project name
+  // Get config and check for changes
   const config = loadConfig();
+
+  // Check if config has changed since last docker init
+  if (hasConfigChanged(ralphDir, config)) {
+    const regenerate = await promptConfirm("Config has changed since last docker init. Regenerate Docker files?");
+    if (regenerate) {
+      await generateFiles(ralphDir, config.language, config.imageName || `ralph-${basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`, true, config.javaVersion, config.cliProvider, config.docker, config.claude);
+      console.log("");
+    }
+  }
+
+  console.log("Building Docker image...\n");
   const imageName = config.imageName || `ralph-${basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 
   return new Promise((resolve, reject) => {
@@ -579,6 +641,26 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
   const dockerDir = join(ralphDir, DOCKER_DIR);
   const dockerfileExists = existsSync(join(dockerDir, "Dockerfile"));
   const hasImage = await imageExists(imageName);
+
+  // Check if config has changed since last docker init
+  if (dockerfileExists) {
+    const configForHash: RalphConfig = {
+      language,
+      checkCommand: '',
+      testCommand: '',
+      javaVersion,
+      cliProvider,
+      docker: dockerConfig,
+      claude: claudeConfig,
+    };
+    if (hasConfigChanged(ralphDir, configForHash)) {
+      const regenerate = await promptConfirm("Config has changed since last docker init. Regenerate Docker files?");
+      if (regenerate) {
+        await generateFiles(ralphDir, language, imageName, true, javaVersion, cliProvider, dockerConfig, claudeConfig);
+        console.log("");
+      }
+    }
+  }
 
   // Auto-init and build if docker folder or image doesn't exist
   if (!dockerfileExists || !hasImage) {
@@ -902,6 +984,7 @@ USAGE:
   ralph docker init -y      Generate files, overwrite without prompting
   ralph docker build        Build image (fetches latest CLI versions)
   ralph docker build --clean  Clean existing image and rebuild from scratch
+                              (alias: --no-cache)
   ralph docker run          Run container (auto-init and build if needed)
   ralph docker clean        Remove Docker image and associated resources
   ralph docker help         Show this help message
@@ -962,7 +1045,8 @@ INSTALLING PACKAGES (works with Docker & Podman):
   switch (subcommand) {
     case "build":
       // Handle build --clean combination: clean first, then build
-      if (hasFlag("--clean")) {
+      // Also support --no-cache as alias for --clean
+      if (hasFlag("--clean") || hasFlag("--no-cache") || hasFlag("-no-cache")) {
         await cleanImage(imageName, ralphDir);
         console.log(""); // Add spacing between clean and build output
       }
