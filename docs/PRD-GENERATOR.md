@@ -92,6 +92,7 @@ If a task takes 2 minutes without thinking, combine with related work.
 | `test` | Test coverage (unit, integration, e2e) |
 | `release` | Version bumps, changelogs, packaging |
 | `config` | Configuration files, settings |
+| `ui` | User interface changes, frontend components |
 | `integration` | Connecting components, wiring, orchestration |
 
 ## Writing Descriptions
@@ -307,7 +308,7 @@ Convert the following document into a Ralph prd.json file.
 
 Rules:
 1. Each sub-task or atomic feature = one PRD item
-2. Use categories: setup, feature, bugfix, refactor, docs, test, release, config, integration
+2. Use categories: setup, feature, bugfix, refactor, docs, test, release, config, ui, integration
 3. Descriptions: imperative verb + specific what + context
 4. Steps: 2-4 concrete actions + verification step
 5. Reference source document sections instead of copying code
