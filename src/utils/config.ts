@@ -10,6 +10,19 @@ export interface CliConfig {
   modelArgs?: string[];
 }
 
+export interface McpServerConfig {
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
+export interface SkillConfig {
+  name: string;
+  description: string;
+  instructions: string;
+  userInvocable?: boolean;  // defaults to true
+}
+
 export interface RalphConfig {
   language: string;
   checkCommand: string;
@@ -34,6 +47,10 @@ export interface RalphConfig {
       node?: string[];
     };
     startCommand?: string;
+  };
+  claude?: {
+    mcpServers?: Record<string, McpServerConfig>;
+    skills?: SkillConfig[];
   };
 }
 

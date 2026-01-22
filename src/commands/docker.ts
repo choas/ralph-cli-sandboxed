@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync, mkdirSync, chmodSync } from "fs";
 import { join, basename } from "path";
 import { spawn } from "child_process";
-import { loadConfig, getRalphDir, RalphConfig } from "../utils/config.js";
+import { loadConfig, getRalphDir, RalphConfig, McpServerConfig, SkillConfig } from "../utils/config.js";
 import { promptConfirm } from "../utils/prompt.js";
 import { getLanguagesJson, getCliProvidersJson } from "../templates/prompts.js";
 
@@ -350,7 +350,22 @@ dist
 *.log
 `;
 
-async function generateFiles(ralphDir: string, language: string, imageName: string, force: boolean = false, javaVersion?: number, cliProvider?: string, dockerConfig?: RalphConfig['docker']): Promise<void> {
+// Generate .mcp.json content for Claude Code MCP servers
+function generateMcpJson(mcpServers: Record<string, McpServerConfig>): string {
+  return JSON.stringify({ mcpServers }, null, 2);
+}
+
+// Generate skill file content with YAML frontmatter
+function generateSkillFile(skill: SkillConfig): string {
+  const lines = ['---', `description: ${skill.description}`];
+  if (skill.userInvocable === false) {
+    lines.push('user-invocable: false');
+  }
+  lines.push('---', '', skill.instructions, '');
+  return lines.join('\n');
+}
+
+async function generateFiles(ralphDir: string, language: string, imageName: string, force: boolean = false, javaVersion?: number, cliProvider?: string, dockerConfig?: RalphConfig['docker'], claudeConfig?: RalphConfig['claude']): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
 
   // Create docker directory
@@ -384,6 +399,48 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
     }
 
     console.log(`Created ${DOCKER_DIR}/${file.name}`);
+  }
+
+  // Generate Claude config files at project root
+  const projectRoot = process.cwd();
+
+  // Generate .mcp.json if MCP servers are configured
+  if (claudeConfig?.mcpServers && Object.keys(claudeConfig.mcpServers).length > 0) {
+    const mcpJsonPath = join(projectRoot, '.mcp.json');
+    if (existsSync(mcpJsonPath) && !force) {
+      const overwrite = await promptConfirm('.mcp.json already exists. Overwrite?');
+      if (!overwrite) {
+        console.log('Skipped .mcp.json');
+      } else {
+        writeFileSync(mcpJsonPath, generateMcpJson(claudeConfig.mcpServers));
+        console.log('Created .mcp.json');
+      }
+    } else {
+      writeFileSync(mcpJsonPath, generateMcpJson(claudeConfig.mcpServers));
+      console.log('Created .mcp.json');
+    }
+  }
+
+  // Generate skill files if skills are configured
+  if (claudeConfig?.skills && claudeConfig.skills.length > 0) {
+    const commandsDir = join(projectRoot, '.claude', 'commands');
+    if (!existsSync(commandsDir)) {
+      mkdirSync(commandsDir, { recursive: true });
+      console.log('Created .claude/commands/');
+    }
+
+    for (const skill of claudeConfig.skills) {
+      const skillPath = join(commandsDir, `${skill.name}.md`);
+      if (existsSync(skillPath) && !force) {
+        const overwrite = await promptConfirm(`.claude/commands/${skill.name}.md already exists. Overwrite?`);
+        if (!overwrite) {
+          console.log(`Skipped .claude/commands/${skill.name}.md`);
+          continue;
+        }
+      }
+      writeFileSync(skillPath, generateSkillFile(skill));
+      console.log(`Created .claude/commands/${skill.name}.md`);
+    }
   }
 }
 
@@ -472,7 +529,7 @@ function getCliProviderConfig(cliProvider?: string): { name: string; command: st
   };
 }
 
-async function runContainer(ralphDir: string, imageName: string, language: string, javaVersion?: number, cliProvider?: string, dockerConfig?: RalphConfig['docker']): Promise<void> {
+async function runContainer(ralphDir: string, imageName: string, language: string, javaVersion?: number, cliProvider?: string, dockerConfig?: RalphConfig['docker'], claudeConfig?: RalphConfig['claude']): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
   const dockerfileExists = existsSync(join(dockerDir, "Dockerfile"));
   const hasImage = await imageExists(imageName);
@@ -481,7 +538,7 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
   if (!dockerfileExists || !hasImage) {
     if (!dockerfileExists) {
       console.log("Docker folder not found. Initializing docker setup...\n");
-      await generateFiles(ralphDir, language, imageName, true, javaVersion, cliProvider, dockerConfig);
+      await generateFiles(ralphDir, language, imageName, true, javaVersion, cliProvider, dockerConfig, claudeConfig);
       console.log("");
     }
 
@@ -769,7 +826,7 @@ export async function dockerInit(silent: boolean = false): Promise<void> {
   }
   console.log(`Image name: ${imageName}\n`);
 
-  await generateFiles(ralphDir, config.language, imageName, true, config.javaVersion, config.cliProvider, config.docker);
+  await generateFiles(ralphDir, config.language, imageName, true, config.javaVersion, config.cliProvider, config.docker, config.claude);
 
   if (!silent) {
     console.log(`
@@ -867,7 +924,7 @@ INSTALLING PACKAGES (works with Docker & Podman):
       break;
 
     case "run":
-      await runContainer(ralphDir, imageName, config.language, config.javaVersion, config.cliProvider, config.docker);
+      await runContainer(ralphDir, imageName, config.language, config.javaVersion, config.cliProvider, config.docker, config.claude);
       break;
 
     case "clean":
@@ -888,7 +945,7 @@ INSTALLING PACKAGES (works with Docker & Podman):
         console.log(`CLI provider: ${config.cliProvider}`);
       }
       console.log(`Image name: ${imageName}\n`);
-      await generateFiles(ralphDir, config.language, imageName, force, config.javaVersion, config.cliProvider, config.docker);
+      await generateFiles(ralphDir, config.language, imageName, force, config.javaVersion, config.cliProvider, config.docker, config.claude);
 
       console.log(`
 Docker files generated in .ralph/docker/
