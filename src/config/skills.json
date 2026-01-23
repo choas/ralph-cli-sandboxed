@@ -1,0 +1,12 @@
+{
+  "skills": {
+    "swift": [
+      {
+        "name": "swift-main-naming",
+        "description": "Prevents naming files main.swift when using @main attribute",
+        "instructions": "IMPORTANT: In Swift, files containing the @main attribute MUST NOT be named main.swift.\n\nWhen the @main attribute is used (e.g., @main struct App), Swift automatically generates an entry point. If the file is also named main.swift, Swift treats it as having a manual entry point, causing a conflict.\n\nRULES:\n- Never name a file main.swift if it contains @main attribute\n- Use descriptive names like App.swift, MyApp.swift, or the actual type name\n- If you encounter a main.swift with @main, rename it to match the type (e.g., struct MyApp -> MyApp.swift)\n\nEXAMPLES:\n\nBAD:\n```\n// main.swift\n@main\nstruct App {\n    static func main() { ... }\n}\n```\n\nGOOD:\n```\n// App.swift\n@main\nstruct App {\n    static func main() { ... }\n}\n```",
+        "userInvocable": false
+      }
+    ]
+  }
+}

@@ -62,6 +62,17 @@ interface CliProvidersJson {
   providers: Record<string, CliProviderConfig>;
 }
 
+export interface SkillDefinition {
+  name: string;
+  description: string;
+  instructions: string;
+  userInvocable?: boolean;
+}
+
+interface SkillsJson {
+  skills: Record<string, SkillDefinition[]>;
+}
+
 // Load languages from JSON config file
 function loadLanguagesConfig(): LanguagesJson {
   // In development: src/config/languages.json
@@ -74,6 +85,13 @@ function loadLanguagesConfig(): LanguagesJson {
 // Load CLI providers from JSON config file
 function loadCliProvidersConfig(): CliProvidersJson {
   const configPath = join(__dirname, "..", "config", "cli-providers.json");
+  const content = readFileSync(configPath, "utf-8");
+  return JSON.parse(content);
+}
+
+// Load skills from JSON config file
+function loadSkillsConfig(): SkillsJson {
+  const configPath = join(__dirname, "..", "config", "skills.json");
   const content = readFileSync(configPath, "utf-8");
   return JSON.parse(content);
 }
@@ -93,6 +111,7 @@ function convertToLanguageConfig(config: LanguageConfigJson): LanguageConfig {
 let _languagesCache: Record<string, LanguageConfig> | null = null;
 let _languagesJsonCache: LanguagesJson | null = null;
 let _cliProvidersCache: CliProvidersJson | null = null;
+let _skillsCache: SkillsJson | null = null;
 
 export function getLanguagesJson(): LanguagesJson {
   if (!_languagesJsonCache) {
@@ -110,6 +129,18 @@ export function getCliProvidersJson(): CliProvidersJson {
 
 export function getCliProviders(): Record<string, CliProviderConfig> {
   return getCliProvidersJson().providers;
+}
+
+export function getSkillsJson(): SkillsJson {
+  if (!_skillsCache) {
+    _skillsCache = loadSkillsConfig();
+  }
+  return _skillsCache;
+}
+
+export function getSkillsForLanguage(language: string): SkillDefinition[] {
+  const skills = getSkillsJson().skills;
+  return skills[language] || [];
 }
 
 export function getLanguages(): Record<string, LanguageConfig> {

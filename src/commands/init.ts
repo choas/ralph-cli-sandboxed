@@ -1,7 +1,8 @@
 import { existsSync, writeFileSync, mkdirSync, copyFileSync } from "fs";
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
-import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, getCliProviders, type LanguageConfig } from "../templates/prompts.js";
+import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, getCliProviders, getSkillsForLanguage, type LanguageConfig, type SkillDefinition } from "../templates/prompts.js";
+import { type SkillConfig } from "../utils/config.js";
 import { promptSelectWithArrows, promptConfirm, promptInput, promptMultiSelectWithArrows } from "../utils/prompt.js";
 import { type CliConfig } from "../utils/config.js";
 import { dockerInit } from "./docker.js";
@@ -46,6 +47,7 @@ export async function init(args: string[]): Promise<void> {
   let cliConfig: CliConfig;
   let selectedKey: string;
   let selectedTechnologies: string[] = [];
+  let selectedSkills: SkillConfig[] = [];
   let checkCommand: string;
   let testCommand: string;
 
@@ -136,6 +138,35 @@ export async function init(args: string[]): Promise<void> {
       }
     }
 
+    // Step 4: Select skills if available for this language
+    const availableSkills = getSkillsForLanguage(selectedKey);
+    if (availableSkills.length > 0) {
+      const skillOptions = availableSkills.map(s => `${s.name} - ${s.description}`);
+
+      const selectedSkillNames = await promptMultiSelectWithArrows(
+        "Select AI coding rules/skills to enable (optional):",
+        skillOptions
+      );
+
+      // Convert selected display names to SkillConfig objects
+      selectedSkills = selectedSkillNames.map(sel => {
+        const idx = skillOptions.indexOf(sel);
+        const skill = availableSkills[idx];
+        return {
+          name: skill.name,
+          description: skill.description,
+          instructions: skill.instructions,
+          userInvocable: skill.userInvocable,
+        };
+      });
+
+      if (selectedSkills.length > 0) {
+        console.log(`\nSelected skills: ${selectedSkills.map(s => s.name).join(", ")}`);
+      } else {
+        console.log("\nNo skills selected.");
+      }
+    }
+
     // Allow custom commands for "none" language
     checkCommand = config.checkCommand;
     testCommand = config.testCommand;
@@ -201,7 +232,7 @@ export async function init(args: string[]): Promise<void> {
     // Claude-specific configuration (MCP servers and skills)
     claude: {
       mcpServers: {},
-      skills: [],
+      skills: selectedSkills,
     },
   };
 
