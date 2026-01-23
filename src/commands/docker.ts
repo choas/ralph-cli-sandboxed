@@ -397,7 +397,7 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig['do
     // Wrap with asciinema recording
     const outputDir = dockerConfig.asciinema.outputDir || '.recordings';
     const innerCommand = dockerConfig.startCommand || 'zsh';
-    commandSection = `    command: bash -c "asciinema rec -c '${innerCommand}' /workspace/${outputDir}/session-$$(date +%Y%m%d-%H%M%S).cast"\n`;
+    commandSection = `    command: bash -c "mkdir -p /workspace/${outputDir} && asciinema rec -c '${innerCommand}' /workspace/${outputDir}/session-$$(date +%Y%m%d-%H%M%S).cast"\n`;
   } else if (dockerConfig?.startCommand) {
     commandSection = `    command: ${dockerConfig.startCommand}\n`;
   } else {
