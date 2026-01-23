@@ -23,10 +23,16 @@ export interface SkillConfig {
   userInvocable?: boolean;  // defaults to true
 }
 
+export interface StreamJsonConfig {
+  enabled: boolean;           // Use --output-format stream-json with Claude
+  saveRawJson?: boolean;      // Save raw JSON output alongside recording (default: true)
+}
+
 export interface AsciinemaConfig {
   enabled: boolean;           // Install asciinema in Docker container
   autoRecord?: boolean;       // Auto-start recording on container start
   outputDir?: string;         // Directory for recordings (default: .recordings)
+  streamJson?: StreamJsonConfig;  // Stream JSON output for cleaner recordings
 }
 
 export interface RalphConfig {

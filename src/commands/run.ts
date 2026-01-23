@@ -1,10 +1,166 @@
 import { spawn } from "child_process";
-import { existsSync, readFileSync, writeFileSync, unlinkSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, unlinkSync, appendFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliConfig, requireContainer } from "../utils/config.js";
+import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliConfig, requireContainer, RalphConfig } from "../utils/config.js";
 import { resolvePromptVariables } from "../templates/prompts.js";
 import { validatePrd, smartMerge, readPrdFile, writePrd, expandPrdFileReferences, PrdEntry } from "../utils/prd-validator.js";
+
+/**
+ * Stream JSON configuration for clean output display
+ */
+interface StreamJsonOptions {
+  enabled: boolean;
+  saveRawJson: boolean;
+  outputDir: string;
+}
+
+/**
+ * Parses a stream-json line and extracts displayable text.
+ * Formats output similar to Claude Code's normal terminal display.
+ */
+function parseStreamJsonLine(line: string, debug: boolean = false): string {
+  try {
+    const json = JSON.parse(line);
+
+    if (debug && json.type) {
+      process.stderr.write(`[stream-json] type: ${json.type}\n`);
+    }
+
+    // Handle Claude Code CLI stream-json events
+    const type = json.type;
+
+    switch (type) {
+      // === Text Content ===
+      case "content_block_delta":
+        // Incremental text updates - the main streaming content
+        if (json.delta?.type === "text_delta") {
+          return json.delta.text || "";
+        }
+        // Tool input being streamed
+        if (json.delta?.type === "input_json_delta") {
+          return ""; // Don't show partial JSON, wait for complete tool call
+        }
+        return json.delta?.text || "";
+
+      case "text":
+        return json.text || "";
+
+      // === Tool Use ===
+      case "content_block_start":
+        if (json.content_block?.type === "tool_use") {
+          const toolName = json.content_block?.name || "unknown";
+          return `\n── Tool: ${toolName} ──\n`;
+        }
+        if (json.content_block?.type === "text") {
+          return json.content_block?.text || "";
+        }
+        return "";
+
+      case "content_block_stop":
+        // End of a content block - add newline after tool use
+        return "";
+
+      // === Tool Results ===
+      case "tool_result":
+        const toolOutput = json.content || json.output || "";
+        const truncated = typeof toolOutput === "string" && toolOutput.length > 500
+          ? toolOutput.substring(0, 500) + "... (truncated)"
+          : toolOutput;
+        return `\n── Tool Result ──\n${typeof truncated === "string" ? truncated : JSON.stringify(truncated, null, 2)}\n`;
+
+      // === Assistant Messages ===
+      case "assistant":
+        const contents = json.message?.content || json.content || [];
+        let output = "";
+        for (const block of contents) {
+          if (block.type === "text") {
+            output += block.text || "";
+          } else if (block.type === "tool_use") {
+            output += `\n── Tool: ${block.name} ──\n`;
+            if (block.input) {
+              output += JSON.stringify(block.input, null, 2) + "\n";
+            }
+          }
+        }
+        return output;
+
+      case "message_start":
+        // Beginning of a new message
+        return "\n";
+
+      case "message_delta":
+        // Message completion info (stop_reason, usage)
+        if (json.delta?.stop_reason) {
+          return `\n[${json.delta.stop_reason}]\n`;
+        }
+        return "";
+
+      case "message_stop":
+        return "\n";
+
+      // === System/User Events ===
+      case "system":
+        if (json.message) {
+          return `[System] ${json.message}\n`;
+        }
+        return "";
+
+      case "user":
+        // User message echo - usually not needed to display
+        return "";
+
+      // === Results and Errors ===
+      case "result":
+        if (json.result !== undefined) {
+          return `\n── Result ──\n${JSON.stringify(json.result, null, 2)}\n`;
+        }
+        return "";
+
+      case "error":
+        const errMsg = json.error?.message || JSON.stringify(json.error);
+        return `\n[Error] ${errMsg}\n`;
+
+      // === File Operations (Claude Code specific) ===
+      case "file_edit":
+      case "file_write":
+        const filePath = json.path || json.file || "unknown";
+        return `\n── Writing: ${filePath} ──\n`;
+
+      case "file_read":
+        const readPath = json.path || json.file || "unknown";
+        return `── Reading: ${readPath} ──\n`;
+
+      case "bash":
+      case "command":
+        const cmd = json.command || json.content || "";
+        return `\n── Running: ${cmd} ──\n`;
+
+      case "bash_output":
+      case "command_output":
+        const cmdOutput = json.output || json.content || "";
+        return cmdOutput + "\n";
+
+      default:
+        // Fallback: check for common text fields
+        if (json.text) return json.text;
+        if (json.content && typeof json.content === "string") return json.content;
+        if (json.message && typeof json.message === "string") return json.message;
+        if (json.output && typeof json.output === "string") return json.output;
+
+        if (debug) {
+          process.stderr.write(`[stream-json] unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}\n`);
+        }
+        return "";
+    }
+  } catch (e) {
+    // Not valid JSON
+    if (debug) {
+      process.stderr.write(`[stream-json] parse error: ${e}\n`);
+    }
+    return "";
+  }
+}
 
 interface PrdItem {
   category: string;
@@ -96,9 +252,11 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): number {
   }
 }
 
-async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string, cliConfig: CliConfig, debug: boolean, model?: string): Promise<{ exitCode: number; output: string }> {
+async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string, cliConfig: CliConfig, debug: boolean, model?: string, streamJson?: StreamJsonOptions): Promise<{ exitCode: number; output: string }> {
   return new Promise((resolve, reject) => {
     let output = "";
+    let jsonLogPath: string | undefined;
+    let lineBuffer = ""; // Buffer for incomplete JSON lines
 
     // Build CLI arguments: config args + yolo args + model args + prompt args
     const cliArgs = [
@@ -110,6 +268,21 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
     if (sandboxed) {
       const yoloArgs = cliConfig.yoloArgs ?? ["--dangerously-skip-permissions"];
       cliArgs.push(...yoloArgs);
+    }
+
+    // Add stream-json output format if enabled
+    if (streamJson?.enabled) {
+      cliArgs.push("--output-format", "stream-json", "--verbose", "--print");
+
+      // Setup JSON log file if saving raw JSON
+      if (streamJson.saveRawJson) {
+        const outputDir = join(process.cwd(), streamJson.outputDir);
+        if (!existsSync(outputDir)) {
+          mkdirSync(outputDir, { recursive: true });
+        }
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+        jsonLogPath = join(outputDir, `ralph-run-${timestamp}.jsonl`);
+      }
     }
 
     // Add model args if model is specified
@@ -125,6 +298,9 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
 
     if (debug) {
       console.log(`[debug] ${cliConfig.command} ${cliArgs.map(a => a.includes(" ") ? `"${a}"` : a).join(" ")}\n`);
+      if (jsonLogPath) {
+        console.log(`[debug] Saving raw JSON to: ${jsonLogPath}\n`);
+      }
     }
 
     const proc = spawn(
@@ -137,11 +313,77 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
 
     proc.stdout.on("data", (data: Buffer) => {
       const chunk = data.toString();
-      output += chunk;
-      process.stdout.write(chunk);
+
+      if (streamJson?.enabled) {
+        // Process stream-json output: parse JSON and display clean text
+        lineBuffer += chunk;
+        const lines = lineBuffer.split("\n");
+        // Keep the last incomplete line in the buffer
+        lineBuffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+
+          // Check if this is a JSON line
+          if (trimmedLine.startsWith("{")) {
+            // Save raw JSON if enabled
+            if (jsonLogPath) {
+              try {
+                appendFileSync(jsonLogPath, trimmedLine + "\n");
+              } catch {
+                // Ignore write errors
+              }
+            }
+
+            // Parse and display clean text
+            const text = parseStreamJsonLine(trimmedLine, debug);
+            if (text) {
+              process.stdout.write(text);
+              output += text; // Accumulate parsed text for completion detection
+            }
+          } else {
+            // Non-JSON line - display as-is (might be status messages, errors, etc.)
+            process.stdout.write(trimmedLine + "\n");
+            output += trimmedLine + "\n";
+          }
+        }
+      } else {
+        // Standard output: pass through as-is
+        output += chunk;
+        process.stdout.write(chunk);
+      }
     });
 
     proc.on("close", (code) => {
+      // Process any remaining buffered content
+      if (streamJson?.enabled && lineBuffer.trim()) {
+        const trimmedLine = lineBuffer.trim();
+        if (trimmedLine.startsWith("{")) {
+          if (jsonLogPath) {
+            try {
+              appendFileSync(jsonLogPath, trimmedLine + "\n");
+            } catch {
+              // Ignore write errors
+            }
+          }
+          const text = parseStreamJsonLine(trimmedLine, debug);
+          if (text) {
+            process.stdout.write(text);
+            output += text;
+          }
+        } else {
+          // Non-JSON remaining content
+          process.stdout.write(trimmedLine + "\n");
+          output += trimmedLine + "\n";
+        }
+      }
+
+      // Ensure final newline for clean output
+      if (streamJson?.enabled) {
+        process.stdout.write("\n");
+      }
+
       resolve({ exitCode: code ?? 0, output });
     });
 
@@ -318,6 +560,14 @@ export async function run(args: string[]): Promise<void> {
   const paths = getPaths();
   const cliConfig = getCliConfig(config);
 
+  // Check if stream-json output is enabled
+  const streamJsonConfig = config.docker?.asciinema?.streamJson;
+  const streamJson: StreamJsonOptions | undefined = streamJsonConfig?.enabled ? {
+    enabled: true,
+    saveRawJson: streamJsonConfig.saveRawJson !== false, // default true
+    outputDir: config.docker?.asciinema?.outputDir || ".recordings",
+  } : undefined;
+
   // Progress tracking: stop only if no tasks complete after N iterations
   const MAX_ITERATIONS_WITHOUT_PROGRESS = 3;
 
@@ -338,6 +588,12 @@ export async function run(args: string[]): Promise<void> {
   }
   if (category) {
     console.log(`Filtering PRD items by category: ${category}`);
+  }
+  if (streamJson?.enabled) {
+    console.log("Stream JSON output enabled - displaying formatted Claude output");
+    if (streamJson.saveRawJson) {
+      console.log(`Raw JSON logs will be saved to: ${streamJson.outputDir}/`);
+    }
   }
   console.log();
 
@@ -440,7 +696,7 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath, cliConfig, debug, model);
+      const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath, cliConfig, debug, model, streamJson);
 
       // Sync any completed items from prd-tasks.json back to prd.json
       // This catches cases where the LLM updated prd-tasks.json instead of prd.json

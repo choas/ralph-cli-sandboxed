@@ -223,6 +223,10 @@ export async function init(args: string[]): Promise<void> {
         enabled: false,
         autoRecord: false,
         outputDir: ".recordings",
+        streamJson: {
+          enabled: false,
+          saveRawJson: true,
+        },
       },
       firewall: {
         allowedDomains: [],

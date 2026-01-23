@@ -1,6 +1,155 @@
 import { spawn } from "child_process";
+import { existsSync, appendFileSync, mkdirSync } from "fs";
+import { join } from "path";
 import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, requireContainer } from "../utils/config.js";
 import { resolvePromptVariables } from "../templates/prompts.js";
+
+/**
+ * Parses a stream-json line and extracts displayable text.
+ * Formats output similar to Claude Code's normal terminal display.
+ */
+function parseStreamJsonLine(line: string, debug: boolean = false): string {
+  try {
+    const json = JSON.parse(line);
+
+    if (debug && json.type) {
+      process.stderr.write(`[stream-json] type: ${json.type}\n`);
+    }
+
+    // Handle Claude Code CLI stream-json events
+    const type = json.type;
+
+    switch (type) {
+      // === Text Content ===
+      case "content_block_delta":
+        // Incremental text updates - the main streaming content
+        if (json.delta?.type === "text_delta") {
+          return json.delta.text || "";
+        }
+        // Tool input being streamed
+        if (json.delta?.type === "input_json_delta") {
+          return ""; // Don't show partial JSON, wait for complete tool call
+        }
+        return json.delta?.text || "";
+
+      case "text":
+        return json.text || "";
+
+      // === Tool Use ===
+      case "content_block_start":
+        if (json.content_block?.type === "tool_use") {
+          const toolName = json.content_block?.name || "unknown";
+          return `\n── Tool: ${toolName} ──\n`;
+        }
+        if (json.content_block?.type === "text") {
+          return json.content_block?.text || "";
+        }
+        return "";
+
+      case "content_block_stop":
+        // End of a content block - add newline after tool use
+        return "";
+
+      // === Tool Results ===
+      case "tool_result":
+        const toolOutput = json.content || json.output || "";
+        const truncated = typeof toolOutput === "string" && toolOutput.length > 500
+          ? toolOutput.substring(0, 500) + "... (truncated)"
+          : toolOutput;
+        return `\n── Tool Result ──\n${typeof truncated === "string" ? truncated : JSON.stringify(truncated, null, 2)}\n`;
+
+      // === Assistant Messages ===
+      case "assistant":
+        const contents = json.message?.content || json.content || [];
+        let output = "";
+        for (const block of contents) {
+          if (block.type === "text") {
+            output += block.text || "";
+          } else if (block.type === "tool_use") {
+            output += `\n── Tool: ${block.name} ──\n`;
+            if (block.input) {
+              output += JSON.stringify(block.input, null, 2) + "\n";
+            }
+          }
+        }
+        return output;
+
+      case "message_start":
+        // Beginning of a new message
+        return "\n";
+
+      case "message_delta":
+        // Message completion info (stop_reason, usage)
+        if (json.delta?.stop_reason) {
+          return `\n[${json.delta.stop_reason}]\n`;
+        }
+        return "";
+
+      case "message_stop":
+        return "\n";
+
+      // === System/User Events ===
+      case "system":
+        if (json.message) {
+          return `[System] ${json.message}\n`;
+        }
+        return "";
+
+      case "user":
+        // User message echo - usually not needed to display
+        return "";
+
+      // === Results and Errors ===
+      case "result":
+        if (json.result !== undefined) {
+          return `\n── Result ──\n${JSON.stringify(json.result, null, 2)}\n`;
+        }
+        return "";
+
+      case "error":
+        const errMsg = json.error?.message || JSON.stringify(json.error);
+        return `\n[Error] ${errMsg}\n`;
+
+      // === File Operations (Claude Code specific) ===
+      case "file_edit":
+      case "file_write":
+        const filePath = json.path || json.file || "unknown";
+        return `\n── Writing: ${filePath} ──\n`;
+
+      case "file_read":
+        const readPath = json.path || json.file || "unknown";
+        return `── Reading: ${readPath} ──\n`;
+
+      case "bash":
+      case "command":
+        const cmd = json.command || json.content || "";
+        return `\n── Running: ${cmd} ──\n`;
+
+      case "bash_output":
+      case "command_output":
+        const cmdOutput = json.output || json.content || "";
+        return cmdOutput + "\n";
+
+      default:
+        // Fallback: check for common text fields
+        if (json.text) return json.text;
+        if (json.content && typeof json.content === "string") return json.content;
+        if (json.message && typeof json.message === "string") return json.message;
+        if (json.output && typeof json.output === "string") return json.output;
+
+        if (debug) {
+          process.stderr.write(`[stream-json] unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}\n`);
+        }
+        return "";
+    }
+  } catch (e) {
+    // Not valid JSON
+    if (debug) {
+      process.stderr.write(`[stream-json] parse error: ${e}\n`);
+    }
+    return "";
+  }
+}
 
 export async function once(args: string[]): Promise<void> {
   // Parse flags
@@ -35,7 +184,20 @@ export async function once(args: string[]): Promise<void> {
   const paths = getPaths();
   const cliConfig = getCliConfig(config);
 
-  console.log("Starting single ralph iteration...\n");
+  // Check if stream-json output is enabled
+  const streamJsonConfig = config.docker?.asciinema?.streamJson;
+  const streamJsonEnabled = streamJsonConfig?.enabled ?? false;
+  const saveRawJson = streamJsonConfig?.saveRawJson !== false; // default true
+  const outputDir = config.docker?.asciinema?.outputDir || ".recordings";
+
+  console.log("Starting single ralph iteration...");
+  if (streamJsonEnabled) {
+    console.log("Stream JSON output enabled - displaying formatted Claude output");
+    if (saveRawJson) {
+      console.log(`Raw JSON logs will be saved to: ${outputDir}/`);
+    }
+  }
+  console.log();
 
   // Build CLI arguments: config args + yolo args + model args + prompt args
   // Use yoloArgs from config if available, otherwise default to Claude's --dangerously-skip-permissions
@@ -47,6 +209,22 @@ export async function once(args: string[]): Promise<void> {
     ...yoloArgs,
   ];
 
+  // Add stream-json output format if enabled
+  let jsonLogPath: string | undefined;
+  if (streamJsonEnabled) {
+    cliArgs.push("--output-format", "stream-json", "--verbose", "--print");
+
+    // Setup JSON log file if saving raw JSON
+    if (saveRawJson) {
+      const fullOutputDir = join(process.cwd(), outputDir);
+      if (!existsSync(fullOutputDir)) {
+        mkdirSync(fullOutputDir, { recursive: true });
+      }
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      jsonLogPath = join(fullOutputDir, `ralph-once-${timestamp}.jsonl`);
+    }
+  }
+
   // Add model args if model is specified
   if (model && cliConfig.modelArgs) {
     cliArgs.push(...cliConfig.modelArgs, model);
@@ -56,22 +234,104 @@ export async function once(args: string[]): Promise<void> {
 
   if (debug) {
     console.log(`[debug] ${cliConfig.command} ${cliArgs.map(a => a.includes(" ") ? `"${a}"` : a).join(" ")}\n`);
+    if (jsonLogPath) {
+      console.log(`[debug] Saving raw JSON to: ${jsonLogPath}\n`);
+    }
   }
 
   return new Promise((resolve, reject) => {
-    const proc = spawn(cliConfig.command, cliArgs, {
-      stdio: "inherit",
-    });
+    if (streamJsonEnabled) {
+      // Stream JSON mode: capture stdout, parse JSON, display clean text
+      let lineBuffer = "";
 
-    proc.on("close", (code) => {
-      if (code !== 0) {
-        console.error(`\n${cliConfig.command} exited with code ${code}`);
-      }
-      resolve();
-    });
+      const proc = spawn(cliConfig.command, cliArgs, {
+        stdio: ["inherit", "pipe", "inherit"],
+      });
 
-    proc.on("error", (err) => {
-      reject(new Error(`Failed to start ${cliConfig.command}: ${err.message}`));
-    });
+      proc.stdout.on("data", (data: Buffer) => {
+        const chunk = data.toString();
+        lineBuffer += chunk;
+        const lines = lineBuffer.split("\n");
+        // Keep the last incomplete line in the buffer
+        lineBuffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+
+          // Check if this is a JSON line
+          if (trimmedLine.startsWith("{")) {
+            // Save raw JSON if enabled
+            if (jsonLogPath) {
+              try {
+                appendFileSync(jsonLogPath, trimmedLine + "\n");
+              } catch {
+                // Ignore write errors
+              }
+            }
+
+            // Parse and display clean text
+            const text = parseStreamJsonLine(trimmedLine, debug);
+            if (text) {
+              process.stdout.write(text);
+            }
+          } else {
+            // Non-JSON line - display as-is (might be status messages, errors, etc.)
+            process.stdout.write(trimmedLine + "\n");
+          }
+        }
+      });
+
+      proc.on("close", (code) => {
+        // Process any remaining buffered content
+        if (lineBuffer.trim()) {
+          const trimmedLine = lineBuffer.trim();
+          if (trimmedLine.startsWith("{")) {
+            if (jsonLogPath) {
+              try {
+                appendFileSync(jsonLogPath, trimmedLine + "\n");
+              } catch {
+                // Ignore write errors
+              }
+            }
+            const text = parseStreamJsonLine(trimmedLine, debug);
+            if (text) {
+              process.stdout.write(text);
+            }
+          } else {
+            // Non-JSON remaining content
+            process.stdout.write(trimmedLine + "\n");
+          }
+        }
+
+        // Ensure final newline
+        process.stdout.write("\n");
+
+        if (code !== 0) {
+          console.error(`\n${cliConfig.command} exited with code ${code}`);
+        }
+        resolve();
+      });
+
+      proc.on("error", (err) => {
+        reject(new Error(`Failed to start ${cliConfig.command}: ${err.message}`));
+      });
+    } else {
+      // Standard mode: pass through all I/O
+      const proc = spawn(cliConfig.command, cliArgs, {
+        stdio: "inherit",
+      });
+
+      proc.on("close", (code) => {
+        if (code !== 0) {
+          console.error(`\n${cliConfig.command} exited with code ${code}`);
+        }
+        resolve();
+      });
+
+      proc.on("error", (err) => {
+        reject(new Error(`Failed to start ${cliConfig.command}: ${err.message}`));
+      });
+    }
   });
 }
