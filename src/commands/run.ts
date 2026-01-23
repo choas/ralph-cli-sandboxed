@@ -208,6 +208,76 @@ function parseStreamJsonLine(line: string, debug: boolean = false): string {
         }
         return "";
 
+      // === OpenCode CLI Events ===
+      case "step_start":
+        // OpenCode step start event - indicates beginning of a new step
+        if (json.step || json.name) {
+          return `\n── Step: ${json.step || json.name} ──\n`;
+        }
+        return "\n";
+
+      case "step_end":
+        // OpenCode step end event
+        return "";
+
+      case "tool":
+      case "tool_call":
+        // OpenCode tool call event
+        if (json.name || json.tool) {
+          let toolOutput = `\n── Tool: ${json.name || json.tool} ──\n`;
+          if (json.input || json.args || json.arguments) {
+            const toolInput = json.input || json.args || json.arguments;
+            toolOutput += typeof toolInput === "string"
+              ? toolInput + "\n"
+              : JSON.stringify(toolInput, null, 2) + "\n";
+          }
+          return toolOutput;
+        }
+        return "";
+
+      case "tool_response":
+        // OpenCode tool response event
+        const toolRespOutput = json.output || json.result || json.content || "";
+        const truncatedResp = typeof toolRespOutput === "string" && toolRespOutput.length > 500
+          ? toolRespOutput.substring(0, 500) + "... (truncated)"
+          : toolRespOutput;
+        return `── Tool Result ──\n${typeof truncatedResp === "string" ? truncatedResp : JSON.stringify(truncatedResp, null, 2)}\n`;
+
+      case "assistant_message":
+      case "model_response":
+        // OpenCode assistant/model response event
+        if (json.content && typeof json.content === "string") {
+          return json.content;
+        }
+        if (json.text) {
+          return json.text;
+        }
+        if (Array.isArray(json.content)) {
+          let msgOutput = "";
+          for (const part of json.content) {
+            if (typeof part === "string") {
+              msgOutput += part;
+            } else if (part.type === "text") {
+              msgOutput += part.text || "";
+            }
+          }
+          return msgOutput;
+        }
+        return "";
+
+      case "thinking":
+      case "reasoning":
+        // OpenCode thinking/reasoning event - show thinking process
+        if (json.content || json.text) {
+          return `[Thinking] ${json.content || json.text}\n`;
+        }
+        return "";
+
+      case "done":
+      case "complete":
+        // OpenCode completion event
+        return "\n";
+
       default:
         // Fallback: check for common text fields
         if (json.text) return json.text;
