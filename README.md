@@ -83,6 +83,57 @@ After running `ralph init`, you'll have:
     └── ...
 ```
 
+### Notifications
+
+Ralph can send notifications when events occur during automation. Configure a notification command in `.ralph/config.json`:
+
+```json
+{
+  "notifyCommand": "ntfy pub mytopic"
+}
+```
+
+The message is appended as the last argument to your command. Supported notification tools include:
+
+| Tool | Example Command | Description |
+|------|----------------|-------------|
+| [ntfy](https://ntfy.sh/) | `ntfy pub mytopic` | Push notifications to phone/desktop |
+| notify-send (Linux) | `notify-send Ralph` | Desktop notifications on Linux |
+| terminal-notifier (macOS) | `terminal-notifier -title Ralph -message` | Desktop notifications on macOS |
+| Custom script | `/path/to/notify.sh` | Your own notification script |
+
+#### Notification Events
+
+Ralph sends notifications for these events:
+
+| Event | Message | When |
+|-------|---------|------|
+| PRD Complete | "Ralph: PRD Complete! All tasks finished." | All PRD tasks are marked as passing |
+| Iteration Complete | "Ralph: Iteration complete." | Single `ralph once` iteration finishes |
+| Run Stopped | "Ralph: Run stopped..." | `ralph run` stops due to no progress or max failures |
+| Error | "Ralph: An error occurred." | CLI fails repeatedly |
+
+#### Example: ntfy Setup
+
+[ntfy](https://ntfy.sh/) is a simple HTTP-based pub-sub notification service:
+
+```bash
+# 1. Install ntfy CLI
+pip install ntfy
+
+# 2. Subscribe to your topic on your phone (ntfy app) or browser
+# Visit: https://ntfy.sh/your-unique-topic
+
+# 3. Configure ralph
+# In .ralph/config.json:
+{
+  "notifyCommand": "ntfy pub your-unique-topic"
+}
+
+# 4. Run ralph - you'll get notifications on completion
+ralph docker run
+```
+
 ### Supported Languages
 
 Ralph supports 18 programming languages with pre-configured build/test commands:

@@ -4,6 +4,7 @@ import { join } from "path";
 import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, requireContainer } from "../utils/config.js";
 import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
 import { getStreamJsonParser } from "../utils/stream-json.js";
+import { sendNotification } from "../utils/notification.js";
 
 export async function once(args: string[]): Promise<void> {
   // Parse flags
@@ -102,7 +103,12 @@ export async function once(args: string[]): Promise<void> {
   // Create provider-specific stream-json parser
   const streamJsonParser = getStreamJsonParser(config.cliProvider, debug);
 
+  // Notification options for this run
+  const notifyOptions = { command: config.notifyCommand, debug };
+
   return new Promise((resolve, reject) => {
+    let output = ""; // Accumulate output for PRD complete detection
+
     if (streamJsonEnabled) {
       // Stream JSON mode: capture stdout, parse JSON, display clean text
       let lineBuffer = "";
@@ -137,15 +143,17 @@ export async function once(args: string[]): Promise<void> {
             const text = streamJsonParser.parseStreamJsonLine(trimmedLine);
             if (text) {
               process.stdout.write(text);
+              output += text; // Accumulate for completion detection
             }
           } else {
             // Non-JSON line - display as-is (might be status messages, errors, etc.)
             process.stdout.write(trimmedLine + "\n");
+            output += trimmedLine + "\n";
           }
         }
       });
 
-      proc.on("close", (code) => {
+      proc.on("close", async (code) => {
         // Process any remaining buffered content
         if (lineBuffer.trim()) {
           const trimmedLine = lineBuffer.trim();
@@ -160,19 +168,28 @@ export async function once(args: string[]): Promise<void> {
             const text = streamJsonParser.parseStreamJsonLine(trimmedLine);
             if (text) {
               process.stdout.write(text);
+              output += text;
             }
           } else {
             // Non-JSON remaining content
             process.stdout.write(trimmedLine + "\n");
+            output += trimmedLine + "\n";
           }
         }
 
         // Ensure final newline
         process.stdout.write("\n");
 
+        // Send notification based on outcome
         if (code !== 0) {
           console.error(`\n${cliConfig.command} exited with code ${code}`);
+          await sendNotification("error", `Ralph: Iteration failed with exit code ${code}`, notifyOptions);
+        } else if (output.includes("<promise>COMPLETE</promise>")) {
+          await sendNotification("prd_complete", undefined, notifyOptions);
+        } else {
+          await sendNotification("iteration_complete", undefined, notifyOptions);
         }
+
         resolve();
       });
 
@@ -180,15 +197,28 @@ export async function once(args: string[]): Promise<void> {
         reject(new Error(`Failed to start ${cliConfig.command}: ${err.message}`));
       });
     } else {
-      // Standard mode: pass through all I/O
+      // Standard mode: capture stdout while passing through
       const proc = spawn(cliConfig.command, cliArgs, {
-        stdio: "inherit",
+        stdio: ["inherit", "pipe", "inherit"],
       });
 
-      proc.on("close", (code) => {
+      proc.stdout.on("data", (data: Buffer) => {
+        const chunk = data.toString();
+        output += chunk;
+        process.stdout.write(chunk);
+      });
+
+      proc.on("close", async (code) => {
+        // Send notification based on outcome
         if (code !== 0) {
           console.error(`\n${cliConfig.command} exited with code ${code}`);
+          await sendNotification("error", `Ralph: Iteration failed with exit code ${code}`, notifyOptions);
+        } else if (output.includes("<promise>COMPLETE</promise>")) {
+          await sendNotification("prd_complete", undefined, notifyOptions);
+        } else {
+          await sendNotification("iteration_complete", undefined, notifyOptions);
         }
+
         resolve();
       });
 

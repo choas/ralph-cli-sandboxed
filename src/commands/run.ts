@@ -5,6 +5,7 @@ import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliCon
 import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
 import { validatePrd, smartMerge, readPrdFile, writePrd, expandPrdFileReferences, PrdEntry } from "../utils/prd-validator.js";
 import { getStreamJsonParser, StreamJsonParser } from "../utils/stream-json.js";
+import { sendNotification } from "../utils/notification.js";
 
 /**
  * Stream JSON configuration for clean output display
@@ -555,6 +556,13 @@ export async function run(args: string[]): Promise<void> {
             console.log("PRD COMPLETE - All features already implemented!");
           }
           console.log("=".repeat(50));
+
+          // Send notification for PRD completion
+          await sendNotification("prd_complete", undefined, {
+            command: config.notifyCommand,
+            debug,
+          });
+
           break;
         }
       }
@@ -597,6 +605,14 @@ export async function run(args: string[]): Promise<void> {
           console.log(`(No tasks completed and no new tasks added)`);
           console.log(`Status: ${progressCounts.complete}/${progressCounts.total} complete, ${progressCounts.incomplete} remaining.`);
           console.log("Check the PRD and task definitions for issues.");
+
+          // Send notification about stopped run
+          await sendNotification(
+            "run_stopped",
+            `Ralph: Run stopped - no progress after ${MAX_ITERATIONS_WITHOUT_PROGRESS} iterations. ${progressCounts.incomplete} tasks remaining.`,
+            { command: config.notifyCommand, debug }
+          );
+
           break;
         }
       }
@@ -616,6 +632,14 @@ export async function run(args: string[]): Promise<void> {
           console.error(`\nStopping: ${cliConfig.command} failed ${consecutiveFailures} times in a row with exit code ${exitCode}.`);
           console.error("This usually indicates a configuration error (e.g., missing API key).");
           console.error("Please check your CLI configuration and try again.");
+
+          // Send notification about error
+          await sendNotification(
+            "error",
+            `Ralph: CLI failed ${consecutiveFailures} times with exit code ${exitCode}. Check configuration.`,
+            { command: config.notifyCommand, debug }
+          );
+
           break;
         }
 
@@ -657,13 +681,10 @@ export async function run(args: string[]): Promise<void> {
           console.log("=".repeat(50));
 
           // Send notification if configured
-          if (config.notifyCommand) {
-            const [cmd, ...cmdArgs] = config.notifyCommand.split(" ");
-            const notifyProc = spawn(cmd, [...cmdArgs, "Ralph: PRD Complete!"], { stdio: "ignore" });
-            notifyProc.on("error", () => {
-              // Notification command not available, ignore
-            });
-          }
+          await sendNotification("prd_complete", undefined, {
+            command: config.notifyCommand,
+            debug,
+          });
 
           break;
         }
