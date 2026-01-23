@@ -104,6 +104,7 @@ CLI CONFIGURATION:
     - aider: AI pair programming
     - codex: OpenAI Codex CLI
     - gemini: Google Gemini CLI
+    - goose: Block's Goose AI coding agent
     - opencode: Open source AI coding agent
     - amp: Sourcegraph AMP CLI
     - custom: Configure your own CLI

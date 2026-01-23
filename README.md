@@ -169,6 +169,7 @@ Ralph supports multiple AI CLI tools. Select your provider during `ralph init`:
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Working | `GEMINI_API_KEY`, `GOOGLE_API_KEY` | |
 | [OpenCode](https://github.com/anomalyco/opencode) | Working | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` | Requires [PR #9073](https://github.com/anomalyco/opencode/pull/9073) |
 | [Aider](https://github.com/paul-gauthier/aider) | Working | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | |
+| [Goose](https://github.com/block/goose) | Working | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | Block's AI coding agent |
 | [Codex CLI](https://github.com/openai/codex) | Testers wanted | `OPENAI_API_KEY` | Sponsors welcome |
 | [AMP](https://ampcode.com/) | Testers wanted | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | Sponsors welcome |
 | Custom | - | User-defined | Configure your own CLI |
