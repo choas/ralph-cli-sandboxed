@@ -130,7 +130,7 @@ Ralph can be configured to use different AI CLI tools. By default, it uses Claud
 {
   "cli": {
     "command": "claude",
-    "args": ["--permission-mode", "acceptEdits"],
+    "args": [],
     "modelArgs": ["--model"],
     "promptArgs": ["-p"]
   }

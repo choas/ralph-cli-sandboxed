@@ -93,7 +93,7 @@ CLI CONFIGURATION:
   {
     "cli": {
       "command": "claude",
-      "args": ["--permission-mode", "acceptEdits"],
+      "args": [],
       "yoloArgs": ["--dangerously-skip-permissions"]
     },
     "cliProvider": "claude"

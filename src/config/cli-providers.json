@@ -4,7 +4,7 @@
       "name": "Claude Code",
       "description": "Anthropic's Claude Code CLI",
       "command": "claude",
-      "defaultArgs": ["--permission-mode", "acceptEdits"],
+      "defaultArgs": [],
       "yoloArgs": ["--dangerously-skip-permissions"],
       "promptArgs": ["-p"],
       "docker": {

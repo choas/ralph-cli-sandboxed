@@ -72,7 +72,7 @@ export interface RalphConfig {
 
 export const DEFAULT_CLI_CONFIG: CliConfig = {
   command: "claude",
-  args: ["--permission-mode", "acceptEdits"],
+  args: [],
   promptArgs: ["-p"],
 };
 
