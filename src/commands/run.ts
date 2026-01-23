@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync, unlinkSync, appendFileSync, mk
 import { join } from "path";
 import { tmpdir } from "os";
 import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliConfig, requireContainer, RalphConfig } from "../utils/config.js";
-import { resolvePromptVariables } from "../templates/prompts.js";
+import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
 import { validatePrd, smartMerge, readPrdFile, writePrd, expandPrdFileReferences, PrdEntry } from "../utils/prd-validator.js";
 
 /**
@@ -13,6 +13,7 @@ interface StreamJsonOptions {
   enabled: boolean;
   saveRawJson: boolean;
   outputDir: string;
+  args: string[];  // Provider-specific stream-json args (e.g., ['--output-format', 'stream-json'])
 }
 
 /**
@@ -270,9 +271,9 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
       cliArgs.push(...yoloArgs);
     }
 
-    // Add stream-json output format if enabled
+    // Add stream-json output format if enabled (using provider-specific args)
     if (streamJson?.enabled) {
-      cliArgs.push("--output-format", "stream-json", "--verbose", "--print");
+      cliArgs.push(...streamJson.args);
 
       // Setup JSON log file if saving raw JSON
       if (streamJson.saveRawJson) {
@@ -562,10 +563,17 @@ export async function run(args: string[]): Promise<void> {
 
   // Check if stream-json output is enabled
   const streamJsonConfig = config.docker?.asciinema?.streamJson;
+  // Get provider-specific streamJsonArgs, falling back to Claude's defaults
+  const providers = getCliProviders();
+  const providerConfig = config.cliProvider ? providers[config.cliProvider] : providers["claude"];
+  const defaultStreamJsonArgs = ["--output-format", "stream-json", "--verbose", "--print"];
+  const streamJsonArgs = providerConfig?.streamJsonArgs ?? defaultStreamJsonArgs;
+
   const streamJson: StreamJsonOptions | undefined = streamJsonConfig?.enabled ? {
     enabled: true,
     saveRawJson: streamJsonConfig.saveRawJson !== false, // default true
     outputDir: config.docker?.asciinema?.outputDir || ".recordings",
+    args: streamJsonArgs,
   } : undefined;
 
   // Progress tracking: stop only if no tasks complete after N iterations

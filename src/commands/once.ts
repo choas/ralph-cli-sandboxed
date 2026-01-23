@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 import { existsSync, appendFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, requireContainer } from "../utils/config.js";
-import { resolvePromptVariables } from "../templates/prompts.js";
+import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
 
 /**
  * Parses a stream-json line and extracts displayable text.
@@ -190,6 +190,12 @@ export async function once(args: string[]): Promise<void> {
   const saveRawJson = streamJsonConfig?.saveRawJson !== false; // default true
   const outputDir = config.docker?.asciinema?.outputDir || ".recordings";
 
+  // Get provider-specific streamJsonArgs, falling back to Claude's defaults
+  const providers = getCliProviders();
+  const providerConfig = config.cliProvider ? providers[config.cliProvider] : providers["claude"];
+  const defaultStreamJsonArgs = ["--output-format", "stream-json", "--verbose", "--print"];
+  const streamJsonArgs = providerConfig?.streamJsonArgs ?? defaultStreamJsonArgs;
+
   console.log("Starting single ralph iteration...");
   if (streamJsonEnabled) {
     console.log("Stream JSON output enabled - displaying formatted Claude output");
@@ -209,10 +215,10 @@ export async function once(args: string[]): Promise<void> {
     ...yoloArgs,
   ];
 
-  // Add stream-json output format if enabled
+  // Add stream-json output format if enabled (using provider-specific args)
   let jsonLogPath: string | undefined;
   if (streamJsonEnabled) {
-    cliArgs.push("--output-format", "stream-json", "--verbose", "--print");
+    cliArgs.push(...streamJsonArgs);
 
     // Setup JSON log file if saving raw JSON
     if (saveRawJson) {

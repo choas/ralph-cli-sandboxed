@@ -47,6 +47,7 @@ export interface CliProviderConfig {
   yoloArgs: string[];
   promptArgs: string[];
   modelArgs?: string[];
+  streamJsonArgs?: string[];  // Provider-specific args for stream-json output (e.g., ['--output-format', 'stream-json'])
   docker: {
     install: string;
   };
