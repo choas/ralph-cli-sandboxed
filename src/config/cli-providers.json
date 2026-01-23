@@ -44,7 +44,8 @@
       "command": "codex",
       "defaultArgs": ["--approval-mode", "suggest"],
       "yoloArgs": ["--approval-mode", "full-auto"],
-      "promptArgs": [],
+      "promptArgs": ["exec"],
+      "streamJsonArgs": ["--json"],
       "docker": {
         "install": "# Install OpenAI Codex CLI\nRUN npm install -g @openai/codex",
         "note": "Check 'codex --help' for available flags"

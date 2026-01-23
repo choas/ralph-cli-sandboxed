@@ -278,6 +278,94 @@ function parseStreamJsonLine(line: string, debug: boolean = false): string {
         // OpenCode completion event
         return "\n";
 
+      // === Codex CLI Events ===
+      case "thread.started":
+        // Codex thread started event - contains thread_id
+        if (json.thread_id) {
+          return `[Codex: thread ${json.thread_id}]\n`;
+        }
+        return "";
+
+      case "turn.started":
+        // Codex turn started event
+        return "\n";
+
+      case "turn.completed":
+        // Codex turn completed event - contains usage info
+        if (json.usage) {
+          const usage = json.usage;
+          return `\n[Turn complete: ${usage.input_tokens || 0} input, ${usage.output_tokens || 0} output tokens]\n`;
+        }
+        return "\n";
+
+      case "turn.failed":
+        // Codex turn failed event
+        if (json.error || json.message) {
+          return `\n[Turn failed] ${json.error || json.message}\n`;
+        }
+        return "\n[Turn failed]\n";
+
+      case "item.started":
+        // Codex item started event - action begins
+        if (json.item) {
+          const item = json.item;
+          if (item.type === "command_execution" && item.command) {
+            return `\n── Running: ${item.command} ──\n`;
+          }
+          if (item.type === "file_change" || item.type === "file_edit") {
+            const filePath = item.path || item.file || "unknown";
+            return `\n── Writing: ${filePath} ──\n`;
+          }
+          if (item.type === "file_read") {
+            const filePath = item.path || item.file || "unknown";
+            return `── Reading: ${filePath} ──\n`;
+          }
+          if (item.type === "mcp_tool_call" || item.type === "tool_call") {
+            const toolName = item.name || item.tool || "unknown";
+            return `\n── Tool: ${toolName} ──\n`;
+          }
+          if (item.type === "web_search") {
+            const query = item.query || "";
+            return `\n── Web search: ${query} ──\n`;
+          }
+          if (item.type === "plan_update") {
+            return `\n── Plan update ──\n`;
+          }
+        }
+        return "";
+
+      case "item.completed":
+        // Codex item completed event - action finished
+        if (json.item) {
+          const item = json.item;
+          if (item.type === "agent_message" && item.text) {
+            return item.text;
+          }
+          if (item.type === "command_execution" && item.output) {
+            const cmdOutput = item.output;
+            const truncatedOutput = typeof cmdOutput === "string" && cmdOutput.length > 500
+              ? cmdOutput.substring(0, 500) + "... (truncated)"
+              : cmdOutput;
+            return `${truncatedOutput}\n`;
+          }
+          if (item.type === "reasoning" && item.text) {
+            return `[Thinking] ${item.text}\n`;
+          }
+          if (item.text) {
+            return item.text;
+          }
+        }
+        return "";
+
+      case "item.failed":
+        // Codex item failed event
+        if (json.item) {
+          const item = json.item;
+          const errMsg = item.error || item.message || "Unknown error";
+          return `\n[Item failed: ${item.type || "unknown"}] ${errMsg}\n`;
+        }
+        return "";
+
       default:
         // Fallback: check for common text fields
         if (json.text) return json.text;
