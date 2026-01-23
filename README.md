@@ -144,6 +144,102 @@ Ralph can be configured to use different AI CLI tools. By default, it uses Claud
 
 The prompt content and `--dangerously-skip-permissions` (in containers) are added automatically at runtime.
 
+### Stream-JSON Output
+
+Ralph supports stream-json output mode for real-time streaming of AI responses. This feature provides cleaner terminal output and enables recording of raw JSON logs for debugging or replay.
+
+#### Enabling Stream-JSON
+
+Configure stream-json in `.ralph/config.json`:
+
+```json
+{
+  "docker": {
+    "asciinema": {
+      "enabled": true,
+      "autoRecord": true,
+      "outputDir": ".recordings",
+      "streamJson": {
+        "enabled": true,
+        "saveRawJson": true
+      }
+    }
+  }
+}
+```
+
+Configuration options:
+- `enabled`: Enable stream-json output mode (default: `false`)
+- `saveRawJson`: Save raw JSON output to `.jsonl` files (default: `true` when enabled)
+- `outputDir`: Directory for recordings and logs (default: `.recordings`)
+
+#### Provider Compatibility
+
+Not all CLI providers support stream-json output. Here's the compatibility matrix:
+
+| CLI Provider | Stream-JSON Support | Arguments Used |
+|--------------|---------------------|----------------|
+| Claude Code | ✅ Yes | `--output-format stream-json --verbose --print` |
+| Gemini CLI | ✅ Yes | `--output-format json` |
+| OpenCode | ✅ Yes | `--format json` |
+| Codex CLI | ✅ Yes | `--json` |
+| Goose | ✅ Yes | `--output-format stream-json` |
+| Aider | ❌ No | - |
+| AMP | ❌ No | - |
+| Custom | ❌ No* | *Add `streamJsonArgs` to your custom config |
+
+Each provider uses different command-line arguments and output formats. Ralph automatically selects the correct parser based on your configured provider.
+
+#### Output Files
+
+When stream-json is enabled, Ralph creates the following files in the `.recordings/` directory (configurable via `outputDir`):
+
+| File Type | Pattern | Description |
+|-----------|---------|-------------|
+| `.jsonl` | `ralph-run-YYYYMMDD-HHMMSS.jsonl` | Raw JSON Lines log from `ralph run` |
+| `.jsonl` | `ralph-once-YYYYMMDD-HHMMSS.jsonl` | Raw JSON Lines log from `ralph once` |
+| `.cast` | `session-YYYYMMDD-HHMMSS.cast` | Asciinema terminal recording (when asciinema enabled) |
+
+The `.jsonl` files contain one JSON object per line with the raw streaming events from the AI provider. These files are useful for:
+- Debugging AI responses
+- Replaying sessions
+- Analyzing tool calls and outputs
+- Building custom post-processing pipelines
+
+#### Troubleshooting Stream-JSON
+
+**Stream-JSON not working:**
+1. Verify your CLI provider supports stream-json (see compatibility matrix above)
+2. Check that `streamJson.enabled` is set to `true` in config
+3. Ensure your CLI provider is correctly installed and accessible
+
+**No output appearing:**
+- Stream-json parsing extracts human-readable text from JSON events
+- Some providers emit different event types; Ralph handles the most common ones
+- Use `--debug` flag with ralph commands to see raw parsing output: `[stream-json]` prefixed lines go to stderr
+
+**Missing .jsonl files:**
+- Verify `saveRawJson` is `true` (or not set, as it defaults to `true`)
+- Check that the `outputDir` directory is writable
+- Files are created at command start; check for permission errors
+
+**Parser not recognizing events:**
+- Each provider has a specific parser (ClaudeStreamParser, GeminiStreamParser, etc.)
+- Unknown event types are handled by a default parser that extracts common fields
+- If you see raw JSON in output, the parser may not support that event type yet
+
+**Custom CLI provider:**
+To add stream-json support for a custom CLI provider, add `streamJsonArgs` to your CLI config:
+```json
+{
+  "cli": {
+    "command": "my-cli",
+    "promptArgs": ["-p"],
+    "streamJsonArgs": ["--json-output"]
+  }
+}
+```
+
 ## PRD Format
 
 The PRD (`prd.json`) is an array of requirements:
