@@ -64,6 +64,7 @@
       "defaultArgs": [],
       "yoloArgs": ["-y"],
       "promptArgs": [],
+      "streamJsonArgs": ["--output-format", "json"],
       "docker": {
         "install": "# Install Google Gemini CLI\nRUN npm install -g @google/gemini-cli",
         "note": "Check 'gemini --help' for available flags"

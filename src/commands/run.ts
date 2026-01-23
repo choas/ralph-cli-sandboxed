@@ -142,6 +142,72 @@ function parseStreamJsonLine(line: string, debug: boolean = false): string {
         const cmdOutput = json.output || json.content || "";
         return cmdOutput + "\n";
 
+      // === Gemini CLI Events ===
+      case "initialization":
+        // Gemini initialization event - contains model info
+        if (json.model) {
+          return `[Gemini: ${json.model}]\n`;
+        }
+        return "";
+
+      case "messages":
+        // Gemini messages event - contains conversation messages
+        if (Array.isArray(json.messages)) {
+          let messagesOutput = "";
+          for (const msg of json.messages) {
+            if (msg.role === "assistant" || msg.role === "model") {
+              if (typeof msg.content === "string") {
+                messagesOutput += msg.content;
+              } else if (Array.isArray(msg.content)) {
+                for (const part of msg.content) {
+                  if (part.type === "text") {
+                    messagesOutput += part.text || "";
+                  }
+                }
+              }
+            }
+          }
+          return messagesOutput;
+        }
+        return "";
+
+      case "tools":
+        // Gemini tools event - tool calls and results
+        if (Array.isArray(json.tools)) {
+          let toolsOutput = "";
+          for (const tool of json.tools) {
+            if (tool.name) {
+              toolsOutput += `\n── Tool: ${tool.name} ──\n`;
+            }
+            if (tool.input) {
+              toolsOutput += JSON.stringify(tool.input, null, 2) + "\n";
+            }
+            if (tool.output || tool.result) {
+              const toolResult = tool.output || tool.result;
+              const truncatedResult = typeof toolResult === "string" && toolResult.length > 500
+                ? toolResult.substring(0, 500) + "... (truncated)"
+                : toolResult;
+              toolsOutput += `── Tool Result ──\n${typeof truncatedResult === "string" ? truncatedResult : JSON.stringify(truncatedResult, null, 2)}\n`;
+            }
+          }
+          return toolsOutput;
+        }
+        return "";
+
+      case "turn_complete":
+        // Gemini turn complete event
+        return "\n";
+
+      case "response":
+        // Gemini response event - may contain final response text
+        if (json.text) {
+          return json.text;
+        }
+        if (json.content && typeof json.content === "string") {
+          return json.content;
+        }
+        return "";
+
       default:
         // Fallback: check for common text fields
         if (json.text) return json.text;
