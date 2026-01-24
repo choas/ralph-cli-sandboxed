@@ -586,6 +586,89 @@ export class GooseStreamParser extends BaseStreamParser {
 }
 
 /**
+ * Parser for Aider CLI stream events.
+ *
+ * Aider's --stream flag outputs JSON events for:
+ * - text: Streamed text content
+ * - tool_call: Tool/function calls
+ * - tool_result: Tool execution results
+ * - file_edit: File modifications
+ * - error: Error messages
+ */
+export class AiderStreamParser extends BaseStreamParser {
+  parseStreamJsonLine(line: string): string {
+    try {
+      const json = JSON.parse(line);
+      const type = json.type;
+
+      if (this.debug && type) {
+        this.debugLog(`type: ${type}`);
+      }
+
+      switch (type) {
+        case "text":
+        case "content":
+          return json.text || json.content || "";
+
+        case "tool_call":
+        case "function_call":
+          if (json.name || json.function) {
+            let toolOutput = `\n── Tool: ${json.name || json.function} ──\n`;
+            if (json.arguments || json.args) {
+              const args = json.arguments || json.args;
+              toolOutput += typeof args === "string"
+                ? args + "\n"
+                : JSON.stringify(args, null, 2) + "\n";
+            }
+            return toolOutput;
+          }
+          return "";
+
+        case "tool_result":
+        case "function_result": {
+          const result = json.result || json.output || json.content || "";
+          const truncated = this.truncateOutput(result);
+          return `── Tool Result ──\n${truncated}\n`;
+        }
+
+        case "file_edit":
+        case "edit": {
+          const filePath = json.path || json.file || "unknown";
+          return `\n── Editing: ${filePath} ──\n`;
+        }
+
+        case "error":
+          return `\n[Error] ${json.message || json.error || JSON.stringify(json)}\n`;
+
+        case "done":
+        case "complete":
+          return "\n";
+
+        default:
+          return this.handleFallback(json, type);
+      }
+    } catch (e) {
+      if (this.debug) {
+        this.debugLog(`parse error: ${e}`);
+      }
+      // Aider may output plain text lines without JSON
+      return line;
+    }
+  }
+
+  private handleFallback(json: Record<string, unknown>, type: string): string {
+    if (json.text) return json.text as string;
+    if (json.content && typeof json.content === "string") return json.content;
+    if (json.message && typeof json.message === "string") return json.message;
+
+    if (this.debug) {
+      this.debugLog(`unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`);
+    }
+    return "";
+  }
+}
+
+/**
  * Universal fallback parser that handles common event patterns.
  * Used for providers without specific stream-json support or as a fallback.
  */
@@ -637,6 +720,8 @@ export function getStreamJsonParser(provider: string | undefined, debug: boolean
       return new CodexStreamParser(debug);
     case "goose":
       return new GooseStreamParser(debug);
+    case "aider":
+      return new AiderStreamParser(debug);
     default:
       // For unknown providers, use default parser
       return new DefaultStreamParser(debug);

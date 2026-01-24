@@ -26,6 +26,7 @@
       "defaultArgs": ["--yes"],
       "yoloArgs": ["--yes-always"],
       "promptArgs": ["--message"],
+      "streamJsonArgs": ["--stream"],
       "docker": {
         "install": "# Install Aider (requires Python)\nRUN apt-get update && apt-get install -y python3 python3-pip && rm -rf /var/lib/apt/lists/* \\\n    && pip3 install --break-system-packages --no-cache-dir aider-chat",
         "note": "Check 'aider --help' for available flags"
