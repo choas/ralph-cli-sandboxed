@@ -176,7 +176,22 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
     // Use the filtered PRD (only incomplete items) for the prompt
     // promptArgs specifies flags to use (e.g., ["-p"] for Claude, [] for positional)
     const promptArgs = cliConfig.promptArgs ?? ["-p"];
-    const promptValue = `@${filteredPrdPath} @${paths.progress} ${prompt}`;
+
+    // Build the prompt value based on whether fileArgs is configured
+    // fileArgs (e.g., ["--read"] for Aider) means files are passed as separate arguments
+    // Otherwise, use @file syntax embedded in the prompt (Claude Code style)
+    let promptValue: string;
+    if (cliConfig.fileArgs && cliConfig.fileArgs.length > 0) {
+      // Add files as separate arguments (e.g., --read prd-tasks.json --read progress.txt)
+      for (const fileArg of cliConfig.fileArgs) {
+        cliArgs.push(fileArg, filteredPrdPath);
+        cliArgs.push(fileArg, paths.progress);
+      }
+      promptValue = prompt;
+    } else {
+      // Use @file syntax embedded in the prompt
+      promptValue = `@${filteredPrdPath} @${paths.progress} ${prompt}`;
+    }
     cliArgs.push(...promptArgs, promptValue);
 
     if (debug) {

@@ -64,11 +64,26 @@ export async function once(args: string[]): Promise<void> {
   // Use yoloArgs from config if available, otherwise default to Claude's --dangerously-skip-permissions
   const yoloArgs = cliConfig.yoloArgs ?? ["--dangerously-skip-permissions"];
   const promptArgs = cliConfig.promptArgs ?? ["-p"];
-  const promptValue = `@${paths.prd} @${paths.progress} ${prompt}`;
   const cliArgs = [
     ...(cliConfig.args ?? []),
     ...yoloArgs,
   ];
+
+  // Build the prompt value based on whether fileArgs is configured
+  // fileArgs (e.g., ["--read"] for Aider) means files are passed as separate arguments
+  // Otherwise, use @file syntax embedded in the prompt (Claude Code style)
+  let promptValue: string;
+  if (cliConfig.fileArgs && cliConfig.fileArgs.length > 0) {
+    // Add files as separate arguments (e.g., --read prd.json --read progress.txt)
+    for (const fileArg of cliConfig.fileArgs) {
+      cliArgs.push(fileArg, paths.prd);
+      cliArgs.push(fileArg, paths.progress);
+    }
+    promptValue = prompt;
+  } else {
+    // Use @file syntax embedded in the prompt
+    promptValue = `@${paths.prd} @${paths.progress} ${prompt}`;
+  }
 
   // Add stream-json output format if enabled (using provider-specific args)
   let jsonLogPath: string | undefined;

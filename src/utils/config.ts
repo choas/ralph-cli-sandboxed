@@ -8,6 +8,7 @@ export interface CliConfig {
   yoloArgs?: string[];
   promptArgs?: string[];
   modelArgs?: string[];
+  fileArgs?: string[];  // Args for including files (e.g., ["--read"] for Aider). If not set, uses @file syntax in prompt.
 }
 
 export interface McpServerConfig {
@@ -94,6 +95,11 @@ export function getCliConfig(config: RalphConfig): CliConfig {
     // Use provider's modelArgs if not already set
     if (result.modelArgs === undefined && provider?.modelArgs !== undefined) {
       result.modelArgs = provider.modelArgs;
+    }
+
+    // Use provider's fileArgs if not already set
+    if (result.fileArgs === undefined && provider?.fileArgs !== undefined) {
+      result.fileArgs = provider.fileArgs;
     }
 
     // Default promptArgs for backwards compatibility

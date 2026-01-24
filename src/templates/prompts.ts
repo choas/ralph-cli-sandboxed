@@ -47,6 +47,7 @@ export interface CliProviderConfig {
   yoloArgs: string[];
   promptArgs: string[];
   modelArgs?: string[];
+  fileArgs?: string[];  // Args for including files (e.g., ["--read"] for Aider). If not set, uses @file syntax in prompt.
   streamJsonArgs?: string[];  // Provider-specific args for stream-json output (e.g., ['--output-format', 'stream-json'])
   docker: {
     install: string;
