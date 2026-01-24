@@ -83,7 +83,7 @@
       "description": "Open source AI coding agent for the terminal",
       "command": "opencode",
       "defaultArgs": [],
-      "yoloArgs": ["--yolo"],
+      "yoloArgs": [],
       "promptArgs": ["run"],
       "streamJsonArgs": ["--format", "json"],
       "docker": {

@@ -306,9 +306,11 @@ export class GeminiStreamParser extends BaseStreamParser {
  * Parser for OpenCode CLI stream-json events.
  *
  * Event types:
- * - step_start/step_end: Step lifecycle
- * - tool/tool_call: Tool invocation
+ * - step_start/step_end/step_finish: Step lifecycle
+ * - tool_use: Tool invocation with nested part structure (part.type="tool", part.tool, part.state)
+ * - tool/tool_call: Direct tool invocation (alternate format)
  * - tool_response: Tool results
+ * - text: Text output with nested part structure (part.text)
  * - assistant_message/model_response: Model output
  * - thinking/reasoning: Thinking process
  * - done/complete: Completion
@@ -331,7 +333,31 @@ export class OpenCodeStreamParser extends BaseStreamParser {
           return "\n";
 
         case "step_end":
+        case "step_finish":
           return "";
+
+        case "tool_use": {
+          // OpenCode sends tool_use with nested part structure
+          const part = json.part as Record<string, unknown> | undefined;
+          if (part?.type === "tool" && part?.tool) {
+            const toolName = part.tool as string;
+            const state = part.state as Record<string, unknown> | undefined;
+            let toolOutput = `\n── Tool: ${toolName} ──\n`;
+
+            // Show title if available (e.g., "workspace/.ralph/prd-tasks.json")
+            if (part.title) {
+              toolOutput = `\n── Tool: ${toolName} (${part.title}) ──\n`;
+            }
+
+            // Show completed output if available
+            if (state?.status === "completed" && state?.output) {
+              const truncated = this.truncateOutput(state.output);
+              toolOutput += `${truncated}\n`;
+            }
+            return toolOutput;
+          }
+          return "";
+        }
 
         case "tool":
         case "tool_call":
@@ -373,6 +399,18 @@ export class OpenCodeStreamParser extends BaseStreamParser {
             return msgOutput;
           }
           return "";
+
+        case "text": {
+          // OpenCode sends text with nested part structure
+          const textPart = json.part as Record<string, unknown> | undefined;
+          if (textPart?.text) {
+            return textPart.text as string;
+          }
+          if (json.text) {
+            return json.text as string;
+          }
+          return "";
+        }
 
         case "thinking":
         case "reasoning":
