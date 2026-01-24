@@ -45,11 +45,11 @@ export async function once(args: string[]): Promise<void> {
   const saveRawJson = streamJsonConfig?.saveRawJson !== false; // default true
   const outputDir = config.docker?.asciinema?.outputDir || ".recordings";
 
-  // Get provider-specific streamJsonArgs, falling back to Claude's defaults
+  // Get provider-specific streamJsonArgs (empty array if not defined)
+  // This allows providers without JSON streaming to still have output displayed
   const providers = getCliProviders();
   const providerConfig = config.cliProvider ? providers[config.cliProvider] : providers["claude"];
-  const defaultStreamJsonArgs = ["--output-format", "stream-json", "--verbose", "--print"];
-  const streamJsonArgs = providerConfig?.streamJsonArgs ?? defaultStreamJsonArgs;
+  const streamJsonArgs = providerConfig?.streamJsonArgs ?? [];
 
   console.log("Starting single ralph iteration...");
   if (streamJsonEnabled) {

@@ -479,8 +479,9 @@ export async function run(args: string[]): Promise<void> {
   // Get provider-specific streamJsonArgs, falling back to Claude's defaults
   const providers = getCliProviders();
   const providerConfig = config.cliProvider ? providers[config.cliProvider] : providers["claude"];
-  const defaultStreamJsonArgs = ["--output-format", "stream-json", "--verbose", "--print"];
-  const streamJsonArgs = providerConfig?.streamJsonArgs ?? defaultStreamJsonArgs;
+  // Only use provider's streamJsonArgs if defined, otherwise empty array (no special args)
+  // This allows providers without JSON streaming to still have output displayed
+  const streamJsonArgs = providerConfig?.streamJsonArgs ?? [];
 
   const streamJson: StreamJsonOptions | undefined = streamJsonConfig?.enabled ? {
     enabled: true,
