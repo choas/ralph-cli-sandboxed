@@ -35,8 +35,24 @@ const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing"
  */
 function createFilteredPrd(prdPath: string, baseDir: string, category?: string): { tempPath: string; hasIncomplete: boolean } {
   const content = readFileSync(prdPath, "utf-8");
-  const items: PrdItem[] = JSON.parse(content);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    console.error("\x1b[31mError: prd.json contains invalid JSON.\x1b[0m");
+    console.error("The file may have been corrupted by an LLM.\n");
+    console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
+    process.exit(1);
+  }
 
+  if (!Array.isArray(parsed)) {
+    console.error("\x1b[31mError: prd.json is corrupted - expected an array of items.\x1b[0m");
+    console.error("The file may have been modified incorrectly by an LLM.\n");
+    console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
+    process.exit(1);
+  }
+
+  const items: PrdItem[] = parsed;
   let filteredItems = items.filter(item => item.passes === false);
 
   // Apply category filter if specified
@@ -71,10 +87,21 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): number {
 
   try {
     const tasksContent = readFileSync(tasksPath, "utf-8");
-    const tasks: PrdItem[] = JSON.parse(tasksContent);
+    const tasksParsed = JSON.parse(tasksContent);
+    if (!Array.isArray(tasksParsed)) {
+      console.warn("\x1b[33mWarning: prd-tasks.json is not a valid array - skipping sync.\x1b[0m");
+      return 0;
+    }
+    const tasks: PrdItem[] = tasksParsed;
 
     const prdContent = readFileSync(prdPath, "utf-8");
-    const prd: PrdItem[] = JSON.parse(prdContent);
+    const prdParsed = JSON.parse(prdContent);
+    if (!Array.isArray(prdParsed)) {
+      console.warn("\x1b[33mWarning: prd.json is corrupted - skipping sync.\x1b[0m");
+      console.warn("Run \x1b[36mralph fix-prd\x1b[0m after this session to repair.\n");
+      return 0;
+    }
+    const prd: PrdItem[] = prdParsed;
 
     let synced = 0;
 
@@ -280,8 +307,24 @@ function formatElapsedTime(startTime: number, endTime: number): string {
  */
 function countPrdItems(prdPath: string, category?: string): { total: number; incomplete: number; complete: number } {
   const content = readFileSync(prdPath, "utf-8");
-  const items: PrdItem[] = JSON.parse(content);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    console.error("\x1b[31mError: prd.json contains invalid JSON.\x1b[0m");
+    console.error("The file may have been corrupted by an LLM.\n");
+    console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
+    process.exit(1);
+  }
 
+  if (!Array.isArray(parsed)) {
+    console.error("\x1b[31mError: prd.json is corrupted - expected an array of items.\x1b[0m");
+    console.error("The file may have been modified incorrectly by an LLM.\n");
+    console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
+    process.exit(1);
+  }
+
+  const items: PrdItem[] = parsed;
   let filteredItems = items;
   if (category) {
     filteredItems = items.filter(item => item.category === category);

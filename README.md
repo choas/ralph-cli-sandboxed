@@ -329,10 +329,44 @@ File paths are resolved relative to the project root. Absolute paths are also su
 
 Ralph includes automatic PRD protection to handle cases where the LLM corrupts the PRD structure:
 
-- **Automatic backup**: Before each run, the PRD is backed up
+- **Automatic backup**: Before each run, the PRD is backed up to `.ralph/backups/`
 - **Validation**: After each iteration, the PRD structure is validated
 - **Smart recovery**: If corrupted, ralph attempts to extract `passes: true` flags from the corrupted PRD and merge them into the backup
 - **Manual recovery**: Use `ralph fix-prd` to validate, auto-fix, or restore from a specific backup
+
+### When PRD Corruption Happens
+
+LLMs sometimes modify the PRD file incorrectly, such as:
+- Converting the array to an object
+- Adding invalid JSON syntax
+- Changing the structure entirely
+
+If you see an error like:
+```
+Error: prd.json is corrupted - expected an array of items.
+The file may have been modified incorrectly by an LLM.
+
+Run ralph fix-prd to diagnose and repair the file.
+```
+
+### Using fix-prd
+
+The `ralph fix-prd` command diagnoses and repairs corrupted PRD files:
+
+```bash
+ralph fix-prd              # Auto-diagnose and fix
+ralph fix-prd --verify     # Check structure without modifying
+ralph fix-prd backup.json  # Restore from a specific backup file
+```
+
+**What fix-prd does:**
+1. Validates JSON syntax and structure
+2. Checks that all required fields exist (category, description, steps, passes)
+3. Attempts to recover `passes: true` flags from corrupted files
+4. Falls back to the most recent backup if recovery fails
+5. Creates a fresh template PRD as a last resort
+
+**Backups are stored in:** `.ralph/backups/backup.prd.YYYY-MM-DD-HHMMSS.json`
 
 ### Dynamic Iteration Limits
 
