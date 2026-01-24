@@ -236,7 +236,7 @@ Not all CLI providers support stream-json output. Here's the compatibility matri
 | OpenCode | ✅ Yes | `--format json` |
 | Codex CLI | ✅ Yes | `--json` |
 | Goose | ✅ Yes | `--output-format stream-json` |
-| Aider | ✅ Yes | `--stream` |
+| Aider | ❌ No | - |
 | AMP | ❌ No | - |
 | Custom | ❌ No* | *Add `streamJsonArgs` to your custom config |
 
