@@ -6,15 +6,30 @@ Ralph automates AI agents that execute code and modify files autonomously. This 
 
 **It is strongly recommended to run ralph inside a Docker container for security.** The Ralph Wiggum technique involves running an AI agent autonomously, which means granting it elevated permissions to execute code and modify files without manual approval for each action.
 
-## The `--dangerously-skip-permissions` Flag
+## Autonomous Mode Flags
 
-When running inside a container, ralph automatically passes the `--dangerously-skip-permissions` flag to Claude Code. This flag:
+When running inside a container, ralph automatically passes the appropriate autonomous mode flag to the CLI provider. This allows the AI agent to execute commands and modify files without prompting for permission.
 
-- Allows Claude to execute commands and modify files without prompting for permission
-- Is **only** enabled when ralph detects it's running inside a container
-- Is required for autonomous operation (otherwise Claude would pause for approval on every action)
+### Provider Support
 
-**Warning:** The `--dangerously-skip-permissions` flag gives the AI agent full control over the environment. This is why container isolation is critical:
+| Provider | Autonomous Flag | Status |
+|----------|-----------------|--------|
+| Claude Code | `--dangerously-skip-permissions` | ✅ Supported |
+| Gemini CLI | `-y` | ✅ Supported |
+| Codex CLI | `--approval-mode full-auto` | ✅ Supported |
+| AMP | `--dangerously-allow-all` | ✅ Supported |
+| Aider | `--yes-always` | ✅ Supported |
+| Goose | (none needed) | ✅ Supported |
+| OpenCode | `--yolo` | ❌ Not yet implemented |
+
+For providers without autonomous mode support, you may need to manually approve actions during execution.
+
+### How It Works
+
+- Autonomous mode is **only** enabled when ralph detects it's running inside a container
+- It is required for fully autonomous operation (otherwise the CLI would pause for approval on every action)
+
+**Warning:** Autonomous mode gives the AI agent full control over the environment. This is why container isolation is critical:
 
 - The container provides a sandbox boundary
 - Network access is restricted to essential services (GitHub, npm, Anthropic API)
