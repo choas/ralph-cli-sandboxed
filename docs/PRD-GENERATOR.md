@@ -360,3 +360,63 @@ After generating prd.json, verify:
 | Missing verification | No way to confirm completion | Add test/build/check step |
 | Too many steps | Overwhelming, hard to track | Max 4-5 steps per item |
 | Wrong granularity | Items too big or too small | One iteration = one item |
+| Starting dev servers | Hangs in sandbox, blocks iteration | Use build/typecheck instead |
+
+## Sandbox Constraints
+
+When running in Docker/Podman sandboxes, certain operations can cause the iteration to hang or fail. Write PRD steps that avoid these issues.
+
+### Avoid Starting Dev Servers
+
+**Problem:** Starting development servers (`npm run dev`, `uvicorn --reload`, `rails server`, etc.) in verification steps can hang the sandbox:
+- Servers wait for network connections that may be blocked by firewall
+- Long-running processes prevent the iteration from completing
+- Telemetry/update checks may timeout on restricted networks
+
+**Bad:**
+```json
+"steps": [
+  "Create the component",
+  "Run `npm run dev` and verify server starts on port 3000",
+  "Open browser and check the page renders"
+]
+```
+
+**Good:**
+```json
+"steps": [
+  "Create the component",
+  "Run `npm run build` and verify compilation succeeds",
+  "Run `npm run lint` to check for errors"
+]
+```
+
+### Verification Alternatives
+
+Instead of starting servers, use these verification methods:
+
+| Instead of | Use |
+|------------|-----|
+| `npm run dev` | `npm run build` or `npx tsc --noEmit` |
+| `uvicorn app:app` | `python -m py_compile app.py` or `mypy app.py` |
+| `rails server` | `rails runner "puts 'OK'"` or `bundle exec rake` |
+| `go run main.go` | `go build ./...` |
+| curl to localhost | Unit tests or integration tests |
+
+### Network-Dependent Operations
+
+Be aware that sandboxed environments may have restricted network access:
+- Package installs work (npm, pip, etc.) if registries are allowed
+- External API calls may be blocked
+- Telemetry and update checks may timeout
+
+**Tip:** Add domains your app needs to the firewall allowlist in `.ralph/config.json`:
+```json
+{
+  "docker": {
+    "firewall": {
+      "allowedDomains": ["api.example.com", "cdn.example.com"]
+    }
+  }
+}
+```

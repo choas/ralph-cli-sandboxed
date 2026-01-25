@@ -196,6 +196,36 @@ Ralph can be configured to use different AI CLI tools. By default, it uses Claud
 
 The prompt content and `--dangerously-skip-permissions` (in containers) are added automatically at runtime.
 
+### Skills Configuration
+
+Skills are reusable instruction sets that extend Claude's behavior for specific languages or project requirements. They inject additional context and rules into prompts.
+
+Configure skills in `.ralph/config.json`:
+
+```json
+{
+  "claude": {
+    "skills": [
+      {
+        "name": "swift-main-naming",
+        "description": "Prevents naming files main.swift when using @main attribute",
+        "instructions": "IMPORTANT: In Swift, files with @main attribute MUST NOT be named main.swift...",
+        "userInvocable": false
+      }
+    ]
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `name` | Unique skill identifier (kebab-case) |
+| `description` | Brief description shown during selection |
+| `instructions` | Full instructions injected into Claude's prompt |
+| `userInvocable` | If `true`, user can invoke via `/skill-name` (default: `true`) |
+
+During `ralph init`, you can select built-in skills for your chosen language. See [docs/SKILLS.md](docs/SKILLS.md) for detailed configuration, custom skills, and best practices.
+
 ### Stream-JSON Output
 
 Ralph supports stream-json output mode for real-time streaming of AI responses. This feature provides cleaner terminal output and enables recording of raw JSON logs for debugging or replay.

@@ -1,5 +1,13 @@
 {
   "skills": {
+    "common": [
+      {
+        "name": "sandbox-safe",
+        "description": "Prevents starting dev servers in sandboxed environments",
+        "instructions": "IMPORTANT: You are running in a sandboxed Docker/Podman container. Do NOT start long-running development servers to verify your work.\n\nAVOID these commands for verification:\n- `npm run dev`, `npm start`, `yarn dev`\n- `uvicorn`, `gunicorn`, `flask run`, `python -m http.server`\n- `rails server`, `rails s`\n- `go run main.go` (for servers)\n- `cargo run` (for servers)\n- Any command that starts a web server and waits for connections\n\nWHY: Dev servers hang in sandboxed environments because:\n1. Network restrictions may block telemetry/update checks\n2. The server waits indefinitely for connections\n3. This prevents the iteration from completing\n\nINSTEAD, use these verification methods:\n- `npm run build` or `npx tsc --noEmit` (TypeScript/JavaScript)\n- `go build ./...` (Go)\n- `cargo build` or `cargo check` (Rust)\n- `python -m py_compile file.py` or `mypy .` (Python)\n- `bundle exec rake` or `rails runner \"puts 'OK'\"` (Ruby)\n- Run unit tests: `npm test`, `pytest`, `go test ./...`\n\nIf you need to verify a server starts correctly, use a brief timeout:\n```bash\ntimeout 5 npm run dev || true  # Only if absolutely necessary\n```\n\nBut prefer build/compile checks over actually starting servers.",
+        "userInvocable": false
+      }
+    ],
     "swift": [
       {
         "name": "swift-main-naming",

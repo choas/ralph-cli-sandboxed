@@ -142,7 +142,9 @@ export function getSkillsJson(): SkillsJson {
 
 export function getSkillsForLanguage(language: string): SkillDefinition[] {
   const skills = getSkillsJson().skills;
-  return skills[language] || [];
+  const languageSkills = skills[language] || [];
+  const commonSkills = skills["common"] || [];
+  return [...commonSkills, ...languageSkills];
 }
 
 export function getLanguages(): Record<string, LanguageConfig> {
