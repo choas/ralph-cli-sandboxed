@@ -102,6 +102,11 @@ export function getCliConfig(config: RalphConfig): CliConfig {
       result.fileArgs = provider.fileArgs;
     }
 
+    // Use provider's yoloArgs if not already set
+    if (result.yoloArgs === undefined && provider?.yoloArgs !== undefined) {
+      result.yoloArgs = provider.yoloArgs;
+    }
+
     // Default promptArgs for backwards compatibility
     if (result.promptArgs === undefined) {
       result.promptArgs = ["-p"];
