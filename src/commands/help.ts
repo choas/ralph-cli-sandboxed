@@ -16,6 +16,8 @@ COMMANDS:
   fix-prd [opts]    Validate and recover corrupted PRD file
   prompt [opts]     Display resolved prompt (for testing in Claude Code)
   docker <sub>      Manage Docker sandbox environment
+  daemon <sub>      Host daemon for sandbox-to-host communication
+  notify [msg]      Send notification to host from sandbox
   help              Show this help message
 
   prd <subcommand>  (Alias) Manage PRD entries - same as add/list/status/toggle/clean
@@ -54,6 +56,17 @@ DOCKER SUBCOMMANDS:
   docker clean      Remove Docker image and associated resources
   docker help       Show docker help message
 
+DAEMON SUBCOMMANDS:
+  daemon start      Start daemon on host (listens for sandbox requests)
+  daemon stop       Stop the daemon
+  daemon status     Show daemon status
+  daemon help       Show daemon help message
+
+NOTIFY OPTIONS:
+  [message]              Message to send as notification
+  --action, -a <name>    Execute specific daemon action (default: notify)
+  --debug, -d            Show debug output
+
 EXAMPLES:
   ralph init                 # Initialize ralph (interactive CLI, language, tech selection)
   ralph init -y              # Initialize with defaults (Claude + Node.js, no prompts)
@@ -79,6 +92,8 @@ EXAMPLES:
   ralph docker init          # Generate Dockerfile for sandboxed env
   ralph docker build         # Build Docker image
   ralph docker run           # Run container (auto-init/build if needed)
+  ralph daemon start         # Start daemon on host (in separate terminal)
+  ralph notify "Task done!"  # Send notification from sandbox to host
 
 CONFIGURATION:
   After running 'ralph init', you'll have:
@@ -110,7 +125,28 @@ CLI CONFIGURATION:
     - custom: Configure your own CLI
 
   Customize 'command', 'args', and 'yoloArgs' for other AI CLIs.
+
+DAEMON CONFIGURATION:
+  The daemon allows sandbox-to-host communication without external network.
+  Configure custom actions in .ralph/config.json:
+  {
+    "notifyCommand": "ntfy pub mytopic",
+    "daemon": {
+      "actions": {
+        "build": {
+          "command": "./scripts/build.sh",
+          "description": "Run build on host"
+        }
+      }
+    }
+  }
+
+  Usage flow:
+  1. Start daemon on host:  ralph daemon start
+  2. Run sandbox:           ralph docker run
+  3. From sandbox, notify:  ralph notify "Task complete!"
 `;
+
 
 export function help(_args: string[]): void {
   console.log(HELP_TEXT.trim());

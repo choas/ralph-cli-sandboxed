@@ -1,10 +1,14 @@
 import { spawn } from "child_process";
+import { isRunningInContainer } from "./config.js";
+import { isDaemonAvailable, sendDaemonNotification } from "./daemon-client.js";
 
 export interface NotificationOptions {
   /** The notification command from config (e.g., "ntfy pub mytopic" or "notify-send") */
   command?: string;
   /** Whether to enable debug output */
   debug?: boolean;
+  /** Whether to try using daemon if available (default: true when in container) */
+  useDaemon?: boolean;
 }
 
 export type NotificationEvent =
@@ -28,41 +32,67 @@ export type NotificationEvent =
  * @param options Notification options including the command
  * @returns Promise that resolves when notification is sent (or immediately if no command configured)
  */
-export function sendNotification(
+export async function sendNotification(
   event: NotificationEvent,
   message?: string,
   options?: NotificationOptions
 ): Promise<void> {
-  return new Promise((resolve) => {
-    const { command, debug } = options ?? {};
+  const { command, debug, useDaemon } = options ?? {};
 
-    // No notification if command is not configured or empty
-    if (!command || command.trim() === "") {
-      if (debug) {
-        console.error("[notification] No notifyCommand configured, skipping notification");
-      }
-      resolve();
-      return;
-    }
+  // Generate default message based on event type
+  const defaultMessages: Record<NotificationEvent, string> = {
+    prd_complete: "Ralph: PRD Complete! All tasks finished.",
+    iteration_complete: "Ralph: Iteration complete.",
+    run_stopped: "Ralph: Run stopped.",
+    error: "Ralph: An error occurred.",
+  };
 
-    // Generate default message based on event type
-    const defaultMessages: Record<NotificationEvent, string> = {
-      prd_complete: "Ralph: PRD Complete! All tasks finished.",
-      iteration_complete: "Ralph: Iteration complete.",
-      run_stopped: "Ralph: Run stopped.",
-      error: "Ralph: An error occurred.",
-    };
+  const finalMessage = message ?? defaultMessages[event];
 
-    const finalMessage = message ?? defaultMessages[event];
+  // Try daemon when in container (unless explicitly disabled)
+  const shouldTryDaemon = useDaemon !== false && isRunningInContainer();
 
-    // Split command into executable and args
-    const parts = command.trim().split(/\s+/);
-    const [cmd, ...cmdArgs] = parts;
-
+  if (shouldTryDaemon && isDaemonAvailable()) {
     if (debug) {
-      console.error(`[notification] Sending: ${cmd} ${[...cmdArgs, finalMessage].join(" ")}`);
+      console.error("[notification] Using daemon to send notification");
     }
 
+    try {
+      const response = await sendDaemonNotification(finalMessage);
+      if (response.success) {
+        if (debug) {
+          console.error("[notification] Notification sent via daemon");
+        }
+        return;
+      } else if (debug) {
+        console.error(`[notification] Daemon notification failed: ${response.error}`);
+        console.error("[notification] Falling back to direct command");
+      }
+    } catch (err) {
+      if (debug) {
+        console.error(`[notification] Daemon error: ${err instanceof Error ? err.message : "unknown"}`);
+        console.error("[notification] Falling back to direct command");
+      }
+    }
+  }
+
+  // No notification if command is not configured or empty
+  if (!command || command.trim() === "") {
+    if (debug) {
+      console.error("[notification] No notifyCommand configured, skipping notification");
+    }
+    return;
+  }
+
+  // Split command into executable and args
+  const parts = command.trim().split(/\s+/);
+  const [cmd, ...cmdArgs] = parts;
+
+  if (debug) {
+    console.error(`[notification] Sending: ${cmd} ${[...cmdArgs, finalMessage].join(" ")}`);
+  }
+
+  return new Promise((resolve) => {
     // Spawn the notification process, appending the message as the last argument
     const proc = spawn(cmd, [...cmdArgs, finalMessage], {
       stdio: "ignore",

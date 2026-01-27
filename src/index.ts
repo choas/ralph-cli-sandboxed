@@ -11,6 +11,8 @@ import { prd, prdAdd, prdList, prdStatus, prdToggle, prdClean, parseListArgs } f
 import { docker } from "./commands/docker.js";
 import { prompt } from "./commands/prompt.js";
 import { fixPrd } from "./commands/fix-prd.js";
+import { daemon } from "./commands/daemon.js";
+import { notify } from "./commands/notify.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,6 +31,8 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   prd,
   prompt,
   docker,
+  daemon,
+  notify,
   "fix-prd": (args) => fixPrd(args),
   // Top-level PRD commands (shortcuts)
   add: () => prdAdd(),

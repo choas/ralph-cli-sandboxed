@@ -36,6 +36,17 @@ export interface AsciinemaConfig {
   streamJson?: StreamJsonConfig;  // Stream JSON output for cleaner recordings
 }
 
+export interface DaemonActionConfig {
+  command: string;            // Command to execute on host
+  description?: string;       // Human-readable description of the action
+}
+
+export interface DaemonConfig {
+  enabled?: boolean;          // Enable daemon support (default: true if actions defined)
+  socketPath?: string;        // Custom socket path (default: .ralph/daemon.sock)
+  actions?: Record<string, DaemonActionConfig>;  // Custom actions the sandbox can trigger
+}
+
 export interface RalphConfig {
   language: string;
   checkCommand: string;
@@ -69,6 +80,7 @@ export interface RalphConfig {
     mcpServers?: Record<string, McpServerConfig>;
     skills?: SkillConfig[];
   };
+  daemon?: DaemonConfig;
 }
 
 export const DEFAULT_CLI_CONFIG: CliConfig = {
