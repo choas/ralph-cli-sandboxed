@@ -182,20 +182,11 @@ async function handleCommand(
   state: ChatState,
   debug: boolean
 ): Promise<void> {
-  const { projectId, command: cmd, args, message } = command;
-
-  // Check if the command is for this project
-  if (projectId !== state.projectId) {
-    if (debug) {
-      console.log(`[chat] Ignoring command for different project: ${projectId} (ours: ${state.projectId})`);
-    }
-    return;
-  }
-
+  const { command: cmd, args, message } = command;
   const chatId = message.chatId;
 
   if (debug) {
-    console.log(`[chat] Received command: ${cmd} ${args.join(" ")}`);
+    console.log(`[chat] Received command: /${cmd} ${args.join(" ")}`);
   }
 
   switch (cmd) {
@@ -229,7 +220,7 @@ async function handleCommand(
 
     case "add": {
       if (args.length === 0) {
-        await client.sendMessage(chatId, `${state.projectName}: Usage: ${state.projectId} add <task description>`);
+        await client.sendMessage(chatId, `${state.projectName}: Usage: /add [task description]`);
         return;
       }
 
@@ -246,7 +237,7 @@ async function handleCommand(
 
     case "exec": {
       if (args.length === 0) {
-        await client.sendMessage(chatId, `${state.projectName}: Usage: ${state.projectId} exec <command>`);
+        await client.sendMessage(chatId, `${state.projectName}: Usage: /exec [command]`);
         return;
       }
 
@@ -267,27 +258,27 @@ async function handleCommand(
     }
 
     case "stop": {
-      await client.sendMessage(chatId, `${state.projectName}: Stop command received (not implemented in daemon mode)`);
+      await client.sendMessage(chatId, `${state.projectName}: Stop command received (not implemented yet)`);
       break;
     }
 
     case "help": {
       const helpText = `
-${state.projectName} (${state.projectId}) commands:
+${state.projectName} commands:
 
-${state.projectId} run - Start ralph automation
-${state.projectId} status - Show PRD progress
-${state.projectId} add [desc] - Add new task to PRD
-${state.projectId} exec [cmd] - Execute shell command
-${state.projectId} stop - Stop running ralph process
-${state.projectId} help - Show this help
+/run - Start ralph automation
+/status - Show PRD progress
+/add [desc] - Add new task to PRD
+/exec [cmd] - Execute shell command
+/stop - Stop running ralph process
+/help - Show this help
 `.trim();
       await client.sendMessage(chatId, helpText);
       break;
     }
 
     default:
-      await client.sendMessage(chatId, `${state.projectName}: Unknown command: ${cmd}. Try: ${state.projectId} help`);
+      await client.sendMessage(chatId, `${state.projectName}: Unknown command: /${cmd}. Try /help`);
   }
 }
 
@@ -341,7 +332,6 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
   console.log("Ralph Chat Daemon");
   console.log("-".repeat(40));
   console.log(`Project: ${projectName}`);
-  console.log(`Project ID: ${projectId}`);
   console.log(`Provider: ${config.chat.provider}`);
   console.log("");
 
@@ -360,11 +350,11 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     console.log("Connected to Telegram!");
     console.log("");
     console.log("Commands (send in Telegram):");
-    console.log(`  ${projectId} run      - Start ralph automation`);
-    console.log(`  ${projectId} status   - Show PRD progress`);
-    console.log(`  ${projectId} add <..> - Add new task to PRD`);
-    console.log(`  ${projectId} exec <..>- Execute shell command`);
-    console.log(`  ${projectId} help     - Show help`);
+    console.log("  /run      - Start ralph automation");
+    console.log("  /status   - Show PRD progress");
+    console.log("  /add ...  - Add new task to PRD");
+    console.log("  /exec ... - Execute shell command");
+    console.log("  /help     - Show help");
     console.log("");
     console.log("Press Ctrl+C to stop the daemon.");
 
@@ -372,7 +362,7 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     if (config.chat.telegram.allowedChatIds && config.chat.telegram.allowedChatIds.length > 0) {
       for (const chatId of config.chat.telegram.allowedChatIds) {
         try {
-          await client.sendMessage(chatId, `connected ${projectName} ${projectId}`);
+          await client.sendMessage(chatId, `${projectName} connected`);
         } catch (err) {
           if (debug) {
             console.error(`[chat] Failed to send connected message to ${chatId}: ${err}`);
@@ -549,13 +539,12 @@ TELEGRAM SETUP:
 CHAT COMMANDS:
   Once connected, send commands to your Telegram bot:
 
-  <project_id> run      - Start ralph automation
-  <project_id> status   - Show PRD progress
-  <project_id> add <..> - Add new task to PRD
-  <project_id> exec <..>- Execute shell command
-  <project_id> help     - Show help
-
-  The project_id is a 3-character code shown when the daemon starts.
+  /run        - Start ralph automation
+  /status     - Show PRD progress
+  /add [desc] - Add new task to PRD
+  /exec [cmd] - Execute shell command
+  /stop       - Stop running ralph process
+  /help       - Show help
 
 SECURITY:
   - Use allowedChatIds to restrict which chats can control ralph
@@ -569,11 +558,11 @@ EXAMPLES:
   # Test the connection
   ralph chat test 123456789
 
-  # In Telegram (example project_id: abc):
-  abc run        # Start ralph automation
-  abc status     # Show task progress
-  abc add Fix login bug  # Add new task
-  abc exec npm test      # Run npm test
+  # In Telegram:
+  /run              # Start ralph automation
+  /status           # Show task progress
+  /add Fix login    # Add new task
+  /exec npm test    # Run npm test
 `);
     return;
   }

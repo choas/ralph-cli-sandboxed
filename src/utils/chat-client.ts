@@ -122,40 +122,51 @@ export function generateProjectId(): string {
 
 /**
  * Parse a chat message to extract a command.
- * Format: "<project_id> <command> [args...]"
  *
- * Examples:
- * - "abc run" -> { projectId: "abc", command: "run", args: [] }
- * - "xyz status" -> { projectId: "xyz", command: "status", args: [] }
- * - "123 exec npm test" -> { projectId: "123", command: "exec", args: ["npm", "test"] }
- * - "abc add Fix the login bug" -> { projectId: "abc", command: "add", args: ["Fix", "the", "login", "bug"] }
+ * Supports slash commands (preferred):
+ * - "/run" -> { command: "run", args: [] }
+ * - "/status" -> { command: "status", args: [] }
+ * - "/exec npm test" -> { command: "exec", args: ["npm", "test"] }
+ * - "/add Fix the login bug" -> { command: "add", args: ["Fix", "the", "login", "bug"] }
  */
 export function parseCommand(text: string, message: ChatMessage): ChatCommand | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
-  const parts = trimmed.split(/\s+/);
-  if (parts.length < 2) return null;
-
-  const [projectId, command, ...args] = parts;
-
-  // Project ID should be 3 alphanumeric characters
-  if (!/^[a-z0-9]{3}$/i.test(projectId)) {
-    return null;
-  }
-
   // Valid commands
-  const validCommands = ["run", "status", "add", "exec", "stop", "help"];
-  if (!validCommands.includes(command.toLowerCase())) {
-    return null;
+  const validCommands = ["run", "status", "add", "exec", "stop", "help", "start"];
+
+  // Check for slash command format: /command [args...]
+  if (trimmed.startsWith("/")) {
+    const parts = trimmed.slice(1).split(/\s+/);
+    if (parts.length === 0) return null;
+
+    const [command, ...args] = parts;
+    const cmd = command.toLowerCase();
+
+    // Handle Telegram's /start command specially
+    if (cmd === "start") {
+      return {
+        projectId: "",
+        command: "help",
+        args: [],
+        message,
+      };
+    }
+
+    if (!validCommands.includes(cmd)) {
+      return null;
+    }
+
+    return {
+      projectId: "",
+      command: cmd,
+      args,
+      message,
+    };
   }
 
-  return {
-    projectId: projectId.toLowerCase(),
-    command: command.toLowerCase(),
-    args,
-    message,
-  };
+  return null;
 }
 
 /**

@@ -204,6 +204,13 @@ Log task completions and ralph finished to file:
 }
 ```
 
+Chat commands (send in Telegram):
+- `/run` - Start ralph automation
+- `/status` - Show PRD progress
+- `/add [desc]` - Add new task
+- `/exec [cmd]` - Execute shell command
+- `/help` - Show help
+
 ### PRD Task Categories
 
 | Category | Use For |
