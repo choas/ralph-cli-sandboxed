@@ -142,6 +142,8 @@ function getDefaultActions(config: ReturnType<typeof loadConfig>): Record<string
 
 /**
  * Execute an action command with arguments.
+ * Environment variables are passed to the command:
+ * - RALPH_MESSAGE: The message argument (if provided)
  */
 async function executeAction(
   action: DaemonAction,
@@ -160,14 +162,21 @@ async function executeAction(
 
   return new Promise((resolve) => {
     let fullCommand: string;
+    const message = args.join(" ") || "";
+
+    // Build environment with RALPH_MESSAGE
+    const env = {
+      ...process.env,
+      RALPH_MESSAGE: message,
+    };
 
     // Special handling for ntfy - use curl with proper syntax
     if (action.ntfyUrl) {
-      const message = args.join(" ") || "Ralph notification";
       // curl -s -d "message" https://ntfy.sh/topic
       fullCommand = `curl -s -d "${message.replace(/"/g, '\\"')}" "${action.ntfyUrl}"`;
     } else {
-      // Build the full command with args
+      // Command can use $RALPH_MESSAGE env var
+      // Also pass args for backwards compatibility
       fullCommand = args.length > 0
         ? `${action.command} ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`
         : action.command;
@@ -176,6 +185,7 @@ async function executeAction(
     const proc = spawn(fullCommand, [], {
       stdio: ["ignore", "pipe", "pipe"],
       shell: true,
+      env,
     });
 
     let stdout = "";
