@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import type { RalphConfig } from "../../utils/config.js";
 import { CONFIG_SECTIONS, type ConfigSection } from "./SectionNav.js";
+import type { ValidationError } from "../utils/validation.js";
+import { getFieldErrors, hasFieldError } from "../utils/validation.js";
 
 /**
  * Field types for determining which editor to render.
@@ -117,6 +119,8 @@ export interface EditorPanelProps {
   onBack: () => void;
   /** Whether this component has focus for keyboard input */
   isFocused?: boolean;
+  /** Validation errors to display inline */
+  validationErrors?: ValidationError[];
 }
 
 /**
@@ -130,6 +134,7 @@ export function EditorPanel({
   onSelectField,
   onBack,
   isFocused = true,
+  validationErrors = [],
 }: EditorPanelProps): React.ReactElement {
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
@@ -244,35 +249,48 @@ export function EditorPanel({
         const isHighlighted = index === highlightedIndex;
         const value = getValueAtPath(config, field.path);
         const displayValue = getDisplayValue(value, field.type);
+        const fieldHasError = hasFieldError(validationErrors, field.path);
+        const fieldErrors = getFieldErrors(validationErrors, field.path);
 
-        // Color based on field type
-        const typeColor = field.type === "array" ? "yellow"
+        // Color based on field type, but red if there's an error
+        const typeColor = fieldHasError ? "red"
+          : field.type === "array" ? "yellow"
           : field.type === "object" ? "magenta"
           : field.type === "boolean" ? "blue"
           : undefined;
 
         return (
-          <Box key={field.path}>
-            {/* Selection indicator */}
-            <Text color={isHighlighted ? "cyan" : undefined}>
-              {isHighlighted ? "▸ " : "  "}
-            </Text>
-            {/* Field label */}
-            <Text
-              bold={isHighlighted}
-              color={isHighlighted ? "cyan" : undefined}
-              inverse={isHighlighted}
-            >
-              {field.label}
-            </Text>
-            <Text dimColor>: </Text>
-            {/* Field value */}
-            <Text color={typeColor} dimColor={value === undefined || value === null}>
-              {displayValue}
-            </Text>
-            {/* Type indicator for complex types */}
-            {(field.type === "array" || field.type === "object") && (
-              <Text dimColor> →</Text>
+          <Box key={field.path} flexDirection="column">
+            <Box>
+              {/* Selection indicator */}
+              <Text color={isHighlighted ? "cyan" : fieldHasError ? "red" : undefined}>
+                {isHighlighted ? "▸ " : fieldHasError ? "✗ " : "  "}
+              </Text>
+              {/* Field label */}
+              <Text
+                bold={isHighlighted}
+                color={fieldHasError ? "red" : isHighlighted ? "cyan" : undefined}
+                inverse={isHighlighted}
+              >
+                {field.label}
+              </Text>
+              <Text dimColor>: </Text>
+              {/* Field value */}
+              <Text color={typeColor} dimColor={value === undefined || value === null}>
+                {displayValue}
+              </Text>
+              {/* Type indicator for complex types */}
+              {(field.type === "array" || field.type === "object") && (
+                <Text dimColor> →</Text>
+              )}
+            </Box>
+            {/* Validation error message */}
+            {fieldHasError && fieldErrors.length > 0 && (
+              <Box marginLeft={4}>
+                <Text color="red" dimColor>
+                  {fieldErrors[0].message}
+                </Text>
+              </Box>
             )}
           </Box>
         );

@@ -9,6 +9,7 @@ import { ArrayEditor } from "./components/ArrayEditor.js";
 import { ObjectEditor } from "./components/ObjectEditor.js";
 import { Preview } from "./components/Preview.js";
 import type { RalphConfig } from "../utils/config.js";
+import { validateConfig, type ValidationError } from "./utils/validation.js";
 
 /**
  * Focus state for the two-panel layout.
@@ -62,6 +63,12 @@ export function ConfigEditor(): React.ReactElement {
 
   // Status message for feedback
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Validation errors
+  const validationErrors = useMemo((): ValidationError[] => {
+    if (!config) return [];
+    return validateConfig(config).errors;
+  }, [config]);
 
   // Get the current field value and type for the field editor
   const currentFieldValue = useMemo(() => {
@@ -129,6 +136,21 @@ export function ConfigEditor(): React.ReactElement {
 
   // Handle save
   const handleSave = useCallback(() => {
+    // Validate before saving
+    if (!config) {
+      setStatusMessage("No configuration to save");
+      setTimeout(() => setStatusMessage(null), 2000);
+      return;
+    }
+
+    const validation = validateConfig(config);
+    if (!validation.valid) {
+      const errorCount = validation.errors.length;
+      setStatusMessage(`Validation failed: ${errorCount} error${errorCount > 1 ? "s" : ""} found`);
+      setTimeout(() => setStatusMessage(null), 3000);
+      return;
+    }
+
     const success = saveConfig();
     if (success) {
       setStatusMessage("Configuration saved!");
@@ -136,7 +158,7 @@ export function ConfigEditor(): React.ReactElement {
       setStatusMessage("Failed to save configuration");
     }
     setTimeout(() => setStatusMessage(null), 2000);
-  }, [saveConfig]);
+  }, [saveConfig, config]);
 
   // Handle quit
   const handleQuit = useCallback(() => {
@@ -308,7 +330,7 @@ export function ConfigEditor(): React.ReactElement {
       {/* Status message */}
       {statusMessage && (
         <Box marginBottom={1}>
-          <Text color={statusMessage.includes("Failed") ? "red" : "green"}>
+          <Text color={statusMessage.includes("Failed") || statusMessage.includes("Validation") ? "red" : "green"}>
             {statusMessage}
           </Text>
         </Box>
@@ -339,6 +361,7 @@ export function ConfigEditor(): React.ReactElement {
               onSelectField={handleSelectField}
               onBack={handleBack}
               isFocused={focusPane === "editor"}
+              validationErrors={validationErrors}
             />
           </Box>
 
