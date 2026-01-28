@@ -134,7 +134,7 @@ export function parseCommand(text: string, message: ChatMessage): ChatCommand | 
   if (!trimmed) return null;
 
   // Valid commands
-  const validCommands = ["run", "status", "add", "exec", "stop", "help", "start"];
+  const validCommands = ["run", "status", "add", "exec", "stop", "help", "start", "notify"];
 
   // Check for slash command format: /command [args...]
   if (trimmed.startsWith("/")) {

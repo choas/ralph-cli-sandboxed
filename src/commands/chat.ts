@@ -310,6 +310,63 @@ async function handleCommand(
       break;
     }
 
+    case "notify": {
+      if (args.length === 0) {
+        // List available notification scripts
+        const actions = config.daemon?.actions || {};
+        const scriptNames = Object.keys(actions).filter(name => name !== "notify" && name !== "telegram_notify");
+        if (scriptNames.length === 0) {
+          await client.sendMessage(chatId, `${state.projectName}: No notification scripts configured. Add scripts to daemon.actions in config.json`);
+        } else {
+          await client.sendMessage(chatId, `${state.projectName}: Available scripts: ${scriptNames.join(", ")}\nUsage: /notify <script>`);
+        }
+        return;
+      }
+
+      const scriptName = args[0].toLowerCase();
+      const actions = config.daemon?.actions || {};
+      const action = actions[scriptName];
+
+      if (!action) {
+        const availableScripts = Object.keys(actions).filter(name => name !== "notify" && name !== "telegram_notify");
+        if (availableScripts.length === 0) {
+          await client.sendMessage(chatId, `${state.projectName}: No notification scripts configured. Add scripts to daemon.actions in config.json`);
+        } else {
+          await client.sendMessage(chatId, `${state.projectName}: Unknown script '${scriptName}'. Available: ${availableScripts.join(", ")}`);
+        }
+        return;
+      }
+
+      await client.sendMessage(chatId, `${state.projectName}: Running '${scriptName}'...`);
+
+      // Execute the script
+      const result = await executeCommand(action.command);
+
+      if (result.success) {
+        let message = `${state.projectName}: '${scriptName}' completed`;
+        if (result.output && result.output !== "(no output)") {
+          // Truncate long output
+          let output = result.output;
+          if (output.length > 500) {
+            output = output.substring(0, 500) + "\n...(truncated)";
+          }
+          message += `\n${output}`;
+        }
+        await client.sendMessage(chatId, message);
+      } else {
+        let message = `${state.projectName}: '${scriptName}' failed`;
+        if (result.output) {
+          let output = result.output;
+          if (output.length > 500) {
+            output = output.substring(0, 500) + "\n...(truncated)";
+          }
+          message += `\n${output}`;
+        }
+        await client.sendMessage(chatId, message);
+      }
+      break;
+    }
+
     case "help": {
       const helpText = `
 ${state.projectName} commands:
@@ -318,6 +375,7 @@ ${state.projectName} commands:
 /status - Show PRD progress
 /add [desc] - Add new task to PRD
 /exec [cmd] - Execute shell command
+/notify [script] - Run notification script (e.g., /notify build)
 /stop - Stop running ralph process
 /help - Show this help
 `.trim();
@@ -392,11 +450,12 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     console.log("Connected to Telegram!");
     console.log("");
     console.log("Commands (send in Telegram):");
-    console.log("  /run      - Start ralph automation");
-    console.log("  /status   - Show PRD progress");
-    console.log("  /add ...  - Add new task to PRD");
-    console.log("  /exec ... - Execute shell command");
-    console.log("  /help     - Show help");
+    console.log("  /run         - Start ralph automation");
+    console.log("  /status      - Show PRD progress");
+    console.log("  /add ...     - Add new task to PRD");
+    console.log("  /exec ...    - Execute shell command");
+    console.log("  /notify ...  - Run notification script");
+    console.log("  /help        - Show help");
     console.log("");
     console.log("Press Ctrl+C to stop the daemon.");
 
@@ -581,17 +640,38 @@ TELEGRAM SETUP:
 CHAT COMMANDS:
   Once connected, send commands to your Telegram bot:
 
-  /run        - Start ralph automation
-  /status     - Show PRD progress
-  /add [desc] - Add new task to PRD
-  /exec [cmd] - Execute shell command
-  /stop       - Stop running ralph process
-  /help       - Show help
+  /run            - Start ralph automation
+  /status         - Show PRD progress
+  /add [desc]     - Add new task to PRD
+  /exec [cmd]     - Execute shell command
+  /notify [name]  - Run a notification script (e.g., /notify build)
+  /stop           - Stop running ralph process
+  /help           - Show help
 
 SECURITY:
   - Use allowedChatIds to restrict which chats can control ralph
   - Never share your bot token
   - The daemon should run on the host, not in the container
+
+NOTIFICATION SCRIPTS:
+  Configure custom scripts in .ralph/config.json under daemon.actions:
+
+  {
+    "daemon": {
+      "actions": {
+        "build": {
+          "command": "/path/to/build-script.sh",
+          "description": "Run build notification"
+        },
+        "deploy": {
+          "command": "/path/to/deploy-script.sh",
+          "description": "Run deploy notification"
+        }
+      }
+    }
+  }
+
+  Then trigger them via Telegram: /notify build or /notify deploy
 
 EXAMPLES:
   # Start the chat daemon
@@ -605,6 +685,8 @@ EXAMPLES:
   /status           # Show task progress
   /add Fix login    # Add new task
   /exec npm test    # Run npm test
+  /notify build     # Run build notification script
+  /notify deploy    # Run deploy notification script
 `);
     return;
   }
