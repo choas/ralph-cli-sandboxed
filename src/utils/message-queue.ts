@@ -105,6 +105,12 @@ export function sendMessage(
   return id;
 }
 
+export type MessageResponse = {
+  success: boolean;
+  output?: string;
+  error?: string;
+};
+
 /**
  * Wait for a response to a message.
  * Returns the response or null if timeout.
@@ -114,7 +120,7 @@ export async function waitForResponse(
   messageId: string,
   timeout: number = 10000,
   pollInterval: number = 100
-): Promise<Message["response"] | null> {
+): Promise<MessageResponse | null> {
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeout) {
@@ -125,7 +131,7 @@ export async function waitForResponse(
       // Clean up processed message
       const remaining = messages.filter(m => m.id !== messageId);
       writeMessages(messagesPath, remaining);
-      return message.response;
+      return message.response as MessageResponse;
     }
 
     await new Promise(resolve => setTimeout(resolve, pollInterval));
@@ -151,7 +157,7 @@ export function getPendingMessages(
 export function respondToMessage(
   messagesPath: string,
   messageId: string,
-  response: Message["response"]
+  response: MessageResponse
 ): boolean {
   const messages = readMessages(messagesPath);
   const message = messages.find(m => m.id === messageId);

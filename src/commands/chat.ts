@@ -3,18 +3,22 @@
  * Allows ralph to receive commands and send notifications via chat services.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, basename } from "path";
-import { spawn, ChildProcess } from "child_process";
+import { spawn } from "child_process";
 import { loadConfig, getRalphDir, isRunningInContainer, RalphConfig } from "../utils/config.js";
 import { createTelegramClient } from "../providers/telegram.js";
 import {
   ChatClient,
   ChatCommand,
-  ChatProjectRegistration,
   generateProjectId,
   formatStatusMessage,
 } from "../utils/chat-client.js";
+import {
+  getMessagesPath,
+  sendMessage,
+  waitForResponse,
+} from "../utils/message-queue.js";
 
 const CHAT_STATE_FILE = "chat-state.json";
 
@@ -173,6 +177,31 @@ async function executeCommand(command: string): Promise<{ success: boolean; outp
 }
 
 /**
+ * Send a command to the sandbox via message queue and wait for response.
+ */
+async function sendToSandbox(
+  action: string,
+  args: string[],
+  debug: boolean,
+  timeout: number = 60000
+): Promise<{ success: boolean; output?: string; error?: string } | null> {
+  const messagesPath = getMessagesPath(false); // host path
+
+  if (debug) {
+    console.log(`[chat] Sending to sandbox: ${action} ${args.join(" ")}`);
+  }
+
+  const messageId = sendMessage(messagesPath, "host", action, args);
+  const response = await waitForResponse(messagesPath, messageId, timeout);
+
+  if (debug) {
+    console.log(`[chat] Sandbox response: ${JSON.stringify(response)}`);
+  }
+
+  return response;
+}
+
+/**
  * Handle incoming chat commands.
  */
 async function handleCommand(
@@ -191,7 +220,7 @@ async function handleCommand(
 
   switch (cmd) {
     case "run": {
-      // Start ralph run in the background
+      // Check PRD status first (from host)
       const prdStatus = getPrdStatus();
       if (prdStatus.incomplete === 0) {
         await client.sendMessage(chatId, `${state.projectName}: All tasks already complete (${prdStatus.complete}/${prdStatus.total})`);
@@ -200,21 +229,38 @@ async function handleCommand(
 
       await client.sendMessage(
         chatId,
-        `${state.projectName}: Starting ralph run (${prdStatus.incomplete} tasks remaining)`
+        `${state.projectName}: Starting ralph run (${prdStatus.incomplete} tasks remaining)...`
       );
 
-      // The actual ralph run will be triggered via the daemon
-      // For now, we just update the state
+      // Send run command to sandbox
+      const response = await sendToSandbox("run", [], debug, 10000);
+      if (response) {
+        if (response.success) {
+          await client.sendMessage(chatId, `${state.projectName}: Ralph run started in sandbox`);
+        } else {
+          await client.sendMessage(chatId, `${state.projectName}: Failed to start: ${response.error}`);
+        }
+      } else {
+        await client.sendMessage(chatId, `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`);
+      }
+
       state.lastActivity = new Date().toISOString();
       saveChatState(state);
       break;
     }
 
     case "status": {
-      const prdStatus = getPrdStatus();
-      const status = prdStatus.incomplete === 0 ? "completed" : "idle";
-      const details = `Progress: ${prdStatus.complete}/${prdStatus.total} tasks complete`;
-      await client.sendMessage(chatId, formatStatusMessage(state.projectName, status, details));
+      // Try sandbox first, fall back to host
+      const response = await sendToSandbox("status", [], debug, 5000);
+      if (response?.success && response.output) {
+        await client.sendMessage(chatId, `${state.projectName}:\n${response.output}`);
+      } else {
+        // Fall back to host status
+        const prdStatus = getPrdStatus();
+        const status = prdStatus.incomplete === 0 ? "completed" : "idle";
+        const details = `Progress: ${prdStatus.complete}/${prdStatus.total} tasks complete`;
+        await client.sendMessage(chatId, formatStatusMessage(state.projectName, status, details));
+      }
       break;
     }
 
@@ -242,18 +288,24 @@ async function handleCommand(
       }
 
       const shellCommand = args.join(" ");
-      await client.sendMessage(chatId, `${state.projectName}: Executing: ${shellCommand}`);
+      await client.sendMessage(chatId, `${state.projectName}: Executing in sandbox: ${shellCommand}`);
 
-      const result = await executeCommand(shellCommand);
-      const statusIcon = result.success ? "[OK]" : "[X]";
+      // Send exec command to sandbox
+      const response = await sendToSandbox("exec", args, debug, 65000);
 
-      // Truncate long output
-      let output = result.output;
-      if (output.length > 1000) {
-        output = output.substring(0, 1000) + "\n...(truncated)";
+      if (response) {
+        const statusIcon = response.success ? "[OK]" : "[X]";
+        let output = response.output || response.error || "(no output)";
+
+        // Truncate long output
+        if (output.length > 1000) {
+          output = output.substring(0, 1000) + "\n...(truncated)";
+        }
+
+        await client.sendMessage(chatId, `${state.projectName}: ${statusIcon}\n\n${output}`);
+      } else {
+        await client.sendMessage(chatId, `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`);
       }
-
-      await client.sendMessage(chatId, `${state.projectName}: ${statusIcon}\n\n${output}`);
       break;
     }
 
