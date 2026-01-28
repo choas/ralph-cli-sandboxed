@@ -310,40 +310,40 @@ async function handleCommand(
       break;
     }
 
-    case "notify": {
+    case "action": {
       if (args.length === 0) {
-        // List available notification scripts
+        // List available actions
         const actions = config.daemon?.actions || {};
-        const scriptNames = Object.keys(actions).filter(name => name !== "notify" && name !== "telegram_notify");
-        if (scriptNames.length === 0) {
-          await client.sendMessage(chatId, `${state.projectName}: No notification scripts configured. Add scripts to daemon.actions in config.json`);
+        const actionNames = Object.keys(actions).filter(name => name !== "notify" && name !== "telegram_notify");
+        if (actionNames.length === 0) {
+          await client.sendMessage(chatId, `${state.projectName}: No actions configured. Add actions to daemon.actions in config.json`);
         } else {
-          await client.sendMessage(chatId, `${state.projectName}: Available scripts: ${scriptNames.join(", ")}\nUsage: /notify <script>`);
+          await client.sendMessage(chatId, `${state.projectName}: Available actions: ${actionNames.join(", ")}\nUsage: /action <name>`);
         }
         return;
       }
 
-      const scriptName = args[0].toLowerCase();
+      const actionName = args[0].toLowerCase();
       const actions = config.daemon?.actions || {};
-      const action = actions[scriptName];
+      const action = actions[actionName];
 
       if (!action) {
-        const availableScripts = Object.keys(actions).filter(name => name !== "notify" && name !== "telegram_notify");
-        if (availableScripts.length === 0) {
-          await client.sendMessage(chatId, `${state.projectName}: No notification scripts configured. Add scripts to daemon.actions in config.json`);
+        const availableActions = Object.keys(actions).filter(name => name !== "notify" && name !== "telegram_notify");
+        if (availableActions.length === 0) {
+          await client.sendMessage(chatId, `${state.projectName}: No actions configured. Add actions to daemon.actions in config.json`);
         } else {
-          await client.sendMessage(chatId, `${state.projectName}: Unknown script '${scriptName}'. Available: ${availableScripts.join(", ")}`);
+          await client.sendMessage(chatId, `${state.projectName}: Unknown action '${actionName}'. Available: ${availableActions.join(", ")}`);
         }
         return;
       }
 
-      await client.sendMessage(chatId, `${state.projectName}: Running '${scriptName}'...`);
+      await client.sendMessage(chatId, `${state.projectName}: Running '${actionName}'...`);
 
       // Execute the script
       const result = await executeCommand(action.command);
 
       if (result.success) {
-        let message = `${state.projectName}: '${scriptName}' completed`;
+        let message = `${state.projectName}: '${actionName}' completed`;
         if (result.output && result.output !== "(no output)") {
           // Truncate long output
           let output = result.output;
@@ -354,7 +354,7 @@ async function handleCommand(
         }
         await client.sendMessage(chatId, message);
       } else {
-        let message = `${state.projectName}: '${scriptName}' failed`;
+        let message = `${state.projectName}: '${actionName}' failed`;
         if (result.output) {
           let output = result.output;
           if (output.length > 500) {
@@ -375,7 +375,7 @@ ${state.projectName} commands:
 /status - Show PRD progress
 /add [desc] - Add new task to PRD
 /exec [cmd] - Execute shell command
-/notify [script] - Run notification script (e.g., /notify build)
+/action [name] - Run daemon action (e.g., /action build)
 /stop - Stop running ralph process
 /help - Show this help
 `.trim();
@@ -454,7 +454,7 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     console.log("  /status      - Show PRD progress");
     console.log("  /add ...     - Add new task to PRD");
     console.log("  /exec ...    - Execute shell command");
-    console.log("  /notify ...  - Run notification script");
+    console.log("  /action ...  - Run daemon action");
     console.log("  /help        - Show help");
     console.log("");
     console.log("Press Ctrl+C to stop the daemon.");
@@ -644,7 +644,7 @@ CHAT COMMANDS:
   /status         - Show PRD progress
   /add [desc]     - Add new task to PRD
   /exec [cmd]     - Execute shell command
-  /notify [name]  - Run a notification script (e.g., /notify build)
+  /action [name]  - Run daemon action (e.g., /action build)
   /stop           - Stop running ralph process
   /help           - Show help
 
@@ -653,25 +653,25 @@ SECURITY:
   - Never share your bot token
   - The daemon should run on the host, not in the container
 
-NOTIFICATION SCRIPTS:
-  Configure custom scripts in .ralph/config.json under daemon.actions:
+DAEMON ACTIONS:
+  Configure custom actions in .ralph/config.json under daemon.actions:
 
   {
     "daemon": {
       "actions": {
         "build": {
           "command": "/path/to/build-script.sh",
-          "description": "Run build notification"
+          "description": "Run build script"
         },
         "deploy": {
           "command": "/path/to/deploy-script.sh",
-          "description": "Run deploy notification"
+          "description": "Run deploy script"
         }
       }
     }
   }
 
-  Then trigger them via Telegram: /notify build or /notify deploy
+  Then trigger them via Telegram: /action build or /action deploy
 
 EXAMPLES:
   # Start the chat daemon
@@ -685,8 +685,8 @@ EXAMPLES:
   /status           # Show task progress
   /add Fix login    # Add new task
   /exec npm test    # Run npm test
-  /notify build     # Run build notification script
-  /notify deploy    # Run deploy notification script
+  /action build     # Run build action
+  /action deploy    # Run deploy action
 `);
     return;
   }
