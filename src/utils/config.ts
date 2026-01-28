@@ -47,6 +47,17 @@ export interface DaemonConfig {
   actions?: Record<string, DaemonActionConfig>;  // Custom actions the sandbox can trigger
 }
 
+export interface TelegramChatSettings {
+  botToken: string;           // Telegram Bot API token (from @BotFather)
+  allowedChatIds?: string[];  // Only respond in these chat IDs (security)
+}
+
+export interface ChatConfig {
+  enabled?: boolean;          // Enable chat client integration
+  provider?: "telegram";      // Chat provider (currently only telegram supported)
+  telegram?: TelegramChatSettings;  // Telegram-specific settings
+}
+
 export interface RalphConfig {
   language: string;
   checkCommand: string;
@@ -81,6 +92,7 @@ export interface RalphConfig {
     skills?: SkillConfig[];
   };
   daemon?: DaemonConfig;
+  chat?: ChatConfig;
 }
 
 export const DEFAULT_CLI_CONFIG: CliConfig = {

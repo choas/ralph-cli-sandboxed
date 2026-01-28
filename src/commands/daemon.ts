@@ -68,6 +68,18 @@ function getDefaultActions(config: ReturnType<typeof loadConfig>): Record<string
     };
   }
 
+  // Add chat_status action for querying PRD status from container
+  actions.chat_status = {
+    command: "ralph prd status --json 2>/dev/null || echo '{}'",
+    description: "Get PRD status as JSON",
+  };
+
+  // Add chat_add action for adding PRD tasks from container
+  actions.chat_add = {
+    command: "ralph add",
+    description: "Add a new task to the PRD",
+  };
+
   return actions;
 }
 

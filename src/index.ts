@@ -13,6 +13,7 @@ import { prompt } from "./commands/prompt.js";
 import { fixPrd } from "./commands/fix-prd.js";
 import { daemon } from "./commands/daemon.js";
 import { notify } from "./commands/notify.js";
+import { chat } from "./commands/chat.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,6 +34,7 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   docker,
   daemon,
   notify,
+  chat,
   "fix-prd": (args) => fixPrd(args),
   // Top-level PRD commands (shortcuts)
   add: () => prdAdd(),

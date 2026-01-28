@@ -18,6 +18,7 @@ COMMANDS:
   docker <sub>      Manage Docker sandbox environment
   daemon <sub>      Host daemon for sandbox-to-host communication
   notify [msg]      Send notification to host from sandbox
+  chat <sub>        Chat client integration (Telegram, etc.)
   help              Show this help message
 
   prd <subcommand>  (Alias) Manage PRD entries - same as add/list/status/toggle/clean
@@ -62,6 +63,12 @@ DAEMON SUBCOMMANDS:
   daemon status     Show daemon status
   daemon help       Show daemon help message
 
+CHAT SUBCOMMANDS:
+  chat start        Start chat daemon (Telegram bot)
+  chat status       Show chat configuration status
+  chat test [id]    Test connection by sending a message
+  chat help         Show chat help message
+
 NOTIFY OPTIONS:
   [message]              Message to send as notification
   --action, -a <name>    Execute specific daemon action (default: notify)
@@ -94,6 +101,8 @@ EXAMPLES:
   ralph docker run           # Run container (auto-init/build if needed)
   ralph daemon start         # Start daemon on host (in separate terminal)
   ralph notify "Task done!"  # Send notification from sandbox to host
+  ralph chat start           # Start Telegram chat daemon
+  ralph chat test 123456     # Test chat connection
 
 CONFIGURATION:
   After running 'ralph init', you'll have:
@@ -145,6 +154,25 @@ DAEMON CONFIGURATION:
   1. Start daemon on host:  ralph daemon start
   2. Run sandbox:           ralph docker run
   3. From sandbox, notify:  ralph notify "Task complete!"
+
+CHAT CONFIGURATION:
+  Enable Telegram chat integration to control ralph from your phone:
+  {
+    "chat": {
+      "enabled": true,
+      "provider": "telegram",
+      "telegram": {
+        "botToken": "YOUR_BOT_TOKEN",
+        "allowedChatIds": ["123456789"]
+      }
+    }
+  }
+
+  Setup:
+  1. Create bot with @BotFather on Telegram
+  2. Add bot token to config.json
+  3. Start chat daemon: ralph chat start
+  4. Send commands to your bot: abc run, abc status, abc add <task>
 `;
 
 

@@ -238,6 +238,16 @@ export async function init(args: string[]): Promise<void> {
       mcpServers: {},
       skills: selectedSkills,
     },
+
+    // Chat client configuration (e.g., Telegram)
+    chat: {
+      enabled: false,
+      provider: "telegram",
+      telegram: {
+        botToken: "",
+        allowedChatIds: [],
+      },
+    },
   };
 
   const configPath = join(ralphDir, CONFIG_FILE);
