@@ -277,8 +277,8 @@ ${state.projectName} (${state.projectId}) commands:
 
 ${state.projectId} run - Start ralph automation
 ${state.projectId} status - Show PRD progress
-${state.projectId} add <desc> - Add new task to PRD
-${state.projectId} exec <cmd> - Execute shell command
+${state.projectId} add [desc] - Add new task to PRD
+${state.projectId} exec [cmd] - Execute shell command
 ${state.projectId} stop - Stop running ralph process
 ${state.projectId} help - Show this help
 `.trim();
@@ -540,7 +540,10 @@ TELEGRAM SETUP:
   1. Create a bot with @BotFather on Telegram
   2. Copy the bot token to chat.telegram.botToken
   3. Start a chat with your bot and send any message
-  4. Get your chat ID from https://api.telegram.org/bot<TOKEN>/getUpdates
+  4. Get your chat ID:
+     curl "https://api.telegram.org/bot<TOKEN>/getUpdates"
+     Note: "bot" is a literal prefix, not a placeholder!
+     Example: https://api.telegram.org/bot123456:ABC-xyz/getUpdates
   5. Add the chat ID to chat.telegram.allowedChatIds (optional security)
 
 CHAT COMMANDS:

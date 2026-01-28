@@ -178,6 +178,32 @@ Log task completions and ralph finished to file:
 | `iteration_complete` | After each `ralph once` iteration |
 | `error` | When an error occurs |
 
+### Telegram Chat Setup
+
+1. Message @BotFather on Telegram, send `/newbot`
+2. Copy the bot token to `chat.telegram.botToken`
+3. Start a chat with your bot and send any message
+4. Get your chat ID:
+   ```bash
+   curl "https://api.telegram.org/bot<TOKEN>/getUpdates"
+   ```
+   **Note:** `bot` is a literal prefix, not a placeholder!
+   Example: `https://api.telegram.org/bot123456:ABC-xyz/getUpdates`
+5. Add chat ID to `chat.telegram.allowedChatIds` (optional)
+
+```json
+{
+  "chat": {
+    "enabled": true,
+    "provider": "telegram",
+    "telegram": {
+      "botToken": "123456:ABC-xyz",
+      "allowedChatIds": ["987654321"]
+    }
+  }
+}
+```
+
 ### PRD Task Categories
 
 | Category | Use For |
