@@ -287,14 +287,10 @@ async function handleCommand(
         return;
       }
 
-      const shellCommand = args.join(" ");
-      await client.sendMessage(chatId, `${state.projectName}: Executing in sandbox: ${shellCommand}`);
-
       // Send exec command to sandbox
       const response = await sendToSandbox("exec", args, debug, 65000);
 
       if (response) {
-        const statusIcon = response.success ? "[OK]" : "[X]";
         let output = response.output || response.error || "(no output)";
 
         // Truncate long output
@@ -302,7 +298,7 @@ async function handleCommand(
           output = output.substring(0, 1000) + "\n...(truncated)";
         }
 
-        await client.sendMessage(chatId, `${state.projectName}: ${statusIcon}\n\n${output}`);
+        await client.sendMessage(chatId, output);
       } else {
         await client.sendMessage(chatId, `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`);
       }
