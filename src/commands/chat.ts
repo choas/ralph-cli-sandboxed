@@ -369,15 +369,12 @@ async function handleCommand(
 
     case "help": {
       const helpText = `
-${state.projectName} commands:
-
-/run - Start ralph automation
-/status - Show PRD progress
-/add [desc] - Add new task to PRD
-/exec [cmd] - Execute shell command
-/action [name] - Run daemon action (e.g., /action build)
-/stop - Stop running ralph process
-/help - Show this help
+/run - Start automation
+/status - PRD progress
+/add [desc] - Add task
+/exec [cmd] - Shell command
+/action [name] - Run action
+/help - This help
 `.trim();
       await client.sendMessage(chatId, helpText);
       break;
