@@ -304,6 +304,26 @@ export async function init(args: string[]): Promise<void> {
     console.log(`Skipped ${RALPH_DIR}/${PROGRESS_FILE} (already exists)`);
   }
 
+  // Create .gitignore if not exists (protects secrets like API tokens)
+  const gitignorePath = join(ralphDir, ".gitignore");
+  if (!existsSync(gitignorePath)) {
+    const gitignoreContent = `# Ralph CLI - Ignore sensitive and runtime files
+# config.json may contain API tokens (Telegram, etc.)
+config.json
+
+# Runtime state files
+messages.json
+chat-state.json
+
+# Docker build artifacts
+docker/.config-hash
+`;
+    writeFileSync(gitignorePath, gitignoreContent);
+    console.log(`Created ${RALPH_DIR}/.gitignore`);
+  } else {
+    console.log(`Skipped ${RALPH_DIR}/.gitignore (already exists)`);
+  }
+
   // Copy PRD guide file from package if not exists
   const prdGuidePath = join(ralphDir, PRD_GUIDE_FILE);
   if (!existsSync(prdGuidePath)) {

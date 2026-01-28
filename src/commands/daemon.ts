@@ -39,11 +39,21 @@ let telegramClient: { sendMessage: (chatId: string, text: string) => Promise<voi
 let telegramConfig: { botToken: string; allowedChatIds?: string[] } | null = null;
 
 /**
+ * Check if Telegram is enabled (has token and not explicitly disabled).
+ */
+function isTelegramEnabled(config: ReturnType<typeof loadConfig>): boolean {
+  if (!config.chat?.enabled) return false;
+  if (!config.chat?.telegram?.botToken) return false;
+  if (config.chat.telegram.enabled === false) return false;
+  return true;
+}
+
+/**
  * Initialize Telegram client if configured.
  */
 async function initTelegramClient(config: ReturnType<typeof loadConfig>): Promise<void> {
-  if (config.chat?.enabled && config.chat?.telegram?.botToken) {
-    telegramConfig = config.chat.telegram;
+  if (isTelegramEnabled(config)) {
+    telegramConfig = config.chat!.telegram!;
     // Dynamic import to avoid circular dependency
     const { createTelegramClient } = await import("../providers/telegram.js");
     telegramClient = createTelegramClient(telegramConfig, false);
@@ -107,8 +117,8 @@ function getDefaultActions(config: ReturnType<typeof loadConfig>): Record<string
     };
   }
 
-  // Add telegram_notify action if chat is configured
-  if (config.chat?.enabled && config.chat?.telegram?.botToken) {
+  // Add telegram_notify action if Telegram is enabled
+  if (isTelegramEnabled(config)) {
     actions.telegram_notify = {
       command: "__telegram__",  // Special marker for Telegram handling
       description: "Send notification via Telegram",

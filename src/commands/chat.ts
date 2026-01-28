@@ -354,6 +354,12 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     process.exit(1);
   }
 
+  // Check if Telegram is explicitly disabled
+  if (config.chat.telegram.enabled === false) {
+    console.error("Error: Telegram is disabled in config (telegram.enabled = false)");
+    process.exit(1);
+  }
+
   // Create or load chat state
   let state = loadChatState();
   const projectId = getOrCreateProjectId();

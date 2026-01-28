@@ -80,6 +80,7 @@ export interface DaemonConfig {
 }
 
 export interface TelegramChatSettings {
+  enabled?: boolean;          // Enable/disable Telegram (default: true if botToken set)
   botToken: string;           // Telegram Bot API token (from @BotFather)
   allowedChatIds?: string[];  // Only respond in these chat IDs (security)
 }
