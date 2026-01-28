@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync, readFileSync, mkdirSync, chmodSync } from "fs";
+import { existsSync, writeFileSync, readFileSync, mkdirSync, chmodSync, openSync } from "fs";
 import { join, basename } from "path";
 import { spawn, ChildProcess } from "child_process";
 import { createHash } from "crypto";
@@ -762,12 +762,18 @@ function getCliProviderConfig(cliProvider?: string): { name: string; command: st
  */
 function startBackgroundServices(config: RalphConfig): () => void {
   const services: string[] = [];
+  const ralphDir = getRalphDir();
+  const logFiles: number[] = [];
 
   // Start daemon if notifications are configured
   if (config.notifications?.provider) {
+    const logPath = join(ralphDir, "daemon.log");
+    const logFd = openSync(logPath, "w");
+    logFiles.push(logFd);
+
     console.log("Starting daemon (notifications configured)...");
     const daemon = spawn("ralph", ["daemon", "start"], {
-      stdio: "ignore",
+      stdio: ["ignore", logFd, logFd],
       detached: true,
     });
     daemon.unref();
@@ -780,9 +786,13 @@ function startBackgroundServices(config: RalphConfig): () => void {
     config.chat?.telegram?.botToken &&
     config.chat.telegram.enabled !== false;
   if (telegramEnabled) {
+    const logPath = join(ralphDir, "chat.log");
+    const logFd = openSync(logPath, "w");
+    logFiles.push(logFd);
+
     console.log("Starting chat client (chat configured)...");
     const chat = spawn("ralph", ["chat", "start"], {
-      stdio: "ignore",
+      stdio: ["ignore", logFd, logFd],
       detached: true,
     });
     chat.unref();
@@ -791,7 +801,9 @@ function startBackgroundServices(config: RalphConfig): () => void {
   }
 
   if (services.length > 0) {
-    console.log(`Background services started: ${services.join(", ")}\n`);
+    console.log(`Background services started: ${services.join(", ")}`);
+    console.log(`Logs: .ralph/daemon.log, .ralph/chat.log`);
+    console.log(`Check status: tail -f .ralph/*.log\n`);
   }
 
   // Return cleanup function

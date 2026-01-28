@@ -315,6 +315,10 @@ config.json
 messages.json
 chat-state.json
 
+# Service logs
+daemon.log
+chat.log
+
 # Docker build artifacts
 docker/.config-hash
 `;
