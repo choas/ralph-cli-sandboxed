@@ -1,10 +1,13 @@
 import { existsSync, writeFileSync, readFileSync, mkdirSync, chmodSync } from "fs";
 import { join, basename } from "path";
-import { spawn } from "child_process";
+import { spawn, ChildProcess } from "child_process";
 import { createHash } from "crypto";
 import { loadConfig, getRalphDir, RalphConfig, McpServerConfig, SkillConfig, AsciinemaConfig } from "../utils/config.js";
 import { promptConfirm } from "../utils/prompt.js";
 import { getLanguagesJson, getCliProvidersJson } from "../templates/prompts.js";
+
+// Track background processes for cleanup
+const backgroundProcesses: ChildProcess[] = [];
 
 const DOCKER_DIR = "docker";
 const CONFIG_HASH_FILE = ".config-hash";
@@ -753,7 +756,56 @@ function getCliProviderConfig(cliProvider?: string): { name: string; command: st
   };
 }
 
-async function runContainer(ralphDir: string, imageName: string, language: string, javaVersion?: number, cliProvider?: string, dockerConfig?: RalphConfig['docker'], claudeConfig?: RalphConfig['claude']): Promise<void> {
+/**
+ * Start background services (daemon, chat) if configured.
+ * Returns cleanup function to stop services.
+ */
+function startBackgroundServices(config: RalphConfig): () => void {
+  const services: string[] = [];
+
+  // Start daemon if notifications are configured
+  if (config.notifications?.provider) {
+    console.log("Starting daemon (notifications configured)...");
+    const daemon = spawn("ralph", ["daemon", "start"], {
+      stdio: "ignore",
+      detached: true,
+    });
+    daemon.unref();
+    backgroundProcesses.push(daemon);
+    services.push("daemon");
+  }
+
+  // Start chat if enabled
+  if (config.chat?.enabled && config.chat?.telegram?.botToken) {
+    console.log("Starting chat client (chat configured)...");
+    const chat = spawn("ralph", ["chat", "start"], {
+      stdio: "ignore",
+      detached: true,
+    });
+    chat.unref();
+    backgroundProcesses.push(chat);
+    services.push("chat");
+  }
+
+  if (services.length > 0) {
+    console.log(`Background services started: ${services.join(", ")}\n`);
+  }
+
+  // Return cleanup function
+  return () => {
+    for (const proc of backgroundProcesses) {
+      try {
+        if (proc.pid) {
+          process.kill(-proc.pid, "SIGTERM");
+        }
+      } catch {
+        // Process may already be dead
+      }
+    }
+  };
+}
+
+async function runContainer(ralphDir: string, imageName: string, language: string, javaVersion?: number, cliProvider?: string, dockerConfig?: RalphConfig['docker'], claudeConfig?: RalphConfig['claude'], fullConfig?: RalphConfig): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
   const dockerfileExists = existsSync(join(dockerDir, "Dockerfile"));
   const hasImage = await imageExists(imageName);
@@ -837,6 +889,12 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
   console.log("Set them in docker-compose.yml or export before running.");
   console.log("");
 
+  // Start background services if configured
+  let cleanupServices = () => {};
+  if (fullConfig) {
+    cleanupServices = startBackgroundServices(fullConfig);
+  }
+
   return new Promise((resolve, reject) => {
     // Use -p to set unique project name per ralph project
     const proc = spawn("docker", ["compose", "-p", imageName, "run", "--rm", "ralph"], {
@@ -845,6 +903,9 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
     });
 
     proc.on("close", (code) => {
+      // Clean up background services
+      cleanupServices();
+
       if (code === 0) {
         resolve();
       } else {
@@ -853,6 +914,7 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
     });
 
     proc.on("error", (err) => {
+      cleanupServices();
       reject(new Error(`Failed to run docker: ${err.message}`));
     });
   });
@@ -1170,7 +1232,7 @@ INSTALLING PACKAGES (works with Docker & Podman):
       break;
 
     case "run":
-      await runContainer(ralphDir, imageName, config.language, config.javaVersion, config.cliProvider, config.docker, config.claude);
+      await runContainer(ralphDir, imageName, config.language, config.javaVersion, config.cliProvider, config.docker, config.claude, config);
       break;
 
     case "clean":
