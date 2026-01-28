@@ -231,6 +231,7 @@ export async function init(args: string[]): Promise<void> {
       firewall: {
         allowedDomains: [],
       },
+      autoStart: false,
     },
 
     // Claude-specific configuration (MCP servers and skills)

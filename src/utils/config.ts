@@ -86,6 +86,7 @@ export interface RalphConfig {
     firewall?: {
       allowedDomains?: string[];
     };
+    autoStart?: boolean;  // Automatically restart container when Docker/Podman starts
   };
   claude?: {
     mcpServers?: Record<string, McpServerConfig>;
