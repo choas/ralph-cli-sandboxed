@@ -1,32 +1,8 @@
-import { render, Box, Text } from "ink";
+import { render } from "ink";
 import React from "react";
-import { loadConfig, RalphConfig, getPaths } from "../utils/config.js";
+import { getPaths } from "../utils/config.js";
 import { existsSync } from "fs";
-
-// Placeholder Ink app component
-function ConfigEditorApp({ config }: { config: RalphConfig }): React.ReactElement {
-  return (
-    <Box flexDirection="column" padding={1}>
-      <Text color="cyan" bold>ralph config</Text>
-      <Text>TUI Config Editor (work in progress)</Text>
-      <Box marginTop={1}>
-        <Text dimColor>Language: </Text>
-        <Text>{config.language}</Text>
-      </Box>
-      <Box>
-        <Text dimColor>Check: </Text>
-        <Text>{config.checkCommand}</Text>
-      </Box>
-      <Box>
-        <Text dimColor>Test: </Text>
-        <Text>{config.testCommand}</Text>
-      </Box>
-      <Box marginTop={1}>
-        <Text dimColor>Press Ctrl+C to exit</Text>
-      </Box>
-    </Box>
-  );
-}
+import { ConfigEditor } from "../tui/ConfigEditor.js";
 
 export async function config(args: string[]): Promise<void> {
   const subcommand = args[0];
@@ -43,17 +19,8 @@ export async function config(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  // Load configuration
-  let configData: RalphConfig;
-  try {
-    configData = loadConfig();
-  } catch (error) {
-    console.error("Error loading config:", error instanceof Error ? error.message : "Unknown error");
-    process.exit(1);
-  }
-
-  // Render Ink app
-  const { waitUntilExit } = render(<ConfigEditorApp config={configData} />);
+  // Render Ink app with ConfigEditor
+  const { waitUntilExit } = render(<ConfigEditor />);
   await waitUntilExit();
 }
 
