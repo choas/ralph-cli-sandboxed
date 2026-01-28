@@ -8,6 +8,7 @@ import { BooleanToggle } from "./components/BooleanToggle.js";
 import { ArrayEditor } from "./components/ArrayEditor.js";
 import { ObjectEditor } from "./components/ObjectEditor.js";
 import { Preview } from "./components/Preview.js";
+import { HelpPanel } from "./components/HelpPanel.js";
 import type { RalphConfig } from "../utils/config.js";
 import { validateConfig, type ValidationError } from "./utils/validation.js";
 
@@ -60,6 +61,9 @@ export function ConfigEditor(): React.ReactElement {
 
   // Preview panel visibility
   const [previewVisible, setPreviewVisible] = useState(true);
+
+  // Help panel visibility
+  const [helpVisible, setHelpVisible] = useState(false);
 
   // Status message for feedback
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -170,11 +174,25 @@ export function ConfigEditor(): React.ReactElement {
     setPreviewVisible((prev) => !prev);
   }, []);
 
-  // Global keyboard shortcuts (S for Save, Q for Quit, Tab for preview toggle)
+  // Toggle help visibility
+  const toggleHelp = useCallback(() => {
+    setHelpVisible((prev) => !prev);
+  }, []);
+
+  // Global keyboard shortcuts (S for Save, Q for Quit, Tab for preview toggle, ? for help)
   useInput(
     (input, key) => {
       // Only handle global shortcuts when not in field editor
       if (focusPane === "field-editor") return;
+
+      // ? key toggles help panel (takes priority when help is visible)
+      if (input === "?") {
+        toggleHelp();
+        return;
+      }
+
+      // When help panel is visible, don't process other shortcuts
+      if (helpVisible) return;
 
       if (input.toUpperCase() === "S") {
         handleSave();
@@ -314,6 +332,11 @@ export function ConfigEditor(): React.ReactElement {
 
   return (
     <Box flexDirection="column">
+      {/* Help panel overlay */}
+      {helpVisible && (
+        <HelpPanel visible={helpVisible} onClose={toggleHelp} />
+      )}
+
       {/* Header */}
       <Box marginBottom={1} justifyContent="space-between">
         <Box>
@@ -324,6 +347,8 @@ export function ConfigEditor(): React.ReactElement {
           <Text dimColor>[S] Save</Text>
           <Text dimColor> | </Text>
           <Text dimColor>[Q] Quit</Text>
+          <Text dimColor> | </Text>
+          <Text dimColor>[?] Help</Text>
         </Box>
       </Box>
 
