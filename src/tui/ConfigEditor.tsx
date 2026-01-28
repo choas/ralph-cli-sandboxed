@@ -7,6 +7,7 @@ import { StringEditor } from "./components/StringEditor.js";
 import { BooleanToggle } from "./components/BooleanToggle.js";
 import { ArrayEditor } from "./components/ArrayEditor.js";
 import { ObjectEditor } from "./components/ObjectEditor.js";
+import { Preview } from "./components/Preview.js";
 import type { RalphConfig } from "../utils/config.js";
 
 /**
@@ -55,6 +56,9 @@ export function ConfigEditor(): React.ReactElement {
   const [selectedSection, setSelectedSection] = useState("basic");
   const [selectedField, setSelectedField] = useState<string | undefined>(undefined);
   const [focusPane, setFocusPane] = useState<FocusPane>("nav");
+
+  // Preview panel visibility
+  const [previewVisible, setPreviewVisible] = useState(true);
 
   // Status message for feedback
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -139,7 +143,12 @@ export function ConfigEditor(): React.ReactElement {
     exit();
   }, [exit]);
 
-  // Global keyboard shortcuts (S for Save, Q for Quit)
+  // Toggle preview visibility
+  const togglePreview = useCallback(() => {
+    setPreviewVisible((prev) => !prev);
+  }, []);
+
+  // Global keyboard shortcuts (S for Save, Q for Quit, Tab for preview toggle)
   useInput(
     (input, key) => {
       // Only handle global shortcuts when not in field editor
@@ -150,8 +159,18 @@ export function ConfigEditor(): React.ReactElement {
       } else if (input.toUpperCase() === "Q") {
         handleQuit();
       } else if (key.tab) {
-        // Tab to switch between nav and editor panes
-        setFocusPane((prev) => (prev === "nav" ? "editor" : "nav"));
+        // Tab to toggle JSON preview visibility
+        togglePreview();
+      } else if (input === "l" || key.rightArrow) {
+        // l or right arrow to move focus to editor
+        if (focusPane === "nav") {
+          setFocusPane("editor");
+        }
+      } else if (input === "h" || key.leftArrow) {
+        // h or left arrow to move focus to nav
+        if (focusPane === "editor") {
+          setFocusPane("nav");
+        }
       }
     },
     { isActive: focusPane !== "field-editor" }
@@ -311,7 +330,7 @@ export function ConfigEditor(): React.ReactElement {
             />
           </Box>
 
-          {/* Right panel: Editor panel */}
+          {/* Middle panel: Editor panel */}
           <Box flexGrow={1}>
             <EditorPanel
               config={config}
@@ -322,14 +341,21 @@ export function ConfigEditor(): React.ReactElement {
               isFocused={focusPane === "editor"}
             />
           </Box>
+
+          {/* Right panel: JSON Preview (toggle with Tab) */}
+          <Preview
+            config={config}
+            selectedSection={selectedSection}
+            visible={previewVisible}
+          />
         </Box>
       )}
 
       {/* Footer with keyboard hints */}
       <Box marginTop={1}>
         <Text dimColor>
-          {focusPane === "nav" && "j/k: navigate | Enter: select section | Tab: switch pane"}
-          {focusPane === "editor" && "j/k: navigate | Enter: edit | Esc: back | Tab: switch pane"}
+          {focusPane === "nav" && "j/k: navigate | Enter: select | l/→: editor | Tab: toggle preview"}
+          {focusPane === "editor" && "j/k: navigate | Enter: edit | h/←: nav | Tab: toggle preview"}
           {focusPane === "field-editor" && "Follow editor hints"}
         </Text>
       </Box>
