@@ -41,10 +41,30 @@ export interface DaemonActionConfig {
   description?: string;       // Human-readable description of the action
 }
 
+/**
+ * Event types that can trigger daemon calls.
+ * - task_complete: Fired after each task is completed
+ * - ralph_complete: Fired when ralph finishes all work (PRD complete)
+ * - iteration_complete: Fired after each iteration
+ * - error: Fired when an error occurs
+ */
+export type DaemonEventType =
+  | "task_complete"      // After each task finishes
+  | "ralph_complete"     // When ralph finishes all work
+  | "iteration_complete" // After each iteration
+  | "error";             // When an error occurs
+
+export interface DaemonEventConfig {
+  action: string;             // Name of the daemon action to call (must exist in actions)
+  args?: string[];            // Additional arguments to pass to the action
+  message?: string;           // Custom message (can include {{task}} placeholder for task_complete)
+}
+
 export interface DaemonConfig {
   enabled?: boolean;          // Enable daemon support (default: true if actions defined)
   socketPath?: string;        // Custom socket path (default: .ralph/daemon.sock)
   actions?: Record<string, DaemonActionConfig>;  // Custom actions the sandbox can trigger
+  events?: Partial<Record<DaemonEventType, DaemonEventConfig[]>>;  // Event handlers - each event can have multiple daemon calls
 }
 
 export interface TelegramChatSettings {

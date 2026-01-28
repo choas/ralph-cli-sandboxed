@@ -249,6 +249,19 @@ export async function init(args: string[]): Promise<void> {
         allowedChatIds: [],
       },
     },
+
+    // Daemon configuration for sandbox-to-host communication
+    daemon: {
+      actions: {},
+      // Event handlers - each event can trigger multiple daemon actions
+      // Available events: task_complete, ralph_complete, iteration_complete, error
+      events: {
+        // Example: notify after each task completes
+        // task_complete: [{ action: "notify", message: "Task complete: {{task}}" }],
+        // Example: notify when ralph finishes all work
+        // ralph_complete: [{ action: "notify", message: "Ralph finished!" }],
+      },
+    },
   };
 
   const configPath = join(ralphDir, CONFIG_FILE);

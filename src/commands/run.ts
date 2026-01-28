@@ -5,7 +5,7 @@ import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliCon
 import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
 import { validatePrd, smartMerge, readPrdFile, writePrd, expandPrdFileReferences, PrdEntry } from "../utils/prd-validator.js";
 import { getStreamJsonParser, StreamJsonParser } from "../utils/stream-json.js";
-import { sendNotification } from "../utils/notification.js";
+import { sendNotificationWithDaemonEvents, triggerDaemonEvents } from "../utils/notification.js";
 
 /**
  * Stream JSON configuration for clean output display
@@ -74,15 +74,23 @@ function createFilteredPrd(prdPath: string, baseDir: string, category?: string):
 }
 
 /**
+ * Result of syncing tasks from prd-tasks.json to prd.json.
+ */
+interface SyncResult {
+  count: number;
+  taskNames: string[];
+}
+
+/**
  * Syncs passes flags from prd-tasks.json back to prd.json.
  * If the LLM marked any item as passes: true in prd-tasks.json,
  * find the matching item in prd.json and update it.
- * Returns the number of items synced.
+ * Returns the number of items synced and their names.
  */
-function syncPassesFromTasks(tasksPath: string, prdPath: string): number {
+function syncPassesFromTasks(tasksPath: string, prdPath: string): SyncResult {
   // Check if tasks file exists
   if (!existsSync(tasksPath)) {
-    return 0;
+    return { count: 0, taskNames: [] };
   }
 
   try {
@@ -90,7 +98,7 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): number {
     const tasksParsed = JSON.parse(tasksContent);
     if (!Array.isArray(tasksParsed)) {
       console.warn("\x1b[33mWarning: prd-tasks.json is not a valid array - skipping sync.\x1b[0m");
-      return 0;
+      return { count: 0, taskNames: [] };
     }
     const tasks: PrdItem[] = tasksParsed;
 
@@ -99,11 +107,12 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): number {
     if (!Array.isArray(prdParsed)) {
       console.warn("\x1b[33mWarning: prd.json is corrupted - skipping sync.\x1b[0m");
       console.warn("Run \x1b[36mralph fix-prd\x1b[0m after this session to repair.\n");
-      return 0;
+      return { count: 0, taskNames: [] };
     }
     const prd: PrdItem[] = prdParsed;
 
     let synced = 0;
+    const syncedTaskNames: string[] = [];
 
     // Find tasks that were marked as passing
     for (const task of tasks) {
@@ -118,6 +127,7 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): number {
         if (match && !match.passes) {
           match.passes = true;
           synced++;
+          syncedTaskNames.push(task.description);
         }
       }
     }
@@ -128,10 +138,10 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): number {
       console.log(`\x1b[32mSynced ${synced} completed item(s) from prd-tasks.json to prd.json\x1b[0m`);
     }
 
-    return synced;
+    return { count: synced, taskNames: syncedTaskNames };
   } catch {
     // Ignore errors - the validation step will handle any issues
-    return 0;
+    return { count: 0, taskNames: [] };
   }
 }
 
@@ -617,9 +627,10 @@ export async function run(args: string[]): Promise<void> {
           console.log("=".repeat(50));
 
           // Send notification for PRD completion
-          await sendNotification("prd_complete", undefined, {
+          await sendNotificationWithDaemonEvents("prd_complete", undefined, {
             command: config.notifyCommand,
             debug,
+            daemonConfig: config.daemon,
           });
 
           break;
@@ -630,7 +641,17 @@ export async function run(args: string[]): Promise<void> {
 
       // Sync any completed items from prd-tasks.json back to prd.json
       // This catches cases where the LLM updated prd-tasks.json instead of prd.json
-      syncPassesFromTasks(filteredPrdPath, paths.prd);
+      const syncResult = syncPassesFromTasks(filteredPrdPath, paths.prd);
+
+      // Send task_complete notification for each completed task
+      for (const taskName of syncResult.taskNames) {
+        await sendNotificationWithDaemonEvents("task_complete", `Ralph: Task complete - ${taskName}`, {
+          command: config.notifyCommand,
+          debug,
+          daemonConfig: config.daemon,
+          taskName,
+        });
+      }
 
       // Clean up temp file after each iteration
       try {
@@ -666,10 +687,10 @@ export async function run(args: string[]): Promise<void> {
           console.log("Check the PRD and task definitions for issues.");
 
           // Send notification about stopped run
-          await sendNotification(
+          await sendNotificationWithDaemonEvents(
             "run_stopped",
             `Ralph: Run stopped - no progress after ${MAX_ITERATIONS_WITHOUT_PROGRESS} iterations. ${progressCounts.incomplete} tasks remaining.`,
-            { command: config.notifyCommand, debug }
+            { command: config.notifyCommand, debug, daemonConfig: config.daemon }
           );
 
           break;
@@ -693,10 +714,10 @@ export async function run(args: string[]): Promise<void> {
           console.error("Please check your CLI configuration and try again.");
 
           // Send notification about error
-          await sendNotification(
+          await sendNotificationWithDaemonEvents(
             "error",
             `Ralph: CLI failed ${consecutiveFailures} times with exit code ${exitCode}. Check configuration.`,
-            { command: config.notifyCommand, debug }
+            { command: config.notifyCommand, debug, daemonConfig: config.daemon }
           );
 
           break;
@@ -740,9 +761,10 @@ export async function run(args: string[]): Promise<void> {
           console.log("=".repeat(50));
 
           // Send notification if configured
-          await sendNotification("prd_complete", undefined, {
+          await sendNotificationWithDaemonEvents("prd_complete", undefined, {
             command: config.notifyCommand,
             debug,
+            daemonConfig: config.daemon,
           });
 
           break;

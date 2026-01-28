@@ -4,7 +4,7 @@ import { join } from "path";
 import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, requireContainer } from "../utils/config.js";
 import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
 import { getStreamJsonParser } from "../utils/stream-json.js";
-import { sendNotification } from "../utils/notification.js";
+import { sendNotificationWithDaemonEvents } from "../utils/notification.js";
 
 export async function once(args: string[]): Promise<void> {
   // Parse flags
@@ -119,7 +119,7 @@ export async function once(args: string[]): Promise<void> {
   const streamJsonParser = getStreamJsonParser(config.cliProvider, debug);
 
   // Notification options for this run
-  const notifyOptions = { command: config.notifyCommand, debug };
+  const notifyOptions = { command: config.notifyCommand, debug, daemonConfig: config.daemon };
 
   return new Promise((resolve, reject) => {
     let output = ""; // Accumulate output for PRD complete detection
@@ -198,11 +198,11 @@ export async function once(args: string[]): Promise<void> {
         // Send notification based on outcome
         if (code !== 0) {
           console.error(`\n${cliConfig.command} exited with code ${code}`);
-          await sendNotification("error", `Ralph: Iteration failed with exit code ${code}`, notifyOptions);
+          await sendNotificationWithDaemonEvents("error", `Ralph: Iteration failed with exit code ${code}`, notifyOptions);
         } else if (output.includes("<promise>COMPLETE</promise>")) {
-          await sendNotification("prd_complete", undefined, notifyOptions);
+          await sendNotificationWithDaemonEvents("prd_complete", undefined, notifyOptions);
         } else {
-          await sendNotification("iteration_complete", undefined, notifyOptions);
+          await sendNotificationWithDaemonEvents("iteration_complete", undefined, notifyOptions);
         }
 
         resolve();
@@ -227,11 +227,11 @@ export async function once(args: string[]): Promise<void> {
         // Send notification based on outcome
         if (code !== 0) {
           console.error(`\n${cliConfig.command} exited with code ${code}`);
-          await sendNotification("error", `Ralph: Iteration failed with exit code ${code}`, notifyOptions);
+          await sendNotificationWithDaemonEvents("error", `Ralph: Iteration failed with exit code ${code}`, notifyOptions);
         } else if (output.includes("<promise>COMPLETE</promise>")) {
-          await sendNotification("prd_complete", undefined, notifyOptions);
+          await sendNotificationWithDaemonEvents("prd_complete", undefined, notifyOptions);
         } else {
-          await sendNotification("iteration_complete", undefined, notifyOptions);
+          await sendNotificationWithDaemonEvents("iteration_complete", undefined, notifyOptions);
         }
 
         resolve();
