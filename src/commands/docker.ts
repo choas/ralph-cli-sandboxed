@@ -426,9 +426,14 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig['do
     # command: bash -c "sudo /usr/local/bin/init-firewall.sh && zsh"\n`;
   }
 
-  // Build restart policy section if autoStart is enabled
+  // Build restart policy section
+  // Priority: restartCount (on-failure with max retries) > autoStart (unless-stopped)
   let restartSection = '';
-  if (dockerConfig?.autoStart) {
+  if (dockerConfig?.restartCount !== undefined && dockerConfig.restartCount > 0) {
+    // Use on-failure policy with max retry count
+    restartSection = `    restart: on-failure:${dockerConfig.restartCount}\n`;
+  } else if (dockerConfig?.autoStart) {
+    // Use unless-stopped for auto-restart on daemon start
     restartSection = '    restart: unless-stopped\n';
   }
 

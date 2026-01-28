@@ -41,6 +41,18 @@ export interface DaemonActionConfig {
   description?: string;       // Human-readable description of the action
 }
 
+// Notification provider configs
+export interface NtfyNotificationConfig {
+  topic: string;              // ntfy topic name (required)
+  server?: string;            // ntfy server URL (default: https://ntfy.sh)
+}
+
+export interface NotificationsConfig {
+  provider: "ntfy" | "command";  // Which notification provider to use
+  ntfy?: NtfyNotificationConfig;
+  command?: string;           // Custom command (for "command" provider)
+}
+
 /**
  * Event types that can trigger daemon calls.
  * - task_complete: Fired after each task is completed
@@ -62,7 +74,7 @@ export interface DaemonEventConfig {
 
 export interface DaemonConfig {
   enabled?: boolean;          // Enable daemon support (default: true if actions defined)
-  socketPath?: string;        // Custom socket path (default: .ralph/daemon.sock)
+  socketPath?: string;        // Deprecated - file-based messaging now used
   actions?: Record<string, DaemonActionConfig>;  // Custom actions the sandbox can trigger
   events?: Partial<Record<DaemonEventType, DaemonEventConfig[]>>;  // Event handlers - each event can have multiple daemon calls
 }
@@ -83,7 +95,8 @@ export interface RalphConfig {
   checkCommand: string;
   testCommand: string;
   imageName?: string;
-  notifyCommand?: string;
+  notifyCommand?: string;     // Deprecated - use notifications instead
+  notifications?: NotificationsConfig;
   technologies?: string[];
   javaVersion?: number;
   cli?: CliConfig;
@@ -107,6 +120,7 @@ export interface RalphConfig {
       allowedDomains?: string[];
     };
     autoStart?: boolean;  // Automatically restart container when Docker/Podman starts
+    restartCount?: number;  // Max restart attempts on failure (uses on-failure policy). 0 = no restart, >0 = max retries
   };
   claude?: {
     mcpServers?: Record<string, McpServerConfig>;
