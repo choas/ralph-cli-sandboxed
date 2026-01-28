@@ -311,10 +311,13 @@ async function handleCommand(
     }
 
     case "action": {
+      // Reload config to pick up new actions
+      const freshConfig = loadConfig();
+      const actions = freshConfig.daemon?.actions || {};
+      const actionNames = Object.keys(actions).filter(name => name !== "notify" && name !== "telegram_notify");
+
       if (args.length === 0) {
         // List available actions
-        const actions = config.daemon?.actions || {};
-        const actionNames = Object.keys(actions).filter(name => name !== "notify" && name !== "telegram_notify");
         if (actionNames.length === 0) {
           await client.sendMessage(chatId, `${state.projectName}: No actions configured. Add actions to daemon.actions in config.json`);
         } else {
@@ -324,15 +327,13 @@ async function handleCommand(
       }
 
       const actionName = args[0].toLowerCase();
-      const actions = config.daemon?.actions || {};
       const action = actions[actionName];
 
       if (!action) {
-        const availableActions = Object.keys(actions).filter(name => name !== "notify" && name !== "telegram_notify");
-        if (availableActions.length === 0) {
+        if (actionNames.length === 0) {
           await client.sendMessage(chatId, `${state.projectName}: No actions configured. Add actions to daemon.actions in config.json`);
         } else {
-          await client.sendMessage(chatId, `${state.projectName}: Unknown action '${actionName}'. Available: ${availableActions.join(", ")}`);
+          await client.sendMessage(chatId, `${state.projectName}: Unknown action '${actionName}'. Available: ${actionNames.join(", ")}`);
         }
         return;
       }
