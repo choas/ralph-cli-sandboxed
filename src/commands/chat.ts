@@ -334,20 +334,8 @@ ${state.projectName} commands:
  * Start the chat daemon (listens for messages and handles commands).
  */
 async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
-  // Check that chat is configured
-  if (!config.chat?.enabled) {
-    console.error("Error: Chat is not enabled in config.json");
-    console.error("Set chat.enabled to true and configure your provider settings.");
-    process.exit(1);
-  }
-
-  if (config.chat.provider !== "telegram") {
-    console.error(`Error: Unknown chat provider: ${config.chat.provider}`);
-    console.error("Currently only 'telegram' is supported.");
-    process.exit(1);
-  }
-
-  if (!config.chat.telegram?.botToken) {
+  // Check that Telegram is configured
+  if (!config.chat?.telegram?.botToken) {
     console.error("Error: Telegram bot token not configured");
     console.error("Set chat.telegram.botToken in .ralph/config.json");
     console.error("Get a token from @BotFather on Telegram");

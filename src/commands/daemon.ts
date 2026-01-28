@@ -42,7 +42,6 @@ let telegramConfig: { botToken: string; allowedChatIds?: string[] } | null = nul
  * Check if Telegram is enabled (has token and not explicitly disabled).
  */
 function isTelegramEnabled(config: ReturnType<typeof loadConfig>): boolean {
-  if (!config.chat?.enabled) return false;
   if (!config.chat?.telegram?.botToken) return false;
   if (config.chat.telegram.enabled === false) return false;
   return true;

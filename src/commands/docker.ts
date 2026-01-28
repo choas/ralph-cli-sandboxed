@@ -781,9 +781,8 @@ function startBackgroundServices(config: RalphConfig): () => void {
     services.push("daemon");
   }
 
-  // Start chat if enabled (check telegram.enabled flag too)
-  const telegramEnabled = config.chat?.enabled &&
-    config.chat?.telegram?.botToken &&
+  // Start chat if telegram is configured and not explicitly disabled
+  const telegramEnabled = config.chat?.telegram?.botToken &&
     config.chat.telegram.enabled !== false;
   if (telegramEnabled) {
     const logPath = join(ralphDir, "chat.log");
