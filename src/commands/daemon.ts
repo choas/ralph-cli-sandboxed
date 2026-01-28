@@ -34,6 +34,46 @@ export interface DaemonResponse {
   error?: string;
 }
 
+// Telegram client for sending messages (lazy loaded)
+let telegramClient: { sendMessage: (chatId: string, text: string) => Promise<void> } | null = null;
+let telegramConfig: { botToken: string; allowedChatIds?: string[] } | null = null;
+
+/**
+ * Initialize Telegram client if configured.
+ */
+async function initTelegramClient(config: ReturnType<typeof loadConfig>): Promise<void> {
+  if (config.chat?.enabled && config.chat?.telegram?.botToken) {
+    telegramConfig = config.chat.telegram;
+    // Dynamic import to avoid circular dependency
+    const { createTelegramClient } = await import("../providers/telegram.js");
+    telegramClient = createTelegramClient(telegramConfig, false);
+  }
+}
+
+/**
+ * Send a message via Telegram if configured.
+ */
+async function sendTelegramMessage(message: string): Promise<{ success: boolean; error?: string }> {
+  if (!telegramClient || !telegramConfig) {
+    return { success: false, error: "Telegram not configured" };
+  }
+
+  try {
+    // Send to all allowed chat IDs, or fail if none configured
+    const chatIds = telegramConfig.allowedChatIds;
+    if (!chatIds || chatIds.length === 0) {
+      return { success: false, error: "No chat IDs configured for Telegram" };
+    }
+
+    for (const chatId of chatIds) {
+      await telegramClient.sendMessage(chatId, message);
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
 /**
  * Default actions available to the sandbox.
  */
@@ -67,6 +107,14 @@ function getDefaultActions(config: ReturnType<typeof loadConfig>): Record<string
     };
   }
 
+  // Add telegram_notify action if chat is configured
+  if (config.chat?.enabled && config.chat?.telegram?.botToken) {
+    actions.telegram_notify = {
+      command: "__telegram__",  // Special marker for Telegram handling
+      description: "Send notification via Telegram",
+    };
+  }
+
   // Add chat_status action for querying PRD status from container
   actions.chat_status = {
     command: "ralph prd status --json 2>/dev/null || echo '{}'",
@@ -89,6 +137,17 @@ async function executeAction(
   action: DaemonAction,
   args: string[] = []
 ): Promise<{ success: boolean; output: string; error?: string }> {
+  // Special handling for Telegram
+  if (action.command === "__telegram__") {
+    const message = args.join(" ") || "Ralph notification";
+    const result = await sendTelegramMessage(message);
+    return {
+      success: result.success,
+      output: result.success ? "Sent to Telegram" : "",
+      error: result.error,
+    };
+  }
+
   return new Promise((resolve) => {
     let fullCommand: string;
 
@@ -187,6 +246,9 @@ async function startDaemon(debug: boolean): Promise<void> {
 
   const config = loadConfig();
   const daemonConfig = config.daemon || {};
+
+  // Initialize Telegram client if configured
+  await initTelegramClient(config);
 
   // Merge default and configured actions
   const defaultActions = getDefaultActions(config);
