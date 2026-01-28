@@ -1,24 +1,45 @@
-import { createConnection, Socket } from "net";
 import { existsSync } from "fs";
-import { getContainerSocketPath, getSocketPath, DaemonRequest, DaemonResponse } from "../commands/daemon.js";
 import { isRunningInContainer } from "./config.js";
+import {
+  getMessagesPath,
+  sendMessage,
+  waitForResponse,
+} from "./message-queue.js";
 
-/**
- * Get the appropriate socket path based on whether we're in a container or on host.
- */
-export function getDaemonSocketPath(): string {
-  if (isRunningInContainer()) {
-    return getContainerSocketPath();
-  }
-  return getSocketPath();
+// Re-export types for backwards compatibility
+export interface DaemonRequest {
+  action: string;
+  args?: string[];
+}
+
+export interface DaemonResponse {
+  success: boolean;
+  message?: string;
+  output?: string;
+  error?: string;
 }
 
 /**
- * Check if the daemon is available (socket exists).
+ * Get the appropriate messages path based on whether we're in a container or on host.
+ */
+export function getDaemonSocketPath(): string {
+  // For backwards compatibility, return the messages path
+  return getMessagesPath(isRunningInContainer());
+}
+
+/**
+ * Check if the daemon is available (messages file can be written).
  */
 export function isDaemonAvailable(): boolean {
-  const socketPath = getDaemonSocketPath();
-  return existsSync(socketPath);
+  const messagesPath = getMessagesPath(isRunningInContainer());
+
+  // In container, check if the .ralph directory is mounted
+  if (isRunningInContainer()) {
+    return existsSync("/workspace/.ralph");
+  }
+
+  // On host, check if .ralph directory exists
+  return existsSync(messagesPath.replace("/messages.json", ""));
 }
 
 /**
@@ -33,93 +54,33 @@ export async function sendDaemonRequest(
   args?: string[],
   timeout: number = 10000
 ): Promise<DaemonResponse> {
-  return new Promise((resolve, reject) => {
-    const socketPath = getDaemonSocketPath();
+  const messagesPath = getMessagesPath(isRunningInContainer());
 
-    // Check if socket exists
-    if (!existsSync(socketPath)) {
-      resolve({
+  try {
+    // Send message via file queue
+    const messageId = sendMessage(messagesPath, "sandbox", action, args);
+
+    // Wait for response
+    const response = await waitForResponse(messagesPath, messageId, timeout);
+
+    if (!response) {
+      return {
         success: false,
-        error: `Daemon not available. Socket not found at ${socketPath}. Start the daemon on the host with 'ralph daemon start'.`,
-      });
-      return;
+        error: `Request timed out after ${timeout}ms. Make sure the daemon is running on the host.`,
+      };
     }
 
-    let socket: Socket | null = null;
-    let timeoutId: NodeJS.Timeout | null = null;
-    let buffer = "";
-    let resolved = false;
-
-    const cleanup = () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-      if (socket) {
-        socket.destroy();
-        socket = null;
-      }
+    return {
+      success: response.success,
+      output: response.output,
+      error: response.error,
     };
-
-    const resolveOnce = (response: DaemonResponse) => {
-      if (!resolved) {
-        resolved = true;
-        cleanup();
-        resolve(response);
-      }
+  } catch (err) {
+    return {
+      success: false,
+      error: `Failed to send message: ${err instanceof Error ? err.message : "unknown error"}`,
     };
-
-    // Set timeout
-    timeoutId = setTimeout(() => {
-      resolveOnce({
-        success: false,
-        error: `Request timed out after ${timeout}ms`,
-      });
-    }, timeout);
-
-    // Connect to daemon
-    socket = createConnection(socketPath);
-
-    socket.on("connect", () => {
-      const request: DaemonRequest = { action, args };
-      socket!.write(JSON.stringify(request) + "\n");
-    });
-
-    socket.on("data", (data) => {
-      buffer += data.toString();
-
-      // Look for complete response (newline-delimited JSON)
-      const newlineIndex = buffer.indexOf("\n");
-      if (newlineIndex !== -1) {
-        const jsonStr = buffer.substring(0, newlineIndex);
-        try {
-          const response: DaemonResponse = JSON.parse(jsonStr);
-          resolveOnce(response);
-        } catch {
-          resolveOnce({
-            success: false,
-            error: `Invalid response from daemon: ${jsonStr}`,
-          });
-        }
-      }
-    });
-
-    socket.on("error", (err) => {
-      resolveOnce({
-        success: false,
-        error: `Connection error: ${err.message}`,
-      });
-    });
-
-    socket.on("close", () => {
-      if (!resolved) {
-        resolveOnce({
-          success: false,
-          error: "Connection closed before receiving response",
-        });
-      }
-    });
-  });
+  }
 }
 
 /**

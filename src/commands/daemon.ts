@@ -1,21 +1,24 @@
-import { createServer, Server, Socket } from "net";
-import { existsSync, mkdirSync, unlinkSync, chmodSync } from "fs";
-import { join, dirname } from "path";
+import { existsSync, watch, FSWatcher } from "fs";
 import { spawn } from "child_process";
 import { loadConfig, getRalphDir, isRunningInContainer } from "../utils/config.js";
-
-// Socket path conventions
-const SOCKET_DIR = ".ralph";
-const SOCKET_FILE = "daemon.sock";
+import {
+  getMessagesPath,
+  readMessages,
+  getPendingMessages,
+  respondToMessage,
+  cleanupOldMessages,
+  initializeMessages,
+  Message,
+} from "../utils/message-queue.js";
 
 export interface DaemonAction {
   command: string;
   description?: string;
+  ntfyUrl?: string;  // Special case for ntfy provider - curl target URL
 }
 
 export interface DaemonConfig {
   enabled?: boolean;
-  socketPath?: string;
   actions?: Record<string, DaemonAction>;
 }
 
@@ -32,25 +35,7 @@ export interface DaemonResponse {
 }
 
 /**
- * Get the default socket path for the daemon.
- * This should be in the project's .ralph directory so it gets mounted into the container.
- */
-export function getSocketPath(): string {
-  const ralphDir = getRalphDir();
-  return join(ralphDir, SOCKET_FILE);
-}
-
-/**
- * Get the socket path as seen from inside the container.
- * The .ralph directory is mounted at /workspace/.ralph in the container.
- */
-export function getContainerSocketPath(): string {
-  return `/workspace/${SOCKET_DIR}/${SOCKET_FILE}`;
-}
-
-/**
  * Default actions available to the sandbox.
- * These can be overridden in config.
  */
 function getDefaultActions(config: ReturnType<typeof loadConfig>): Record<string, DaemonAction> {
   const actions: Record<string, DaemonAction> = {
@@ -60,8 +45,22 @@ function getDefaultActions(config: ReturnType<typeof loadConfig>): Record<string
     },
   };
 
-  // Add notify action if notifyCommand is configured
-  if (config.notifyCommand) {
+  // Add notify action based on notifications config
+  if (config.notifications?.provider === "ntfy" && config.notifications.ntfy?.topic) {
+    const server = config.notifications.ntfy.server || "https://ntfy.sh";
+    const topic = config.notifications.ntfy.topic;
+    actions.notify = {
+      command: "curl",  // Placeholder - ntfyUrl triggers special handling
+      description: `Send notification via ntfy to ${topic}`,
+      ntfyUrl: `${server}/${topic}`,
+    };
+  } else if (config.notifications?.provider === "command" && config.notifications.command) {
+    actions.notify = {
+      command: config.notifications.command,
+      description: "Send notification to host",
+    };
+  } else if (config.notifyCommand) {
+    // Fallback to deprecated notifyCommand
     actions.notify = {
       command: config.notifyCommand,
       description: "Send notification to host",
@@ -86,16 +85,26 @@ function getDefaultActions(config: ReturnType<typeof loadConfig>): Record<string
 /**
  * Execute an action command with arguments.
  */
-async function executeAction(action: DaemonAction, args: string[] = []): Promise<{ success: boolean; output: string; error?: string }> {
+async function executeAction(
+  action: DaemonAction,
+  args: string[] = []
+): Promise<{ success: boolean; output: string; error?: string }> {
   return new Promise((resolve) => {
-    // Split command into executable and base args
-    const parts = action.command.trim().split(/\s+/);
-    const [cmd, ...cmdArgs] = parts;
+    let fullCommand: string;
 
-    // Append the request args
-    const allArgs = [...cmdArgs, ...args];
+    // Special handling for ntfy - use curl with proper syntax
+    if (action.ntfyUrl) {
+      const message = args.join(" ") || "Ralph notification";
+      // curl -s -d "message" https://ntfy.sh/topic
+      fullCommand = `curl -s -d "${message.replace(/"/g, '\\"')}" "${action.ntfyUrl}"`;
+    } else {
+      // Build the full command with args
+      fullCommand = args.length > 0
+        ? `${action.command} ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`
+        : action.command;
+    }
 
-    const proc = spawn(cmd, allArgs, {
+    const proc = spawn(fullCommand, [], {
       stdio: ["ignore", "pipe", "pipe"],
       shell: true,
     });
@@ -115,7 +124,11 @@ async function executeAction(action: DaemonAction, args: string[] = []): Promise
       if (code === 0) {
         resolve({ success: true, output: stdout.trim() });
       } else {
-        resolve({ success: false, output: stdout.trim(), error: stderr.trim() || `Exit code: ${code}` });
+        resolve({
+          success: false,
+          output: stdout.trim(),
+          error: stderr.trim() || `Exit code: ${code}`,
+        });
       }
     });
 
@@ -126,153 +139,128 @@ async function executeAction(action: DaemonAction, args: string[] = []): Promise
 }
 
 /**
- * Handle a client connection.
+ * Process a message from the sandbox.
  */
-function handleClient(socket: Socket, actions: Record<string, DaemonAction>, debug: boolean): void {
-  let buffer = "";
+async function processMessage(
+  message: Message,
+  actions: Record<string, DaemonAction>,
+  messagesPath: string,
+  debug: boolean
+): Promise<void> {
+  if (debug) {
+    console.log(`[daemon] Processing: ${message.action} (${message.id})`);
+  }
 
-  socket.on("data", async (data) => {
-    buffer += data.toString();
+  const action = actions[message.action];
 
-    // Look for complete JSON messages (newline-delimited)
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || ""; // Keep incomplete line in buffer
+  if (!action) {
+    respondToMessage(messagesPath, message.id, {
+      success: false,
+      error: `Unknown action: ${message.action}. Available: ${Object.keys(actions).join(", ")}`,
+    });
+    return;
+  }
 
-    for (const line of lines) {
-      if (!line.trim()) continue;
+  const result = await executeAction(action, message.args);
 
-      try {
-        const request: DaemonRequest = JSON.parse(line);
-
-        if (debug) {
-          console.log(`[daemon] Received request: ${JSON.stringify(request)}`);
-        }
-
-        // Validate action exists
-        const action = actions[request.action];
-        if (!action) {
-          const response: DaemonResponse = {
-            success: false,
-            error: `Unknown action: ${request.action}. Available actions: ${Object.keys(actions).join(", ")}`,
-          };
-          socket.write(JSON.stringify(response) + "\n");
-          continue;
-        }
-
-        // Execute the action
-        const result = await executeAction(action, request.args);
-        const response: DaemonResponse = {
-          success: result.success,
-          output: result.output,
-          error: result.error,
-          message: result.success ? "Action executed successfully" : "Action failed",
-        };
-
-        if (debug) {
-          console.log(`[daemon] Response: ${JSON.stringify(response)}`);
-        }
-
-        socket.write(JSON.stringify(response) + "\n");
-      } catch (err) {
-        const response: DaemonResponse = {
-          success: false,
-          error: `Invalid request format: ${err instanceof Error ? err.message : "unknown error"}`,
-        };
-        socket.write(JSON.stringify(response) + "\n");
-      }
-    }
+  respondToMessage(messagesPath, message.id, {
+    success: result.success,
+    output: result.output,
+    error: result.error,
   });
 
-  socket.on("error", (err) => {
-    if (debug) {
-      console.error(`[daemon] Socket error: ${err.message}`);
-    }
-  });
+  if (debug) {
+    console.log(`[daemon] Responded: ${result.success ? "success" : "failed"}`);
+  }
 }
 
 /**
- * Start the daemon server.
+ * Start the daemon - watches for messages from sandbox.
  */
 async function startDaemon(debug: boolean): Promise<void> {
   // Daemon should not run inside a container
   if (isRunningInContainer()) {
     console.error("Error: 'ralph daemon' should run on the host, not inside a container.");
-    console.error("The daemon provides a communication channel from sandbox to host.");
+    console.error("The daemon processes messages from the sandbox.");
     process.exit(1);
   }
 
   const config = loadConfig();
   const daemonConfig = config.daemon || {};
 
-  // Get socket path
-  const socketPath = daemonConfig.socketPath || getSocketPath();
-
-  // Ensure socket directory exists
-  const socketDir = dirname(socketPath);
-  if (!existsSync(socketDir)) {
-    mkdirSync(socketDir, { recursive: true });
-  }
-
-  // Remove existing socket file if present
-  if (existsSync(socketPath)) {
-    try {
-      unlinkSync(socketPath);
-    } catch {
-      console.error(`Error: Cannot remove existing socket at ${socketPath}`);
-      console.error("Another daemon may be running. Use 'ralph daemon stop' to stop it.");
-      process.exit(1);
-    }
-  }
-
   // Merge default and configured actions
   const defaultActions = getDefaultActions(config);
   const configuredActions = daemonConfig.actions || {};
   const actions = { ...defaultActions, ...configuredActions };
 
-  // Create server
-  const server: Server = createServer((socket) => {
-    if (debug) {
-      console.log("[daemon] Client connected");
+  const messagesPath = getMessagesPath(false);
+  const ralphDir = getRalphDir();
+
+  // Initialize messages file with daemon_started message
+  initializeMessages(messagesPath);
+
+  console.log("Ralph daemon started");
+  console.log(`Messages file: ${messagesPath}`);
+  console.log("");
+  console.log("Available actions:");
+  for (const [name, action] of Object.entries(actions)) {
+    console.log(`  ${name}: ${action.description || action.command}`);
+  }
+  console.log("");
+  console.log("Watching for messages from sandbox...");
+  console.log("Press Ctrl+C to stop.");
+
+  // Process any pending messages on startup
+  const pending = getPendingMessages(messagesPath, "sandbox");
+  for (const msg of pending) {
+    await processMessage(msg, actions, messagesPath, debug);
+  }
+
+  // Watch for file changes
+  let processing = false;
+  let watcher: FSWatcher | null = null;
+
+  const checkMessages = async () => {
+    if (processing) return;
+    processing = true;
+
+    try {
+      const pending = getPendingMessages(messagesPath, "sandbox");
+      for (const msg of pending) {
+        await processMessage(msg, actions, messagesPath, debug);
+      }
+
+      // Cleanup old messages periodically
+      cleanupOldMessages(messagesPath, 60000);
+    } catch (err) {
+      if (debug) {
+        console.error(`[daemon] Error processing messages: ${err}`);
+      }
     }
-    handleClient(socket, actions, debug);
-  });
 
-  // Handle server errors
-  server.on("error", (err) => {
-    console.error(`[daemon] Server error: ${err.message}`);
-    process.exit(1);
-  });
+    processing = false;
+  };
 
-  // Start listening
-  server.listen(socketPath, () => {
-    // Make socket accessible to container (group/other readable and writable)
-    chmodSync(socketPath, 0o666);
+  // Watch the .ralph directory for changes
+  if (existsSync(ralphDir)) {
+    watcher = watch(ralphDir, { persistent: true }, (eventType, filename) => {
+      if (filename === "messages.json") {
+        checkMessages();
+      }
+    });
+  }
 
-    console.log("Ralph daemon started");
-    console.log(`Socket: ${socketPath}`);
-    console.log("");
-    console.log("Available actions:");
-    for (const [name, action] of Object.entries(actions)) {
-      console.log(`  ${name}: ${action.description || action.command}`);
-    }
-    console.log("");
-    console.log("The sandbox can now send commands to the host.");
-    console.log("Press Ctrl+C to stop the daemon.");
-  });
+  // Also poll periodically as backup (file watching can be unreliable)
+  const pollInterval = setInterval(checkMessages, 1000);
 
-  // Handle shutdown signals
+  // Handle shutdown
   const shutdown = () => {
     console.log("\nShutting down daemon...");
-    server.close(() => {
-      try {
-        if (existsSync(socketPath)) {
-          unlinkSync(socketPath);
-        }
-      } catch {
-        // Ignore errors during cleanup
-      }
-      process.exit(0);
-    });
+    if (watcher) {
+      watcher.close();
+    }
+    clearInterval(pollInterval);
+    process.exit(0);
   };
 
   process.on("SIGINT", shutdown);
@@ -280,45 +268,25 @@ async function startDaemon(debug: boolean): Promise<void> {
 }
 
 /**
- * Stop a running daemon by removing its socket.
- */
-function stopDaemon(): void {
-  const socketPath = getSocketPath();
-
-  if (existsSync(socketPath)) {
-    try {
-      unlinkSync(socketPath);
-      console.log("Daemon socket removed.");
-      console.log("Note: If the daemon process is still running, it will detect the removed socket and exit.");
-    } catch (err) {
-      console.error(`Error removing socket: ${err instanceof Error ? err.message : "unknown error"}`);
-      process.exit(1);
-    }
-  } else {
-    console.log("No daemon socket found. Daemon may not be running.");
-  }
-}
-
-/**
  * Show daemon status.
  */
 function showStatus(): void {
-  const socketPath = getSocketPath();
+  const messagesPath = getMessagesPath(false);
 
   console.log("Ralph Daemon Status");
   console.log("-".repeat(40));
-  console.log(`Socket path: ${socketPath}`);
-  console.log(`Socket exists: ${existsSync(socketPath) ? "yes" : "no"}`);
+  console.log(`Messages file: ${messagesPath}`);
+  console.log(`File exists: ${existsSync(messagesPath) ? "yes" : "no"}`);
 
-  if (existsSync(socketPath)) {
-    console.log("");
-    console.log("Daemon appears to be running.");
-    console.log("Use 'ralph daemon stop' to stop it.");
-  } else {
-    console.log("");
-    console.log("Daemon is not running.");
-    console.log("Use 'ralph daemon start' to start it.");
+  if (existsSync(messagesPath)) {
+    const messages = readMessages(messagesPath);
+    const pending = messages.filter((m) => m.status === "pending");
+    console.log(`Total messages: ${messages.length}`);
+    console.log(`Pending messages: ${pending.length}`);
   }
+
+  console.log("");
+  console.log("To start the daemon: ralph daemon start");
 }
 
 /**
@@ -335,26 +303,43 @@ ralph daemon - Host daemon for sandbox-to-host communication
 
 USAGE:
   ralph daemon start [--debug]  Start the daemon (run on host, not in container)
-  ralph daemon stop             Stop the daemon
   ralph daemon status           Show daemon status
   ralph daemon help             Show this help message
 
 DESCRIPTION:
-  The daemon runs on the host machine and listens on a Unix socket that is
-  mounted into the sandbox container. This allows the sandboxed environment
-  to communicate with the host for specific, whitelisted actions without
-  requiring external network access.
+  The daemon runs on the host machine and watches the .ralph/messages.json
+  file for messages from the sandboxed container. When the sandbox sends
+  a message, the daemon processes it and writes a response.
+
+  This file-based approach works on all platforms (macOS, Linux, Windows)
+  and allows other tools to also interact with the message queue.
 
 CONFIGURATION:
-  Configure the daemon in .ralph/config.json:
+  Configure notifications in .ralph/config.json:
 
+  Using ntfy (recommended - no install needed, uses curl):
+  {
+    "notifications": {
+      "provider": "ntfy",
+      "ntfy": {
+        "topic": "my-ralph-notifications",
+        "server": "https://ntfy.sh"
+      }
+    }
+  }
+
+  Using a custom command:
+  {
+    "notifications": {
+      "provider": "command",
+      "command": "notify-send Ralph"
+    }
+  }
+
+  Custom daemon actions:
   {
     "daemon": {
       "actions": {
-        "notify": {
-          "command": "ntfy pub mytopic",
-          "description": "Send notification via ntfy"
-        },
         "custom-action": {
           "command": "/path/to/script.sh",
           "description": "Run custom script"
@@ -364,8 +349,10 @@ CONFIGURATION:
   }
 
 DEFAULT ACTIONS:
-  ping     Health check - responds with 'pong'
-  notify   Send notification (uses notifyCommand from config)
+  ping         Health check - responds with 'pong'
+  notify       Send notification (uses notifications config)
+  chat_status  Get PRD status as JSON
+  chat_add     Add a new task to the PRD
 
 SANDBOX USAGE:
   From inside the container, use 'ralph notify' to send messages:
@@ -373,10 +360,36 @@ SANDBOX USAGE:
   ralph notify "Task completed!"
   ralph notify --action ping
 
-SECURITY:
-  - Only configured actions can be executed
-  - Commands run with host user permissions
-  - Socket is only accessible via mounted volume
+MESSAGE FORMAT:
+  The messages.json file contains an array of messages:
+
+  [
+    {
+      "id": "uuid",
+      "from": "sandbox",
+      "action": "notify",
+      "args": ["Hello!"],
+      "timestamp": 1234567890,
+      "status": "pending"
+    }
+  ]
+
+  When the daemon processes a message, it updates the status and adds a response:
+
+  {
+    "id": "uuid",
+    "from": "sandbox",
+    "action": "notify",
+    "args": ["Hello!"],
+    "timestamp": 1234567890,
+    "status": "done",
+    "response": {
+      "success": true,
+      "output": "..."
+    }
+  }
+
+  Other tools can read/write to this file for integration.
 
 EXAMPLES:
   # Terminal 1: Start daemon on host
@@ -396,12 +409,13 @@ EXAMPLES:
       await startDaemon(debug);
       break;
 
-    case "stop":
-      stopDaemon();
-      break;
-
     case "status":
       showStatus();
+      break;
+
+    case "stop":
+      console.log("The file-based daemon doesn't require stopping.");
+      console.log("Just press Ctrl+C in the terminal where it's running.");
       break;
 
     default:

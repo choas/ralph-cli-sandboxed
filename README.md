@@ -45,6 +45,8 @@ ralph docker run
 | `ralph fix-prd [opts]` | Validate and recover corrupted PRD file |
 | `ralph prompt [opts]` | Display resolved prompt |
 | `ralph docker <sub>` | Manage Docker sandbox environment |
+| `ralph daemon <sub>` | Manage host daemon for sandbox notifications |
+| `ralph notify [msg]` | Send notification (from sandbox to host) |
 | `ralph help` | Show help message |
 
 > **Note:** `ralph prd <subcommand>` still works for compatibility (e.g., `ralph prd add`).
@@ -85,19 +87,51 @@ After running `ralph init`, you'll have:
 
 ### Notifications
 
-Ralph can send notifications when events occur during automation. Configure a notification command in `.ralph/config.json`:
+Ralph can send notifications when events occur during automation. Configure notifications in `.ralph/config.json`:
+
+#### Using ntfy (Recommended)
+
+[ntfy](https://ntfy.sh/) is a simple HTTP-based pub-sub notification service. Ralph uses curl to send notifications, so **no ntfy CLI installation is required**:
 
 ```json
 {
-  "notifyCommand": "ntfy pub mytopic"
+  "notifications": {
+    "provider": "ntfy",
+    "ntfy": {
+      "topic": "my-ralph-notifications",
+      "server": "https://ntfy.sh"
+    }
+  }
 }
 ```
 
-The message is appended as the last argument to your command. Supported notification tools include:
+| Field | Description |
+|-------|-------------|
+| `provider` | Set to `"ntfy"` for ntfy notifications |
+| `ntfy.topic` | Your unique topic name (required) |
+| `ntfy.server` | ntfy server URL (default: `https://ntfy.sh`) |
+
+To receive notifications:
+1. Subscribe to your topic on your phone ([ntfy app](https://ntfy.sh/)) or browser (`https://ntfy.sh/your-topic`)
+2. Run `ralph docker run` - you'll get notifications on completion
+
+#### Using a Custom Command
+
+For other notification tools, use the `command` provider:
+
+```json
+{
+  "notifications": {
+    "provider": "command",
+    "command": "notify-send Ralph"
+  }
+}
+```
+
+The message is appended as the last argument to your command. Supported tools include:
 
 | Tool | Example Command | Description |
 |------|----------------|-------------|
-| [ntfy](https://ntfy.sh/) | `ntfy pub mytopic` | Push notifications to phone/desktop |
 | notify-send (Linux) | `notify-send Ralph` | Desktop notifications on Linux |
 | terminal-notifier (macOS) | `terminal-notifier -title Ralph -message` | Desktop notifications on macOS |
 | Custom script | `/path/to/notify.sh` | Your own notification script |
@@ -113,25 +147,75 @@ Ralph sends notifications for these events:
 | Run Stopped | "Ralph: Run stopped..." | `ralph run` stops due to no progress or max failures |
 | Error | "Ralph: An error occurred." | CLI fails repeatedly |
 
-#### Example: ntfy Setup
+#### Sandbox-to-Host Notifications (Daemon)
 
-[ntfy](https://ntfy.sh/) is a simple HTTP-based pub-sub notification service:
+When running in a Docker sandbox, notifications are sent via the ralph daemon which runs on the host. The sandbox communicates with the daemon through a shared message file (`.ralph/messages.json`).
 
 ```bash
-# 1. Install ntfy CLI
-pip install ntfy
+# Terminal 1: Start daemon on host
+ralph daemon start
 
-# 2. Subscribe to your topic on your phone (ntfy app) or browser
-# Visit: https://ntfy.sh/your-unique-topic
-
-# 3. Configure ralph
-# In .ralph/config.json:
-{
-  "notifyCommand": "ntfy pub your-unique-topic"
-}
-
-# 4. Run ralph - you'll get notifications on completion
+# Terminal 2: Run container
 ralph docker run
+
+# Inside container: Send notification manually
+ralph notify "Hello from sandbox!"
+```
+
+The daemon watches for messages and executes the configured notification command on the host. This file-based approach works on all platforms (macOS, Linux, Windows) and allows other tools to integrate with the message queue.
+
+#### Custom Daemon Actions
+
+You can define custom actions that the sandbox can trigger. This example logs task completions and ralph finished events to a file:
+
+```json
+{
+  "daemon": {
+    "actions": {
+      "log_task": {
+        "command": "echo \"$(date '+%Y-%m-%d %H:%M:%S') - Task completed:\" >> log.txt && echo",
+        "description": "Log task completion to file"
+      },
+      "log_complete": {
+        "command": "echo \"$(date '+%Y-%m-%d %H:%M:%S') - Ralph finished: All PRD tasks complete\" >> log.txt",
+        "description": "Log ralph completion to file"
+      }
+    },
+    "events": {
+      "task_complete": [
+        {
+          "action": "log_task",
+          "message": "{{task}}"
+        }
+      ],
+      "ralph_complete": [
+        {
+          "action": "log_complete"
+        },
+        {
+          "action": "notify",
+          "message": "All tasks done!"
+        }
+      ]
+    }
+  }
+}
+```
+
+| Event | When Triggered |
+|-------|----------------|
+| `task_complete` | After each PRD task is marked as passing |
+| `ralph_complete` | When all PRD tasks are complete |
+| `iteration_complete` | After each `ralph once` iteration |
+| `error` | When an error occurs |
+
+The `{{task}}` placeholder is replaced with the task description. Events can trigger multiple actions - for example, `ralph_complete` above both logs to file and sends a notification.
+
+Example `log.txt` output:
+```
+2024-01-15 14:23:01 - Task completed: Add user authentication
+2024-01-15 14:45:32 - Task completed: Implement JWT tokens
+2024-01-15 15:02:18 - Ralph finished: All PRD tasks complete
 ```
 
 ### Supported Languages

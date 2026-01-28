@@ -1,12 +1,17 @@
-import { isDaemonAvailable, sendDaemonRequest, getDaemonSocketPath } from "../utils/daemon-client.js";
 import { isRunningInContainer } from "../utils/config.js";
 import { sendNotification, NotificationEvent } from "../utils/notification.js";
 import { loadConfig } from "../utils/config.js";
+import {
+  getMessagesPath,
+  sendMessage,
+  waitForResponse,
+} from "../utils/message-queue.js";
+import { existsSync } from "fs";
 
 /**
  * Send a notification - works both inside and outside containers.
  *
- * Inside container: Uses daemon socket to communicate with host
+ * Inside container: Uses file-based message queue to communicate with host daemon
  * Outside container: Uses notifyCommand directly (for testing)
  */
 export async function notify(args: string[]): Promise<void> {
@@ -38,21 +43,52 @@ export async function notify(args: string[]): Promise<void> {
     }
   }
 
+  const inContainer = isRunningInContainer();
+  const messagesPath = getMessagesPath(inContainer);
+
   if (debug) {
     console.log(`[notify] Action: ${action}`);
     console.log(`[notify] Message/Args: ${message || "(none)"}`);
-    console.log(`[notify] In container: ${isRunningInContainer()}`);
-    console.log(`[notify] Daemon socket: ${getDaemonSocketPath()}`);
-    console.log(`[notify] Daemon available: ${isDaemonAvailable()}`);
+    console.log(`[notify] In container: ${inContainer}`);
+    console.log(`[notify] Messages file: ${messagesPath}`);
   }
 
-  // Check if daemon is available
-  if (isDaemonAvailable()) {
-    // Use daemon for communication
-    const response = await sendDaemonRequest(
+  if (inContainer) {
+    // Inside container - use file-based message queue
+    if (!existsSync(messagesPath)) {
+      // Check if .ralph directory exists (mounted from host)
+      const ralphDir = "/workspace/.ralph";
+      if (!existsSync(ralphDir)) {
+        console.error("Error: .ralph directory not mounted in container.");
+        console.error("Make sure the container is started with 'ralph docker run'.");
+        process.exit(1);
+      }
+    }
+
+    // Send message via file queue
+    const messageId = sendMessage(
+      messagesPath,
+      "sandbox",
       action,
       message ? [message] : undefined
     );
+
+    if (debug) {
+      console.log(`[notify] Sent message: ${messageId}`);
+    }
+
+    console.log("Message sent. Waiting for daemon response...");
+
+    // Wait for response
+    const response = await waitForResponse(messagesPath, messageId, 10000);
+
+    if (!response) {
+      console.error("No response from daemon (timeout).");
+      console.error("");
+      console.error("Make sure the daemon is running on the host:");
+      console.error("  ralph daemon start");
+      process.exit(1);
+    }
 
     if (debug) {
       console.log(`[notify] Response: ${JSON.stringify(response)}`);
@@ -68,11 +104,11 @@ export async function notify(args: string[]): Promise<void> {
         }
       }
     } else {
-      console.error(`Failed to send notification: ${response.error}`);
+      console.error(`Failed: ${response.error}`);
       process.exit(1);
     }
-  } else if (!isRunningInContainer()) {
-    // Outside container, daemon not running - use direct notification
+  } else {
+    // Outside container - use direct notification or message queue
     try {
       const config = loadConfig();
       if (config.notifyCommand) {
@@ -80,25 +116,16 @@ export async function notify(args: string[]): Promise<void> {
           command: config.notifyCommand,
           debug,
         });
-        console.log("Notification sent directly (daemon not running).");
+        console.log("Notification sent directly.");
       } else {
-        console.error("No notifyCommand configured and daemon not running.");
-        console.error("Configure notifyCommand in .ralph/config.json or start the daemon.");
+        console.error("No notifyCommand configured.");
+        console.error("Configure notifyCommand in .ralph/config.json");
         process.exit(1);
       }
     } catch {
       console.error("Failed to load config. Run 'ralph init' first.");
       process.exit(1);
     }
-  } else {
-    // Inside container but daemon not available
-    console.error("Daemon not available.");
-    console.error("");
-    console.error("The daemon must be running on the host to receive notifications.");
-    console.error("Start it with: ralph daemon start");
-    console.error("");
-    console.error(`Looking for socket at: ${getDaemonSocketPath()}`);
-    process.exit(1);
   }
 }
 
@@ -118,8 +145,8 @@ OPTIONS:
 
 DESCRIPTION:
   This command sends notifications or executes actions through the ralph
-  daemon. The daemon runs on the host and the sandbox communicates with
-  it via a Unix socket.
+  daemon. Communication happens via a shared file (.ralph/messages.json)
+  that is mounted into the container.
 
 EXAMPLES:
   # Send a notification
@@ -146,9 +173,8 @@ SETUP:
      ralph notify "Hello from sandbox!"
 
 NOTES:
-  - The daemon must be running on the host for this to work inside containers
-  - Outside containers, this command can send notifications directly if
-    notifyCommand is configured
-  - Custom actions can be configured in the daemon config
+  - The daemon must be running on the host to process messages
+  - Communication uses .ralph/messages.json (works on all platforms)
+  - Other tools can also read/write to this file for integration
 `);
 }
