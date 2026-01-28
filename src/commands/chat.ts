@@ -368,6 +368,37 @@ async function handleCommand(
       break;
     }
 
+    case "claude": {
+      if (args.length === 0) {
+        await client.sendMessage(chatId, `${state.projectName}: Usage: /claude [prompt]`);
+        return;
+      }
+
+      const prompt = args.join(" ");
+      await client.sendMessage(chatId, `${state.projectName}: Running Claude Code with prompt...`);
+
+      // Send claude command to sandbox with longer timeout (5 minutes)
+      const response = await sendToSandbox("claude", args, debug, 300000);
+
+      if (response) {
+        let output = response.output || response.error || "(no output)";
+
+        // Truncate long output
+        if (output.length > 2000) {
+          output = output.substring(0, 2000) + "\n...(truncated)";
+        }
+
+        if (response.success) {
+          await client.sendMessage(chatId, `${state.projectName}: Claude Code completed\n${output}`);
+        } else {
+          await client.sendMessage(chatId, `${state.projectName}: Claude Code failed\n${output}`);
+        }
+      } else {
+        await client.sendMessage(chatId, `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`);
+      }
+      break;
+    }
+
     case "help": {
       const helpText = `
 /run - Start automation
@@ -375,6 +406,7 @@ async function handleCommand(
 /add [desc] - Add task
 /exec [cmd] - Shell command
 /action [name] - Run action
+/claude [prompt] - Run Claude Code
 /help - This help
 `.trim();
       await client.sendMessage(chatId, helpText);
@@ -453,6 +485,7 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     console.log("  /add ...     - Add new task to PRD");
     console.log("  /exec ...    - Execute shell command");
     console.log("  /action ...  - Run daemon action");
+    console.log("  /claude ...  - Run Claude Code with prompt (YOLO mode)");
     console.log("  /help        - Show help");
     console.log("");
     console.log("Press Ctrl+C to stop the daemon.");
@@ -643,6 +676,7 @@ CHAT COMMANDS:
   /add [desc]     - Add new task to PRD
   /exec [cmd]     - Execute shell command
   /action [name]  - Run daemon action (e.g., /action build)
+  /claude [prompt] - Run Claude Code with prompt in YOLO mode
   /stop           - Stop running ralph process
   /help           - Show help
 
@@ -685,6 +719,7 @@ EXAMPLES:
   /exec npm test    # Run npm test
   /action build     # Run build action
   /action deploy    # Run deploy action
+  /claude Fix the login bug  # Run Claude Code with prompt
 `);
     return;
   }

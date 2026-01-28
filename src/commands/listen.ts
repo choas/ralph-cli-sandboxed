@@ -153,6 +153,45 @@ async function processMessage(
       break;
     }
 
+    case "claude": {
+      // Run Claude Code with the provided prompt in YOLO mode
+      const prompt = args?.join(" ") || "";
+      if (!prompt) {
+        respondToMessage(messagesPath, message.id, {
+          success: false,
+          error: "No prompt provided",
+        });
+        return;
+      }
+
+      console.log(`[listen] Running Claude Code with prompt: ${prompt.substring(0, 50)}...`);
+
+      // Build the command: claude -p "prompt" --dangerously-skip-permissions
+      // Using --print to get non-interactive output
+      const escapedPrompt = prompt.replace(/'/g, "'\\''");
+      const command = `claude -p '${escapedPrompt}' --dangerously-skip-permissions --print`;
+
+      // Run with 5 minute timeout
+      const result = await executeCommand(command, 300000);
+
+      // Truncate long output
+      let output = result.output;
+      if (output.length > 4000) {
+        output = output.substring(0, 4000) + "\n...(truncated)";
+      }
+
+      respondToMessage(messagesPath, message.id, {
+        success: result.success,
+        output,
+        error: result.error,
+      });
+
+      if (debug) {
+        console.log(`[listen] Claude Code result: ${result.success ? "OK" : "FAILED"}`);
+      }
+      break;
+    }
+
     default:
       respondToMessage(messagesPath, message.id, {
         success: false,
@@ -173,7 +212,7 @@ async function startListening(debug: boolean): Promise<void> {
   console.log(`Messages file: ${messagesPath}`);
   console.log("");
   console.log("Listening for commands from host...");
-  console.log("Supported actions: exec, run, status, ping");
+  console.log("Supported actions: exec, run, status, ping, claude");
   console.log("");
   console.log("Press Ctrl+C to stop.");
 
@@ -256,10 +295,11 @@ DESCRIPTION:
   processes them and writes responses back.
 
 SUPPORTED ACTIONS:
-  exec [cmd]  Execute a shell command in the sandbox
-  run         Start ralph run
-  status      Get PRD status
-  ping        Health check
+  exec [cmd]     Execute a shell command in the sandbox
+  run            Start ralph run
+  status         Get PRD status
+  ping           Health check
+  claude [prompt] Run Claude Code with prompt (YOLO mode)
 
 SETUP:
   1. Start the daemon on the host: ralph daemon start
