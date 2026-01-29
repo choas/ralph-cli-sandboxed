@@ -211,6 +211,19 @@ export function parseCommand(text: string, message: ChatMessage): ChatCommand | 
 }
 
 /**
+ * Escape HTML special characters in a string.
+ * This is required for Telegram messages since they use parse_mode: "HTML".
+ * Characters like <, >, & in command output (e.g., git status showing <file>)
+ * would otherwise be interpreted as HTML tags and cause API errors.
+ */
+export function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/**
  * Strip ANSI escape codes from a string.
  * This is useful for cleaning output before sending to chat services
  * that don't support terminal formatting.

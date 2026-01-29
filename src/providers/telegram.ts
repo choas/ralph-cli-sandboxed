@@ -13,6 +13,7 @@ import {
   TelegramSettings,
   SendMessageOptions,
   parseCommand,
+  escapeHtml,
 } from "../utils/chat-client.js";
 
 interface TelegramUpdate {
@@ -306,9 +307,13 @@ export class TelegramChatClient implements ChatClient {
       throw new Error("Not connected");
     }
 
+    // Escape HTML special characters since we use parse_mode: "HTML".
+    // This prevents API errors when text contains <, >, & (e.g., git status output with <file>).
+    const escapedText = escapeHtml(text);
+
     const body: Record<string, unknown> = {
       chat_id: chatId,
-      text,
+      text: escapedText,
       parse_mode: "HTML",
     };
 
