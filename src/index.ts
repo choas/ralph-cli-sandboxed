@@ -11,6 +11,7 @@ import { prd, prdAdd, prdList, prdStatus, prdToggle, prdClean, parseListArgs } f
 import { docker } from "./commands/docker.js";
 import { prompt } from "./commands/prompt.js";
 import { fixPrd } from "./commands/fix-prd.js";
+import { fixConfig } from "./commands/fix-config.js";
 import { daemon } from "./commands/daemon.js";
 import { notify } from "./commands/notify.js";
 import { chat } from "./commands/chat.js";
@@ -42,6 +43,7 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   config,
   action,
   "fix-prd": (args) => fixPrd(args),
+  "fix-config": (args) => fixConfig(args),
   // Top-level PRD commands (shortcuts)
   add: () => prdAdd(),
   list: (args) => {

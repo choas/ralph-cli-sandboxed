@@ -14,6 +14,7 @@ COMMANDS:
   toggle <n>        Toggle passes status for entry n
   clean             Remove all passing entries from the PRD
   fix-prd [opts]    Validate and recover corrupted PRD file
+  fix-config [opts] Validate and recover corrupted config.json
   prompt [opts]     Display resolved prompt (for testing in Claude Code)
   docker <sub>      Manage Docker sandbox environment
   daemon <sub>      Host daemon for sandbox-to-host communication
@@ -50,6 +51,10 @@ TOGGLE OPTIONS:
 FIX-PRD OPTIONS:
   <backup-file>              Restore PRD from a specific backup file
   --verify, -v               Only verify format, don't attempt to fix
+
+FIX-CONFIG OPTIONS:
+  --verify, -v               Only verify format, don't attempt to fix
+  -y, --yes                  Skip confirmation prompt, apply fixes automatically
 
 DOCKER SUBCOMMANDS:
   docker init       Generate Dockerfile and scripts
@@ -102,6 +107,9 @@ EXAMPLES:
   ralph fix-prd              # Validate/recover corrupted PRD file
   ralph fix-prd --verify     # Check PRD format without fixing
   ralph fix-prd backup.prd.2024-01-15.json  # Restore from specific backup
+  ralph fix-config           # Validate/recover corrupted config.json
+  ralph fix-config --verify  # Check config format without fixing
+  ralph fix-config -y        # Auto-fix without prompts
   ralph prompt               # Display resolved prompt
   ralph docker init          # Generate Dockerfile for sandboxed env
   ralph docker build         # Build Docker image
