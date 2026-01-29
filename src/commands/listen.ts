@@ -202,7 +202,7 @@ async function processMessage(
     default:
       respondToMessage(messagesPath, message.id, {
         success: false,
-        error: `Unknown action: ${action}`,
+        error: `Unknown action: ${action}. Supported: exec, run, status, ping, claude`,
       });
   }
 }

@@ -450,7 +450,17 @@ async function handleCommand(
         if (response.success) {
           await client.sendMessage(chatId, `${state.projectName}: Claude Code completed\n${output}`);
         } else {
-          await client.sendMessage(chatId, `${state.projectName}: Claude Code failed\n${output}`);
+          // Check for version mismatch (sandbox has old version without /claude support)
+          if (response.error?.includes("Unknown action: claude")) {
+            await client.sendMessage(
+              chatId,
+              `${state.projectName}: Claude Code failed - sandbox needs update.\n` +
+              `The sandbox listener doesn't support /claude. Rebuild your Docker container:\n` +
+              `  ralph docker build --no-cache`
+            );
+          } else {
+            await client.sendMessage(chatId, `${state.projectName}: Claude Code failed\n${output}`);
+          }
         }
       } else {
         await client.sendMessage(chatId, `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`);
