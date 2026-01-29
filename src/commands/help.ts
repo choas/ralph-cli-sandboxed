@@ -18,6 +18,7 @@ COMMANDS:
   docker <sub>      Manage Docker sandbox environment
   daemon <sub>      Host daemon for sandbox-to-host communication
   notify [msg]      Send notification to host from sandbox
+  action [name]     Execute host actions from config.json
   chat <sub>        Chat client integration (Telegram, etc.)
   help              Show this help message
 
@@ -74,6 +75,12 @@ NOTIFY OPTIONS:
   --action, -a <name>    Execute specific daemon action (default: notify)
   --debug, -d            Show debug output
 
+ACTION OPTIONS:
+  [name]                 Name of the action to execute
+  [args...]              Arguments to pass to the action command
+  --list, -l             List all configured actions
+  --debug, -d            Show debug output
+
 EXAMPLES:
   ralph init                 # Initialize ralph (interactive CLI, language, tech selection)
   ralph init -y              # Initialize with defaults (Claude + Node.js, no prompts)
@@ -103,6 +110,8 @@ EXAMPLES:
   ralph notify "Task done!"  # Send notification from sandbox to host
   ralph chat start           # Start Telegram chat daemon
   ralph chat test 123456     # Test chat connection
+  ralph action --list        # List available host actions
+  ralph action build         # Execute 'build' action on host
 
 CONFIGURATION:
   After running 'ralph init', you'll have:

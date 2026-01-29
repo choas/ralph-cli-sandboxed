@@ -16,6 +16,7 @@ import { notify } from "./commands/notify.js";
 import { chat } from "./commands/chat.js";
 import { listen } from "./commands/listen.js";
 import { config } from "./commands/config.js";
+import { action } from "./commands/action.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -39,6 +40,7 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   chat,
   listen,
   config,
+  action,
   "fix-prd": (args) => fixPrd(args),
   // Top-level PRD commands (shortcuts)
   add: () => prdAdd(),
