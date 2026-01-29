@@ -3,7 +3,7 @@
  * Provides quick setup templates for common integrations.
  */
 
-import type { RalphConfig, NotificationProviderConfig, TelegramChatSettings } from "../../utils/config.js";
+import type { RalphConfig, NotificationProviderConfig, TelegramChatSettings, SlackChatSettings } from "../../utils/config.js";
 
 /**
  * A preset defines default values for a specific integration.
@@ -40,11 +40,18 @@ export const CHAT_PRESETS: ConfigPreset[] = [
   {
     id: "slack",
     name: "Slack",
-    description: "Slack App for chat control (coming soon)",
+    description: "Slack App for chat control via Socket Mode",
     category: "chat",
     fields: {
       "chat.enabled": true,
       "chat.provider": "slack",
+      "chat.slack": {
+        enabled: true,
+        botToken: "",     // xoxb-... from OAuth & Permissions
+        appToken: "",     // xapp-... from Basic Information > App-Level Tokens
+        signingSecret: "", // From Basic Information > App Credentials
+        allowedChannelIds: [],
+      } satisfies SlackChatSettings,
     },
   },
   {

@@ -34,6 +34,19 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
     { key: "token", description: "Gotify app token", required: true },
     { key: "priority", description: "Message priority (0-10)" },
   ],
+  // Chat provider hints
+  slack: [
+    { key: "botToken", description: "Slack Bot Token (xoxb-...) from OAuth & Permissions", required: true },
+    { key: "appToken", description: "Slack App Token (xapp-...) from Basic Information > App-Level Tokens", required: true },
+    { key: "signingSecret", description: "Slack Signing Secret from Basic Information > App Credentials", required: true },
+    { key: "allowedChannelIds", description: "Only respond in these channel IDs (security)" },
+    { key: "enabled", description: "Enable/disable Slack integration" },
+  ],
+  telegram: [
+    { key: "botToken", description: "Telegram Bot API token from @BotFather", required: true },
+    { key: "allowedChatIds", description: "Only respond in these chat IDs (security)" },
+    { key: "enabled", description: "Enable/disable Telegram integration" },
+  ],
 };
 
 export interface KeyValueEditorProps {

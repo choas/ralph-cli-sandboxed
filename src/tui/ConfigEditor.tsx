@@ -381,7 +381,12 @@ export function ConfigEditor(): React.ReactElement {
            selectedField === "notifications.pushover" ||
            selectedField === "notifications.gotify");
 
-        if (isNotificationProvider) {
+        // Check if this is a chat provider config field
+        const isChatProvider = selectedField &&
+          (selectedField === "chat.slack" ||
+           selectedField === "chat.telegram");
+
+        if (isNotificationProvider || isChatProvider) {
           // Extract provider name from field path
           const providerName = selectedField.split(".").pop() || "";
           return (
@@ -390,8 +395,24 @@ export function ConfigEditor(): React.ReactElement {
               entries={stringEntries}
               providerName={providerName}
               onConfirm={(entries) => {
-                // For notification providers, keep values as strings
-                handleFieldConfirm(entries);
+                // Parse back array values (like allowedChatIds, allowedChannelIds)
+                const parsedEntries: Record<string, unknown> = {};
+                for (const [k, v] of Object.entries(entries)) {
+                  // Check if this looks like a JSON array or object
+                  if (v.startsWith("[") || v.startsWith("{")) {
+                    try {
+                      parsedEntries[k] = JSON.parse(v);
+                    } catch {
+                      parsedEntries[k] = v;
+                    }
+                  } else if (v === "true" || v === "false") {
+                    // Parse boolean values
+                    parsedEntries[k] = v === "true";
+                  } else {
+                    parsedEntries[k] = v;
+                  }
+                }
+                handleFieldConfirm(parsedEntries);
               }}
               onCancel={handleFieldCancel}
               isFocused={true}
