@@ -188,6 +188,7 @@ RUN apt-get update && apt-get install -y \\
     ipset \\
     iproute2 \\
     dnsutils \\
+    ripgrep \\
     zsh \\
 ${customPackages}    && rm -rf /var/lib/apt/lists/*
 
