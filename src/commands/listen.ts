@@ -119,8 +119,15 @@ async function processMessage(
 
     case "run": {
       // Start ralph run in background
-      console.log("[listen] Starting ralph run...");
-      const proc = spawn("ralph", ["run"], {
+      // Support optional category filter: run [category]
+      const runArgs = ["run"];
+      if (message.args && message.args.length > 0) {
+        runArgs.push("--category", message.args[0]);
+        console.log(`[listen] Starting ralph run with category: ${message.args[0]}...`);
+      } else {
+        console.log("[listen] Starting ralph run...");
+      }
+      const proc = spawn("ralph", runArgs, {
         stdio: "inherit",
         cwd: "/workspace",
         detached: true,
@@ -129,7 +136,7 @@ async function processMessage(
 
       respondToMessage(messagesPath, message.id, {
         success: true,
-        output: "Ralph run started",
+        output: message.args?.length ? `Ralph run started (category: ${message.args[0]})` : "Ralph run started",
       });
       break;
     }

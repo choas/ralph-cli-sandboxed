@@ -11,6 +11,7 @@ import {
   ChatMessage,
   ChatMessageHandler,
   TelegramSettings,
+  SendMessageOptions,
   parseCommand,
 } from "../utils/chat-client.js";
 
@@ -33,6 +34,7 @@ interface TelegramUpdate {
     date: number;
     text?: string;
   };
+  callback_query?: TelegramCallbackQuery;
 }
 
 interface TelegramApiResponse<T> {
@@ -40,6 +42,36 @@ interface TelegramApiResponse<T> {
   result?: T;
   description?: string;
   error_code?: number;
+}
+
+/**
+ * Inline keyboard button for Telegram.
+ */
+/**
+ * Telegram-specific inline keyboard button format.
+ */
+interface InlineKeyboardButton {
+  text: string;
+  callback_data?: string;
+  url?: string;
+}
+
+interface TelegramCallbackQuery {
+  id: string;
+  from: {
+    id: number;
+    first_name: string;
+    last_name?: string;
+    username?: string;
+  };
+  message?: {
+    message_id: number;
+    chat: {
+      id: number;
+      type: string;
+    };
+  };
+  data?: string;
 }
 
 export class TelegramChatClient implements ChatClient {
@@ -136,6 +168,55 @@ export class TelegramChatClient implements ChatClient {
       for (const update of updates) {
         this.lastUpdateId = update.update_id;
 
+        // Handle callback queries (button presses)
+        if (update.callback_query) {
+          const callbackQuery = update.callback_query;
+          const chatId = callbackQuery.message?.chat?.id
+            ? String(callbackQuery.message.chat.id)
+            : null;
+
+          if (chatId && this.isChatAllowed(chatId) && callbackQuery.data) {
+            // Acknowledge the callback query
+            try {
+              await this.answerCallbackQuery(callbackQuery.id);
+            } catch (err) {
+              if (this.debug) {
+                console.error(`[telegram] Failed to answer callback query: ${err}`);
+              }
+            }
+
+            // Create a synthetic message from the callback data
+            // The callback_data is the command string (e.g., "/run feature")
+            const message: ChatMessage = {
+              text: callbackQuery.data,
+              chatId,
+              senderId: String(callbackQuery.from.id),
+              senderName: [callbackQuery.from.first_name, callbackQuery.from.last_name]
+                .filter(Boolean)
+                .join(" "),
+              timestamp: new Date(),
+              raw: update,
+            };
+
+            // Parse and execute the command
+            const command = parseCommand(message.text, message);
+            if (command) {
+              try {
+                await onCommand(command);
+              } catch (err) {
+                if (this.debug) {
+                  console.error(`[telegram] Callback command error: ${err}`);
+                }
+                await this.sendMessage(
+                  chatId,
+                  `Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`
+                );
+              }
+            }
+          }
+          continue;
+        }
+
         if (update.message?.text) {
           const chatId = String(update.message.chat.id);
 
@@ -220,15 +301,43 @@ export class TelegramChatClient implements ChatClient {
     this.poll(onCommand, onMessage);
   }
 
-  async sendMessage(chatId: string, text: string): Promise<void> {
+  async sendMessage(chatId: string, text: string, options?: SendMessageOptions): Promise<void> {
     if (!this.connected) {
       throw new Error("Not connected");
     }
 
-    await this.apiRequest("sendMessage", {
+    const body: Record<string, unknown> = {
       chat_id: chatId,
       text,
       parse_mode: "HTML",
+    };
+
+    // Convert generic InlineButton format to Telegram's InlineKeyboardMarkup
+    if (options?.inlineKeyboard && options.inlineKeyboard.length > 0) {
+      const inlineKeyboard: InlineKeyboardButton[][] = options.inlineKeyboard.map((row) =>
+        row.map((button) => ({
+          text: button.text,
+          callback_data: button.callbackData,
+          url: button.url,
+        }))
+      );
+      body.reply_markup = { inline_keyboard: inlineKeyboard };
+    }
+
+    await this.apiRequest("sendMessage", body);
+  }
+
+  /**
+   * Answer a callback query (acknowledge button press).
+   */
+  async answerCallbackQuery(callbackQueryId: string, text?: string): Promise<void> {
+    if (!this.connected) {
+      throw new Error("Not connected");
+    }
+
+    await this.apiRequest("answerCallbackQuery", {
+      callback_query_id: callbackQueryId,
+      text,
     });
   }
 

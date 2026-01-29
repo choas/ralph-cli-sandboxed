@@ -11,6 +11,7 @@ import { createTelegramClient } from "../providers/telegram.js";
 import {
   ChatClient,
   ChatCommand,
+  InlineButton,
   generateProjectId,
   formatStatusMessage,
   formatStatusForChat,
@@ -101,6 +102,39 @@ function getPrdStatus(): { complete: number; total: number; incomplete: number }
     return { complete, total, incomplete: total - complete };
   } catch {
     return { complete: 0, total: 0, incomplete: 0 };
+  }
+}
+
+/**
+ * Get open (incomplete) categories from the PRD.
+ * Returns unique categories that have at least one incomplete task.
+ */
+function getOpenCategories(): string[] {
+  const ralphDir = getRalphDir();
+  const prdPath = join(ralphDir, "prd.json");
+
+  if (!existsSync(prdPath)) {
+    return [];
+  }
+
+  try {
+    const content = readFileSync(prdPath, "utf-8");
+    const items = JSON.parse(content);
+    if (!Array.isArray(items)) {
+      return [];
+    }
+
+    // Get unique categories that have incomplete tasks
+    const openCategories = new Set<string>();
+    for (const item of items) {
+      if (item.passes !== true && item.category) {
+        openCategories.add(item.category);
+      }
+    }
+
+    return Array.from(openCategories);
+  } catch {
+    return [];
   }
 }
 
@@ -221,6 +255,9 @@ async function handleCommand(
 
   switch (cmd) {
     case "run": {
+      // Check for optional category filter
+      const category = args.length > 0 ? args[0] : undefined;
+
       // Check PRD status first (from host)
       const prdStatus = getPrdStatus();
       if (prdStatus.incomplete === 0) {
@@ -228,16 +265,18 @@ async function handleCommand(
         return;
       }
 
+      const categoryInfo = category ? ` (category: ${category})` : "";
       await client.sendMessage(
         chatId,
-        `${state.projectName}: Starting ralph run (${prdStatus.incomplete} tasks remaining)...`
+        `${state.projectName}: Starting ralph run${categoryInfo} (${prdStatus.incomplete} tasks remaining)...`
       );
 
-      // Send run command to sandbox
-      const response = await sendToSandbox("run", [], debug, 10000);
+      // Send run command to sandbox with optional category argument
+      const runArgs = category ? [category] : [];
+      const response = await sendToSandbox("run", runArgs, debug, 10000);
       if (response) {
         if (response.success) {
-          await client.sendMessage(chatId, `${state.projectName}: Ralph run started in sandbox`);
+          await client.sendMessage(chatId, `${state.projectName}: Ralph run started in sandbox${categoryInfo}`);
         } else {
           await client.sendMessage(chatId, `${state.projectName}: Failed to start: ${response.error}`);
         }
@@ -253,17 +292,34 @@ async function handleCommand(
     case "status": {
       // Try sandbox first, fall back to host
       const response = await sendToSandbox("status", [], debug, 5000);
+      let statusMessage: string;
       if (response?.success && response.output) {
         // Strip ANSI codes and progress bar for clean chat output
         const cleanedOutput = formatStatusForChat(response.output);
-        await client.sendMessage(chatId, `${state.projectName}:\n${cleanedOutput}`);
+        statusMessage = `${state.projectName}:\n${cleanedOutput}`;
       } else {
         // Fall back to host status
         const prdStatus = getPrdStatus();
         const status = prdStatus.incomplete === 0 ? "completed" : "idle";
         const details = `Progress: ${prdStatus.complete}/${prdStatus.total} tasks complete`;
-        await client.sendMessage(chatId, formatStatusMessage(state.projectName, status, details));
+        statusMessage = formatStatusMessage(state.projectName, status, details);
       }
+
+      // Get open categories and create inline buttons (max 4)
+      const openCategories = getOpenCategories();
+      let inlineKeyboard: InlineButton[][] | undefined;
+
+      if (openCategories.length > 0 && openCategories.length <= 4) {
+        // Create a row of buttons, one per category
+        inlineKeyboard = [
+          openCategories.map((category) => ({
+            text: `▶ Run ${category}`,
+            callbackData: `/run ${category}`,
+          })),
+        ];
+      }
+
+      await client.sendMessage(chatId, statusMessage, { inlineKeyboard });
       break;
     }
 

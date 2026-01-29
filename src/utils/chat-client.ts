@@ -58,6 +58,26 @@ export type ChatCommandHandler = (command: ChatCommand) => Promise<void>;
 export type ChatMessageHandler = (message: ChatMessage) => Promise<void>;
 
 /**
+ * Options for sending messages (provider-specific features).
+ */
+export interface SendMessageOptions {
+  /** Inline keyboard buttons (Telegram-specific) */
+  inlineKeyboard?: InlineButton[][];
+}
+
+/**
+ * Inline button for chat messages.
+ */
+export interface InlineButton {
+  /** Button text displayed to user */
+  text: string;
+  /** Callback data sent when button is pressed (used as command) */
+  callbackData?: string;
+  /** URL to open when button is pressed */
+  url?: string;
+}
+
+/**
  * Abstract interface for chat clients.
  * Implementations should handle provider-specific API calls.
  */
@@ -76,8 +96,9 @@ export interface ChatClient {
    * Send a text message to a specific chat.
    * @param chatId The chat ID to send to
    * @param text The message text
+   * @param options Optional message options (e.g., inline keyboard)
    */
-  sendMessage(chatId: string, text: string): Promise<void>;
+  sendMessage(chatId: string, text: string, options?: SendMessageOptions): Promise<void>;
 
   /**
    * Disconnect from the chat service.
