@@ -15,6 +15,8 @@ export interface JsonSnippetEditorProps {
   isFocused?: boolean;
   /** Maximum height for the content area (for scrolling) */
   maxHeight?: number;
+  /** Maximum width for the preview (terminal columns) */
+  maxWidth?: number;
 }
 
 type EditorMode = "view" | "edit";
@@ -74,6 +76,9 @@ function parseJsonWithLineInfo(jsonStr: string): { value?: unknown; error?: Json
  * Format JSON with indentation for display.
  */
 function formatJson(value: unknown): string {
+  if (value === undefined) {
+    return "null";
+  }
   return JSON.stringify(value, null, 2);
 }
 
@@ -175,14 +180,32 @@ function validateJsonStructure(value: unknown, label: string): string[] {
 }
 
 /**
+ * Truncate a JSON string value if it's too long.
+ * Keeps the quotes and adds "..." before the closing quote.
+ */
+function truncateJsonString(str: string, maxLen: number): string {
+  // str includes the surrounding quotes, so we need to account for that
+  if (str.length <= maxLen) {
+    return str;
+  }
+  // Truncate the content (excluding quotes) and add ellipsis
+  // Leave room for the ellipsis (3 chars) and closing quote
+  const truncated = str.slice(0, maxLen - 4) + '..."';
+  return truncated;
+}
+
+/**
  * Simple syntax highlighting for JSON preview.
  */
-function highlightJson(json: string, maxLines: number): React.ReactElement[] {
+function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React.ReactElement[] {
   const lines = json.split("\n");
   const displayLines = lines.slice(0, maxLines);
   const hasMore = lines.length > maxLines;
 
   const elements: React.ReactElement[] = [];
+
+  // Calculate max string length based on available width (account for line number, indentation)
+  const maxStringLen = Math.max(20, Math.min(50, maxLineWidth - 15));
 
   for (let i = 0; i < displayLines.length; i++) {
     const line = displayLines[i];
@@ -192,22 +215,30 @@ function highlightJson(json: string, maxLines: number): React.ReactElement[] {
     const tokens: React.ReactElement[] = [];
     let remaining = line;
     let tokenKey = 0;
+    let lineLength = 0;
+    const effectiveMaxWidth = maxLineWidth - 6; // Account for line number prefix "123 "
 
-    while (remaining.length > 0) {
+    while (remaining.length > 0 && lineLength < effectiveMaxWidth) {
       // Match string (key or value)
       const stringMatch = remaining.match(/^("(?:[^"\\]|\\.)*")/);
       if (stringMatch) {
-        const str = stringMatch[1];
+        let str = stringMatch[1];
         // Check if this is a key (followed by :)
         const afterStr = remaining.slice(str.length).trim();
         const isKey = afterStr.startsWith(":");
+
+        // Truncate long string values (not keys)
+        if (!isKey && str.length > maxStringLen) {
+          str = truncateJsonString(str, maxStringLen);
+        }
 
         tokens.push(
           <Text key={tokenKey++} color={isKey ? "cyan" : "green"}>
             {str}
           </Text>
         );
-        remaining = remaining.slice(str.length);
+        lineLength += str.length;
+        remaining = remaining.slice(stringMatch[1].length);
         continue;
       }
 
@@ -219,6 +250,7 @@ function highlightJson(json: string, maxLines: number): React.ReactElement[] {
             {numMatch[1]}
           </Text>
         );
+        lineLength += numMatch[1].length;
         remaining = remaining.slice(numMatch[1].length);
         continue;
       }
@@ -231,6 +263,7 @@ function highlightJson(json: string, maxLines: number): React.ReactElement[] {
             {boolNullMatch[1]}
           </Text>
         );
+        lineLength += boolNullMatch[1].length;
         remaining = remaining.slice(boolNullMatch[1].length);
         continue;
       }
@@ -243,6 +276,7 @@ function highlightJson(json: string, maxLines: number): React.ReactElement[] {
             {otherMatch[1]}
           </Text>
         );
+        lineLength += otherMatch[1].length;
         remaining = remaining.slice(otherMatch[1].length);
         continue;
       }
@@ -251,7 +285,15 @@ function highlightJson(json: string, maxLines: number): React.ReactElement[] {
       tokens.push(
         <Text key={tokenKey++}>{remaining[0]}</Text>
       );
+      lineLength += 1;
       remaining = remaining.slice(1);
+    }
+
+    // If line was truncated due to length
+    if (remaining.length > 0) {
+      tokens.push(
+        <Text key={tokenKey++} dimColor>...</Text>
+      );
     }
 
     elements.push(
@@ -285,6 +327,7 @@ export function JsonSnippetEditor({
   onCancel,
   isFocused = true,
   maxHeight = 15,
+  maxWidth = 80,
 }: JsonSnippetEditorProps): React.ReactElement {
   // Format the value as JSON for editing
   const initialJson = useMemo(() => formatJson(value), [value]);
@@ -483,7 +526,9 @@ export function JsonSnippetEditor({
   }
 
   // Render view mode with syntax-highlighted preview
-  const previewLines = highlightJson(editText, previewMaxLines);
+  // Account for border (2) and padding (2) when calculating preview width
+  const previewWidth = Math.max(40, maxWidth - 4);
+  const previewLines = highlightJson(editText, previewMaxLines, previewWidth);
 
   return (
     <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>

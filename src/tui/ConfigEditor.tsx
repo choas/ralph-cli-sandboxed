@@ -319,6 +319,7 @@ export function ConfigEditor(): React.ReactElement {
           onCancel={handleFieldCancel}
           isFocused={true}
           maxHeight={editorMaxHeight}
+          maxWidth={terminalSize.columns}
         />
       );
     }
