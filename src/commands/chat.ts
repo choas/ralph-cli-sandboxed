@@ -9,6 +9,7 @@ import { spawn } from "child_process";
 import { loadConfig, getRalphDir, isRunningInContainer, RalphConfig } from "../utils/config.js";
 import { createTelegramClient } from "../providers/telegram.js";
 import { createSlackClient } from "../providers/slack.js";
+import { createDiscordClient } from "../providers/discord.js";
 import {
   ChatClient,
   ChatCommand,
@@ -535,6 +536,33 @@ function createChatClient(config: RalphConfig, debug: boolean): { client: ChatCl
     };
   }
 
+  if (provider === "discord") {
+    // Check that Discord is configured
+    if (!config.chat?.discord?.botToken) {
+      console.error("Error: Discord bot token not configured");
+      console.error("Set chat.discord.botToken in .ralph/config.json");
+      console.error("Get a token from the Discord Developer Portal: https://discord.com/developers/applications");
+      process.exit(1);
+    }
+    if (config.chat.discord.enabled === false) {
+      console.error("Error: Discord is disabled in config (discord.enabled = false)");
+      process.exit(1);
+    }
+
+    return {
+      client: createDiscordClient(
+        {
+          botToken: config.chat.discord.botToken,
+          allowedGuildIds: config.chat.discord.allowedGuildIds,
+          allowedChannelIds: config.chat.discord.allowedChannelIds,
+        },
+        debug
+      ),
+      provider: "discord",
+      allowedChatIds: config.chat.discord.allowedChannelIds,
+    };
+  }
+
   // Default to Telegram
   if (!config.chat?.telegram?.botToken) {
     console.error("Error: Telegram bot token not configured");
@@ -599,9 +627,10 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
         : undefined
     );
 
-    console.log(`Connected to ${provider === "slack" ? "Slack" : "Telegram"}!`);
+    const providerName = provider === "slack" ? "Slack" : provider === "discord" ? "Discord" : "Telegram";
+    console.log(`Connected to ${providerName}!`);
     console.log("");
-    console.log(`Commands (send in ${provider === "slack" ? "Slack" : "Telegram"}):`);
+    console.log(`Commands (send in ${providerName}):`);
     console.log("  /run         - Start ralph automation");
     console.log("  /status      - Show PRD progress");
     console.log("  /add ...     - Add new task to PRD");
@@ -698,6 +727,22 @@ function showStatus(config: RalphConfig): void {
       if (!config.chat.slack?.signingSecret) missing.push("signingSecret");
       console.log(`Slack: not configured (missing: ${missing.join(", ")})`);
     }
+  } else if (config.chat.provider === "discord") {
+    if (config.chat.discord?.botToken) {
+      console.log("Discord: configured");
+      if (config.chat.discord.allowedGuildIds && config.chat.discord.allowedGuildIds.length > 0) {
+        console.log(`Allowed guilds: ${config.chat.discord.allowedGuildIds.join(", ")}`);
+      } else {
+        console.log("Allowed guilds: all (no restrictions)");
+      }
+      if (config.chat.discord.allowedChannelIds && config.chat.discord.allowedChannelIds.length > 0) {
+        console.log(`Allowed channels: ${config.chat.discord.allowedChannelIds.join(", ")}`);
+      } else {
+        console.log("Allowed channels: all (no restrictions)");
+      }
+    } else {
+      console.log("Discord: not configured (missing botToken)");
+    }
   } else if (config.chat.provider === "telegram") {
     if (config.chat.telegram?.botToken) {
       console.log("Telegram: configured");
@@ -746,6 +791,25 @@ async function testChat(config: RalphConfig, chatId?: string): Promise<void> {
       appToken: config.chat.slack.appToken,
       signingSecret: config.chat.slack.signingSecret,
       allowedChannelIds: config.chat.slack.allowedChannelIds,
+    });
+  } else if (provider === "discord") {
+    if (!config.chat.discord?.botToken) {
+      console.error("Error: Discord bot token not configured");
+      process.exit(1);
+    }
+
+    targetChatId = chatId || (config.chat.discord.allowedChannelIds?.[0]);
+    if (!targetChatId) {
+      console.error("Error: No channel ID specified and no allowed channel IDs configured");
+      console.error("Usage: ralph chat test <channel_id>");
+      console.error("Or add channel IDs to chat.discord.allowedChannelIds in config.json");
+      process.exit(1);
+    }
+
+    client = createDiscordClient({
+      botToken: config.chat.discord.botToken,
+      allowedGuildIds: config.chat.discord.allowedGuildIds,
+      allowedChannelIds: config.chat.discord.allowedChannelIds,
     });
   } else {
     // Telegram
@@ -801,7 +865,7 @@ export async function chat(args: string[]): Promise<void> {
   // Show help
   if (subcommand === "help" || subcommand === "--help" || subcommand === "-h" || !subcommand) {
     console.log(`
-ralph chat - Chat client integration (Telegram, Slack)
+ralph chat - Chat client integration (Telegram, Slack, Discord)
 
 USAGE:
   ralph chat start [--debug]  Start the chat daemon
@@ -838,6 +902,19 @@ CONFIGURATION:
     }
   }
 
+  Discord:
+  {
+    "chat": {
+      "enabled": true,
+      "provider": "discord",
+      "discord": {
+        "botToken": "YOUR_BOT_TOKEN",
+        "allowedGuildIds": ["123456789"],
+        "allowedChannelIds": ["987654321"]
+      }
+    }
+  }
+
 TELEGRAM SETUP:
   1. Create a bot with @BotFather on Telegram
   2. Copy the bot token to chat.telegram.botToken
@@ -865,6 +942,21 @@ SLACK SETUP:
   9. Invite the bot to channels: /invite @your-bot-name
   10. Add channel IDs to chat.slack.allowedChannelIds (optional security)
 
+DISCORD SETUP:
+  1. Create an application at https://discord.com/developers/applications
+  2. Go to "Bot" section and click "Add Bot"
+  3. Enable these Privileged Gateway Intents:
+     - MESSAGE CONTENT INTENT (to read message content)
+  4. Copy the bot token to chat.discord.botToken
+  5. Go to "OAuth2" > "URL Generator":
+     - Select scopes: bot, applications.commands
+     - Select permissions: Send Messages, Read Message History, Use Slash Commands
+  6. Use the generated URL to invite the bot to your server
+  7. Get your guild (server) ID: Enable Developer Mode in Discord settings,
+     then right-click your server and "Copy Server ID"
+  8. Get channel IDs: Right-click a channel and "Copy Channel ID"
+  9. Add IDs to allowedGuildIds and allowedChannelIds (optional security)
+
 CHAT COMMANDS:
   Once connected, send commands to your bot:
 
@@ -878,7 +970,7 @@ CHAT COMMANDS:
   /help           - Show help
 
 SECURITY:
-  - Use allowedChatIds/allowedChannelIds to restrict which chats can control ralph
+  - Use allowedChatIds/allowedChannelIds/allowedGuildIds to restrict access
   - Never share your bot tokens
   - The daemon should run on the host, not in the container
 
@@ -912,7 +1004,10 @@ EXAMPLES:
   # Test the connection (Slack)
   ralph chat test C01234567
 
-  # In Telegram/Slack:
+  # Test the connection (Discord)
+  ralph chat test 123456789012345678
+
+  # In Telegram/Slack/Discord:
   /run              # Start ralph automation
   /status           # Show task progress
   /add Fix login    # Add new task
