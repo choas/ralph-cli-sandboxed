@@ -6,6 +6,7 @@ import {
   sendMessage,
   waitForResponse,
 } from "../utils/message-queue.js";
+import { getDefaultActions, getBuiltInActionNames, DaemonAction } from "../utils/daemon-actions.js";
 
 /**
  * Execute an action from config.json - works both inside and outside containers.
@@ -49,14 +50,19 @@ export async function action(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  // Get available actions from daemon config
-  const daemonActions = config.daemon?.actions || {};
-  const actionNames = Object.keys(daemonActions);
+  // Get built-in actions and configured actions
+  const builtInActions = getDefaultActions(config);
+  const builtInNames = getBuiltInActionNames(config);
+  const configuredActions = config.daemon?.actions || {};
+
+  // Merge: configured actions override built-in ones
+  const allActions: Record<string, DaemonAction> = { ...builtInActions, ...configuredActions };
+  const actionNames = Object.keys(allActions);
 
   // If --list or no action specified, show available actions
   if (showList || !actionName) {
     if (actionNames.length === 0) {
-      console.log("No actions configured.");
+      console.log("No actions available.");
       console.log("");
       console.log("Configure actions in .ralph/config.json:");
       console.log('  {');
@@ -72,29 +78,47 @@ export async function action(args: string[]): Promise<void> {
     } else {
       console.log("Available actions:");
       console.log("");
-      for (const [name, actionConfig] of Object.entries(daemonActions)) {
-        const desc = actionConfig.description || actionConfig.command;
-        console.log(`  ${name.padEnd(20)} ${desc}`);
+
+      // Show built-in actions first
+      const builtInList = actionNames.filter(name => builtInNames.has(name) && !configuredActions[name]);
+      const customList = actionNames.filter(name => !builtInNames.has(name) || configuredActions[name]);
+
+      for (const name of builtInList) {
+        const action = allActions[name];
+        const desc = action.description || action.command;
+        console.log(`  ${name.padEnd(20)} ${desc} [built-in]`);
       }
+
+      for (const name of customList) {
+        const action = allActions[name];
+        const desc = action.description || action.command;
+        // Mark if this is a custom override of a built-in action
+        const overrideMarker = builtInNames.has(name) ? " [override]" : "";
+        console.log(`  ${name.padEnd(20)} ${desc}${overrideMarker}`);
+      }
+
       console.log("");
       console.log("Run an action: ralph action <name> [args...]");
+      console.log("");
+      console.log("Note: Built-in actions require the daemon to be running.");
     }
     return;
   }
 
   // Validate action exists
-  if (!daemonActions[actionName]) {
+  if (!allActions[actionName]) {
     console.error(`Unknown action: ${actionName}`);
     console.error("");
     if (actionNames.length > 0) {
       console.error(`Available actions: ${actionNames.join(", ")}`);
     } else {
-      console.error("No actions configured in .ralph/config.json");
+      console.error("No actions available");
     }
     process.exit(1);
   }
 
-  const actionConfig = daemonActions[actionName];
+  const actionConfig = allActions[actionName];
+  const isBuiltIn = builtInNames.has(actionName) && !configuredActions[actionName];
   const inContainer = isRunningInContainer();
 
   if (debug) {
@@ -102,13 +126,18 @@ export async function action(args: string[]): Promise<void> {
     console.log(`[action] Args: ${actionArgs.join(" ") || "(none)"}`);
     console.log(`[action] Command: ${actionConfig.command}`);
     console.log(`[action] In container: ${inContainer}`);
+    console.log(`[action] Is built-in: ${isBuiltIn}`);
   }
 
   if (inContainer) {
     // Inside container - use file-based message queue to execute on host
     await executeViaQueue(actionName, actionArgs, debug);
+  } else if (isBuiltIn) {
+    // Outside container, built-in action - also use message queue (daemon handles special actions)
+    // Built-in actions like telegram_notify, slack_notify use special markers that only the daemon understands
+    await executeViaQueue(actionName, actionArgs, debug);
   } else {
-    // Outside container - execute directly
+    // Outside container, custom action - execute directly
     await executeDirectly(actionConfig.command, actionArgs, debug);
   }
 }
