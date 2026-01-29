@@ -112,8 +112,8 @@ export function prdList(category?: string, passesFilter?: boolean): void {
   }
 
   filteredPrd.forEach(({ entry, originalIndex }) => {
-    const status = entry.passes ? "\x1b[32m[PASS]\x1b[0m" : "\x1b[33m[    ]\x1b[0m";
-    console.log(`  ${originalIndex + 1}. ${status} [${entry.category}] ${entry.description}`);
+    const statusEmoji = entry.passes ? "✅" : "○";
+    console.log(`  ${originalIndex + 1}. ${statusEmoji} [${entry.category}] ${entry.description}`);
     entry.steps.forEach((step, j) => {
       console.log(`       ${j + 1}. ${step}`);
     });
