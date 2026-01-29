@@ -121,11 +121,14 @@ export interface EditorPanelProps {
   isFocused?: boolean;
   /** Validation errors to display inline */
   validationErrors?: ValidationError[];
+  /** Maximum height for the fields list (for scrolling) */
+  maxHeight?: number;
 }
 
 /**
  * EditorPanel component displays fields for the selected config section.
  * It shows a breadcrumb of the current path and lists editable fields.
+ * Supports scrolling for long content with Page Up/Down and scroll indicators.
  */
 export function EditorPanel({
   config,
@@ -135,8 +138,10 @@ export function EditorPanel({
   onBack,
   isFocused = true,
   validationErrors = [],
+  maxHeight = 12,
 }: EditorPanelProps): React.ReactElement {
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   // Get the current section definition
   const currentSection = useMemo(() => {
@@ -161,19 +166,41 @@ export function EditorPanel({
     });
   }, [currentSection, config]);
 
-  // Reset highlighted index when section changes
+  const totalFields = fields.length;
+
+  // Reset highlighted index and scroll when section changes
   useEffect(() => {
     setHighlightedIndex(0);
+    setScrollOffset(0);
   }, [selectedSection]);
+
+  // Auto-scroll to keep highlighted item visible
+  useEffect(() => {
+    if (highlightedIndex < scrollOffset) {
+      setScrollOffset(highlightedIndex);
+    } else if (highlightedIndex >= scrollOffset + maxHeight) {
+      setScrollOffset(highlightedIndex - maxHeight + 1);
+    }
+  }, [highlightedIndex, scrollOffset, maxHeight]);
 
   // Navigation handlers
   const handleNavigateUp = useCallback(() => {
-    setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : fields.length - 1));
-  }, [fields.length]);
+    setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : totalFields - 1));
+  }, [totalFields]);
 
   const handleNavigateDown = useCallback(() => {
-    setHighlightedIndex((prev) => (prev < fields.length - 1 ? prev + 1 : 0));
-  }, [fields.length]);
+    setHighlightedIndex((prev) => (prev < totalFields - 1 ? prev + 1 : 0));
+  }, [totalFields]);
+
+  const handlePageUp = useCallback(() => {
+    const newIndex = Math.max(0, highlightedIndex - maxHeight);
+    setHighlightedIndex(newIndex);
+  }, [highlightedIndex, maxHeight]);
+
+  const handlePageDown = useCallback(() => {
+    const newIndex = Math.min(totalFields - 1, highlightedIndex + maxHeight);
+    setHighlightedIndex(newIndex);
+  }, [highlightedIndex, maxHeight, totalFields]);
 
   const handleSelect = useCallback(() => {
     const field = fields[highlightedIndex];
@@ -192,6 +219,10 @@ export function EditorPanel({
         handleNavigateDown();
       } else if (input === "k" || key.upArrow) {
         handleNavigateUp();
+      } else if (key.pageUp) {
+        handlePageUp();
+      } else if (key.pageDown) {
+        handlePageDown();
       } else if (key.return) {
         handleSelect();
       } else if (key.escape) {
@@ -215,6 +246,17 @@ export function EditorPanel({
     }
     return parts.join(" > ");
   }, [currentSection, selectedSection, selectedField]);
+
+  // Calculate visible fields based on scroll offset
+  const visibleFields = useMemo(() => {
+    const endIndex = Math.min(scrollOffset + maxHeight, totalFields);
+    return fields.slice(scrollOffset, endIndex);
+  }, [fields, scrollOffset, maxHeight, totalFields]);
+
+  // Check if we have overflow
+  const canScrollUp = scrollOffset > 0;
+  const canScrollDown = scrollOffset + maxHeight < totalFields;
+  const hasOverflow = totalFields > maxHeight;
 
   // Render loading state
   if (!config) {
@@ -242,11 +284,24 @@ export function EditorPanel({
       {/* Breadcrumb */}
       <Box marginBottom={1}>
         <Text bold color="cyan">{breadcrumb}</Text>
+        {hasOverflow && (
+          <Text dimColor> ({highlightedIndex + 1}/{totalFields})</Text>
+        )}
       </Box>
 
-      {/* Fields list */}
-      {fields.map((field, index) => {
-        const isHighlighted = index === highlightedIndex;
+      {/* Up scroll indicator */}
+      {hasOverflow && (
+        <Box>
+          <Text color={canScrollUp ? "cyan" : "gray"} dimColor={!canScrollUp}>
+            {canScrollUp ? "▲ more" : ""}
+          </Text>
+        </Box>
+      )}
+
+      {/* Visible fields list */}
+      {visibleFields.map((field) => {
+        const actualIndex = fields.findIndex((f) => f.path === field.path);
+        const isHighlighted = actualIndex === highlightedIndex;
         const value = getValueAtPath(config, field.path);
         const displayValue = getDisplayValue(value, field.type);
         const fieldHasError = hasFieldError(validationErrors, field.path);
@@ -296,9 +351,21 @@ export function EditorPanel({
         );
       })}
 
+      {/* Down scroll indicator */}
+      {hasOverflow && (
+        <Box>
+          <Text color={canScrollDown ? "cyan" : "gray"} dimColor={!canScrollDown}>
+            {canScrollDown ? "▼ more" : ""}
+          </Text>
+        </Box>
+      )}
+
       {/* Navigation hints */}
       <Box marginTop={1}>
-        <Text dimColor>j/k: navigate | Enter: edit | Esc: back</Text>
+        <Text dimColor>
+          j/k: navigate | Enter: edit | Esc: back
+          {hasOverflow && " | PgUp/Dn: scroll"}
+        </Text>
       </Box>
     </Box>
   );

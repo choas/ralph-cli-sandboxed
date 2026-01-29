@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 
@@ -13,6 +13,8 @@ export interface ArrayEditorProps {
   onCancel: () => void;
   /** Whether this editor has focus */
   isFocused?: boolean;
+  /** Maximum height for the items list (for scrolling) */
+  maxHeight?: number;
 }
 
 type EditorMode = "list" | "add" | "edit";
@@ -20,7 +22,7 @@ type EditorMode = "list" | "add" | "edit";
 /**
  * ArrayEditor component for editing arrays of strings.
  * Shows numbered list with edit/delete options.
- * Supports adding new items and reordering with move up/down keys.
+ * Supports adding new items, reordering with move up/down keys, and scrolling for long lists.
  */
 export function ArrayEditor({
   label,
@@ -28,15 +30,26 @@ export function ArrayEditor({
   onConfirm,
   onCancel,
   isFocused = true,
+  maxHeight = 10,
 }: ArrayEditorProps): React.ReactElement {
   const [editItems, setEditItems] = useState<string[]>([...items]);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [scrollOffset, setScrollOffset] = useState(0);
   const [mode, setMode] = useState<EditorMode>("list");
   const [editText, setEditText] = useState("");
   const [editingIndex, setEditingIndex] = useState(-1);
 
   // Total items including "+ Add item" option
   const totalOptions = editItems.length + 1;
+
+  // Auto-scroll to keep highlighted item visible
+  useEffect(() => {
+    if (highlightedIndex < scrollOffset) {
+      setScrollOffset(highlightedIndex);
+    } else if (highlightedIndex >= scrollOffset + maxHeight) {
+      setScrollOffset(highlightedIndex - maxHeight + 1);
+    }
+  }, [highlightedIndex, scrollOffset, maxHeight]);
 
   // Navigation handlers
   const handleNavigateUp = useCallback(() => {
@@ -46,6 +59,16 @@ export function ArrayEditor({
   const handleNavigateDown = useCallback(() => {
     setHighlightedIndex((prev) => (prev < totalOptions - 1 ? prev + 1 : 0));
   }, [totalOptions]);
+
+  const handlePageUp = useCallback(() => {
+    const newIndex = Math.max(0, highlightedIndex - maxHeight);
+    setHighlightedIndex(newIndex);
+  }, [highlightedIndex, maxHeight]);
+
+  const handlePageDown = useCallback(() => {
+    const newIndex = Math.min(totalOptions - 1, highlightedIndex + maxHeight);
+    setHighlightedIndex(newIndex);
+  }, [highlightedIndex, maxHeight, totalOptions]);
 
   // Move item up in the list
   const handleMoveUp = useCallback(() => {
@@ -133,6 +156,10 @@ export function ArrayEditor({
         handleNavigateDown();
       } else if (input === "k" || key.upArrow) {
         handleNavigateUp();
+      } else if (key.pageUp) {
+        handlePageUp();
+      } else if (key.pageDown) {
+        handlePageDown();
       } else if (key.return || input === "e") {
         // Enter or 'e' to edit/add
         handleStartEdit();
@@ -166,6 +193,18 @@ export function ArrayEditor({
     },
     { isActive: isFocused && mode !== "list" }
   );
+
+  // Calculate visible items based on scroll offset
+  const visibleItems = useMemo(() => {
+    const allItems = [...editItems, { isAddOption: true }];
+    const endIndex = Math.min(scrollOffset + maxHeight, allItems.length);
+    return allItems.slice(scrollOffset, endIndex);
+  }, [editItems, scrollOffset, maxHeight]);
+
+  // Check if we have overflow
+  const canScrollUp = scrollOffset > 0;
+  const canScrollDown = scrollOffset + maxHeight < totalOptions;
+  const hasOverflow = totalOptions > maxHeight;
 
   // Render text input mode (add or edit)
   if (mode === "add" || mode === "edit") {
@@ -204,56 +243,86 @@ export function ArrayEditor({
       <Box marginBottom={1}>
         <Text bold color="cyan">Edit: {label}</Text>
         <Text dimColor> ({editItems.length} items)</Text>
+        {hasOverflow && (
+          <Text dimColor> [{highlightedIndex + 1}/{totalOptions}]</Text>
+        )}
       </Box>
 
-      {/* Items list */}
-      {editItems.length === 0 ? (
+      {/* Up scroll indicator */}
+      {hasOverflow && (
+        <Box>
+          <Text color={canScrollUp ? "cyan" : "gray"} dimColor={!canScrollUp}>
+            {canScrollUp ? "  ▲ more" : ""}
+          </Text>
+        </Box>
+      )}
+
+      {/* Visible items list */}
+      {editItems.length === 0 && scrollOffset === 0 ? (
         <Box marginBottom={1}>
           <Text dimColor italic>No items</Text>
         </Box>
       ) : (
-        editItems.map((item, index) => {
-          const isHighlighted = index === highlightedIndex;
+        visibleItems.map((item, visibleIndex) => {
+          // Check if this is the "Add item" option
+          if (typeof item === "object" && "isAddOption" in item) {
+            const actualIndex = editItems.length;
+            const isHighlighted = actualIndex === highlightedIndex;
+
+            return (
+              <Box key="add-item">
+                <Text color={isHighlighted ? "green" : undefined}>
+                  {isHighlighted ? "▸ " : "  "}
+                </Text>
+                <Text
+                  bold={isHighlighted}
+                  color={isHighlighted ? "green" : "gray"}
+                  inverse={isHighlighted}
+                >
+                  + Add item
+                </Text>
+              </Box>
+            );
+          }
+
+          // Regular item
+          const actualIndex = scrollOffset + visibleIndex;
+          const isHighlighted = actualIndex === highlightedIndex;
 
           return (
-            <Box key={`item-${index}`}>
+            <Box key={`item-${actualIndex}`}>
               {/* Selection indicator */}
               <Text color={isHighlighted ? "cyan" : undefined}>
                 {isHighlighted ? "▸ " : "  "}
               </Text>
               {/* Item number */}
-              <Text dimColor>{String(index + 1).padStart(2, " ")}. </Text>
+              <Text dimColor>{String(actualIndex + 1).padStart(2, " ")}. </Text>
               {/* Item value */}
               <Text
                 bold={isHighlighted}
                 color={isHighlighted ? "cyan" : undefined}
                 inverse={isHighlighted}
               >
-                {item}
+                {item as string}
               </Text>
             </Box>
           );
         })
       )}
 
-      {/* Add item option */}
-      <Box>
-        <Text color={highlightedIndex === editItems.length ? "green" : undefined}>
-          {highlightedIndex === editItems.length ? "▸ " : "  "}
-        </Text>
-        <Text
-          bold={highlightedIndex === editItems.length}
-          color={highlightedIndex === editItems.length ? "green" : "gray"}
-          inverse={highlightedIndex === editItems.length}
-        >
-          + Add item
-        </Text>
-      </Box>
+      {/* Down scroll indicator */}
+      {hasOverflow && (
+        <Box>
+          <Text color={canScrollDown ? "cyan" : "gray"} dimColor={!canScrollDown}>
+            {canScrollDown ? "  ▼ more" : ""}
+          </Text>
+        </Box>
+      )}
 
       {/* Help text */}
       <Box marginTop={1} flexDirection="column">
         <Text dimColor>j/k: navigate | Enter/e: edit | d: delete</Text>
-        <Text dimColor>J/K: reorder | s: save | Esc: cancel</Text>
+        <Text dimColor>J/K: reorder | s: save | Esc: cancel{hasOverflow && " | PgUp/Dn: scroll"}</Text>
       </Box>
     </Box>
   );

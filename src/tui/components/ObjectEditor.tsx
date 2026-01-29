@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 
@@ -13,6 +13,8 @@ export interface ObjectEditorProps {
   onCancel: () => void;
   /** Whether this editor has focus */
   isFocused?: boolean;
+  /** Maximum height for the entries list (for scrolling) */
+  maxHeight?: number;
 }
 
 type EditorMode = "list" | "add-key" | "add-value" | "edit-value";
@@ -21,6 +23,7 @@ type EditorMode = "list" | "add-key" | "add-value" | "edit-value";
  * ObjectEditor component for editing key-value pairs.
  * Used for environment variables, mcpServers, actions, and similar objects.
  * Shows keys with expandable values, supports adding and deleting entries.
+ * Supports scrolling for long lists with Page Up/Down.
  */
 export function ObjectEditor({
   label,
@@ -28,9 +31,11 @@ export function ObjectEditor({
   onConfirm,
   onCancel,
   isFocused = true,
+  maxHeight = 10,
 }: ObjectEditorProps): React.ReactElement {
   const [editEntries, setEditEntries] = useState<Record<string, string>>({ ...entries });
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [scrollOffset, setScrollOffset] = useState(0);
   const [mode, setMode] = useState<EditorMode>("list");
   const [editText, setEditText] = useState("");
   const [newKey, setNewKey] = useState("");
@@ -41,6 +46,15 @@ export function ObjectEditor({
   // Total options includes all keys plus "+ Add entry" option
   const totalOptions = keys.length + 1;
 
+  // Auto-scroll to keep highlighted item visible
+  useEffect(() => {
+    if (highlightedIndex < scrollOffset) {
+      setScrollOffset(highlightedIndex);
+    } else if (highlightedIndex >= scrollOffset + maxHeight) {
+      setScrollOffset(highlightedIndex - maxHeight + 1);
+    }
+  }, [highlightedIndex, scrollOffset, maxHeight]);
+
   // Navigation handlers
   const handleNavigateUp = useCallback(() => {
     setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : totalOptions - 1));
@@ -49,6 +63,16 @@ export function ObjectEditor({
   const handleNavigateDown = useCallback(() => {
     setHighlightedIndex((prev) => (prev < totalOptions - 1 ? prev + 1 : 0));
   }, [totalOptions]);
+
+  const handlePageUp = useCallback(() => {
+    const newIndex = Math.max(0, highlightedIndex - maxHeight);
+    setHighlightedIndex(newIndex);
+  }, [highlightedIndex, maxHeight]);
+
+  const handlePageDown = useCallback(() => {
+    const newIndex = Math.min(totalOptions - 1, highlightedIndex + maxHeight);
+    setHighlightedIndex(newIndex);
+  }, [highlightedIndex, maxHeight, totalOptions]);
 
   // Toggle expansion of a key to show its value
   const handleToggleExpand = useCallback(() => {
@@ -162,6 +186,10 @@ export function ObjectEditor({
         handleNavigateDown();
       } else if (input === "k" || key.upArrow) {
         handleNavigateUp();
+      } else if (key.pageUp) {
+        handlePageUp();
+      } else if (key.pageDown) {
+        handlePageDown();
       } else if (key.return || input === "e") {
         // Enter or 'e' to edit/add
         handleStartEdit();
@@ -192,6 +220,18 @@ export function ObjectEditor({
     },
     { isActive: isFocused && mode !== "list" }
   );
+
+  // Calculate visible items based on scroll offset
+  const visibleItems = useMemo(() => {
+    const allKeys = [...keys, "__add_entry__"];
+    const endIndex = Math.min(scrollOffset + maxHeight, allKeys.length);
+    return allKeys.slice(scrollOffset, endIndex);
+  }, [keys, scrollOffset, maxHeight]);
+
+  // Check if we have overflow
+  const canScrollUp = scrollOffset > 0;
+  const canScrollDown = scrollOffset + maxHeight < totalOptions;
+  const hasOverflow = totalOptions > maxHeight;
 
   // Render key input mode
   if (mode === "add-key") {
@@ -266,16 +306,52 @@ export function ObjectEditor({
       <Box marginBottom={1}>
         <Text bold color="cyan">Edit: {label}</Text>
         <Text dimColor> ({keys.length} entries)</Text>
+        {hasOverflow && (
+          <Text dimColor> [{highlightedIndex + 1}/{totalOptions}]</Text>
+        )}
       </Box>
 
-      {/* Entries list */}
-      {keys.length === 0 ? (
+      {/* Up scroll indicator */}
+      {hasOverflow && (
+        <Box>
+          <Text color={canScrollUp ? "cyan" : "gray"} dimColor={!canScrollUp}>
+            {canScrollUp ? "  ▲ more" : ""}
+          </Text>
+        </Box>
+      )}
+
+      {/* Visible entries list */}
+      {keys.length === 0 && scrollOffset === 0 ? (
         <Box marginBottom={1}>
           <Text dimColor italic>No entries</Text>
         </Box>
       ) : (
-        keys.map((key, index) => {
-          const isHighlighted = index === highlightedIndex;
+        visibleItems.map((key, visibleIndex) => {
+          // Check if this is the "Add entry" option
+          if (key === "__add_entry__") {
+            const actualIndex = keys.length;
+            const isHighlighted = actualIndex === highlightedIndex;
+
+            return (
+              <Box key="add-entry">
+                <Text color={isHighlighted ? "green" : undefined}>
+                  {isHighlighted ? "▸ " : "  "}
+                </Text>
+                <Text dimColor>{"  "}</Text>
+                <Text
+                  bold={isHighlighted}
+                  color={isHighlighted ? "green" : "gray"}
+                  inverse={isHighlighted}
+                >
+                  + Add entry
+                </Text>
+              </Box>
+            );
+          }
+
+          // Regular entry
+          const actualIndex = scrollOffset + visibleIndex;
+          const isHighlighted = actualIndex === highlightedIndex;
           const isExpanded = expandedKeys.has(key);
           const value = editEntries[key];
 
@@ -319,25 +395,19 @@ export function ObjectEditor({
         })
       )}
 
-      {/* Add entry option */}
-      <Box>
-        <Text color={highlightedIndex === keys.length ? "green" : undefined}>
-          {highlightedIndex === keys.length ? "▸ " : "  "}
-        </Text>
-        <Text dimColor>{"  "}</Text>
-        <Text
-          bold={highlightedIndex === keys.length}
-          color={highlightedIndex === keys.length ? "green" : "gray"}
-          inverse={highlightedIndex === keys.length}
-        >
-          + Add entry
-        </Text>
-      </Box>
+      {/* Down scroll indicator */}
+      {hasOverflow && (
+        <Box>
+          <Text color={canScrollDown ? "cyan" : "gray"} dimColor={!canScrollDown}>
+            {canScrollDown ? "  ▼ more" : ""}
+          </Text>
+        </Box>
+      )}
 
       {/* Help text */}
       <Box marginTop={1} flexDirection="column">
         <Text dimColor>j/k: navigate | Tab/Space: expand | Enter/e: edit</Text>
-        <Text dimColor>d: delete | s: save | Esc: cancel</Text>
+        <Text dimColor>d: delete | s: save | Esc: cancel{hasOverflow && " | PgUp/Dn: scroll"}</Text>
       </Box>
     </Box>
   );

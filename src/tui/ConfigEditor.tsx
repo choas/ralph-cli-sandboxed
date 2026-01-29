@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import { useConfig } from "./hooks/useConfig.js";
+import { useTerminalSize } from "./hooks/useTerminalSize.js";
 import { SectionNav, CONFIG_SECTIONS } from "./components/SectionNav.js";
 import { EditorPanel, getValueAtPath, inferFieldType } from "./components/EditorPanel.js";
 import { StringEditor } from "./components/StringEditor.js";
@@ -48,6 +49,7 @@ function setValueAtPath<T extends object>(obj: T, path: string, value: unknown):
  */
 export function ConfigEditor(): React.ReactElement {
   const { exit } = useApp();
+  const terminalSize = useTerminalSize();
   const {
     config,
     loading,
@@ -56,6 +58,14 @@ export function ConfigEditor(): React.ReactElement {
     saveConfig,
     updateConfig,
   } = useConfig();
+
+  // Calculate available height for scrollable content
+  // Reserve lines for: header (2), status message (1), footer (2), borders (2)
+  const availableHeight = Math.max(8, terminalSize.rows - 7);
+  // Nav panel gets slightly less height for its content
+  const navMaxHeight = Math.max(4, availableHeight - 4);
+  // Editor panel gets full available height
+  const editorMaxHeight = Math.max(6, availableHeight - 2);
 
   // Navigation state
   const [selectedSection, setSelectedSection] = useState("basic");
@@ -332,6 +342,7 @@ export function ConfigEditor(): React.ReactElement {
             onConfirm={handleFieldConfirm}
             onCancel={handleFieldCancel}
             isFocused={true}
+            maxHeight={editorMaxHeight}
           />
         );
       case "object":
@@ -388,6 +399,7 @@ export function ConfigEditor(): React.ReactElement {
             }}
             onCancel={handleFieldCancel}
             isFocused={true}
+            maxHeight={editorMaxHeight}
           />
         );
       default:
@@ -459,6 +471,7 @@ export function ConfigEditor(): React.ReactElement {
               selectedSection={selectedSection}
               onSelectSection={handleSelectSection}
               isFocused={focusPane === "nav"}
+              maxHeight={navMaxHeight}
             />
           </Box>
 
@@ -472,6 +485,7 @@ export function ConfigEditor(): React.ReactElement {
               onBack={handleBack}
               isFocused={focusPane === "editor"}
               validationErrors={validationErrors}
+              maxHeight={editorMaxHeight}
             />
           </Box>
 
