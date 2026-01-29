@@ -42,6 +42,10 @@ let telegramConfig: { botToken: string; allowedChatIds?: string[] } | null = nul
 let slackClient: { sendMessage: (channelId: string, text: string) => Promise<void> } | null = null;
 let slackConfig: { botToken: string; appToken: string; signingSecret: string; allowedChannelIds?: string[] } | null = null;
 
+// Discord client for sending messages (lazy loaded)
+let discordClient: { sendMessage: (channelId: string, text: string) => Promise<void> } | null = null;
+let discordConfig: { botToken: string; allowedGuildIds?: string[]; allowedChannelIds?: string[] } | null = null;
+
 /**
  * Check if Telegram is enabled (has token and not explicitly disabled).
  */
@@ -59,6 +63,15 @@ function isSlackEnabled(config: ReturnType<typeof loadConfig>): boolean {
   if (!config.chat?.slack?.appToken) return false;
   if (!config.chat?.slack?.signingSecret) return false;
   if (config.chat.slack.enabled === false) return false;
+  return true;
+}
+
+/**
+ * Check if Discord is enabled (has token and not explicitly disabled).
+ */
+function isDiscordEnabled(config: ReturnType<typeof loadConfig>): boolean {
+  if (!config.chat?.discord?.botToken) return false;
+  if (config.chat.discord.enabled === false) return false;
   return true;
 }
 
@@ -83,6 +96,18 @@ async function initSlackClient(config: ReturnType<typeof loadConfig>): Promise<v
     // Dynamic import to avoid circular dependency
     const { createSlackClient } = await import("../providers/slack.js");
     slackClient = createSlackClient(slackConfig, false);
+  }
+}
+
+/**
+ * Initialize Discord client if configured.
+ */
+async function initDiscordClient(config: ReturnType<typeof loadConfig>): Promise<void> {
+  if (isDiscordEnabled(config)) {
+    discordConfig = config.chat!.discord!;
+    // Dynamic import to avoid circular dependency
+    const { createDiscordClient } = await import("../providers/discord.js");
+    discordClient = createDiscordClient(discordConfig, false);
   }
 }
 
@@ -127,6 +152,30 @@ async function sendSlackMessage(message: string): Promise<{ success: boolean; er
 
     for (const channelId of channelIds) {
       await slackClient.sendMessage(channelId, message);
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
+/**
+ * Send a message via Discord if configured.
+ */
+async function sendDiscordMessage(message: string): Promise<{ success: boolean; error?: string }> {
+  if (!discordClient || !discordConfig) {
+    return { success: false, error: "Discord not configured" };
+  }
+
+  try {
+    // Send to all allowed channel IDs, or fail if none configured
+    const channelIds = discordConfig.allowedChannelIds;
+    if (!channelIds || channelIds.length === 0) {
+      return { success: false, error: "No channel IDs configured for Discord" };
+    }
+
+    for (const channelId of channelIds) {
+      await discordClient.sendMessage(channelId, message);
     }
     return { success: true };
   } catch (err) {
@@ -183,6 +232,14 @@ function getDefaultActions(config: ReturnType<typeof loadConfig>): Record<string
     };
   }
 
+  // Add discord_notify action if Discord is enabled
+  if (isDiscordEnabled(config)) {
+    actions.discord_notify = {
+      command: "__discord__",  // Special marker for Discord handling
+      description: "Send notification via Discord",
+    };
+  }
+
   // Add chat_status action for querying PRD status from container
   actions.chat_status = {
     command: "ralph prd status --json 2>/dev/null || echo '{}'",
@@ -225,6 +282,17 @@ async function executeAction(
     return {
       success: result.success,
       output: result.success ? "Sent to Slack" : "",
+      error: result.error,
+    };
+  }
+
+  // Special handling for Discord
+  if (action.command === "__discord__") {
+    const message = args.join(" ") || "Ralph notification";
+    const result = await sendDiscordMessage(message);
+    return {
+      success: result.success,
+      output: result.success ? "Sent to Discord" : "",
       error: result.error,
     };
   }
@@ -339,6 +407,7 @@ async function startDaemon(debug: boolean): Promise<void> {
   // Initialize chat clients if configured
   await initTelegramClient(config);
   await initSlackClient(config);
+  await initDiscordClient(config);
 
   // Merge default and configured actions
   const defaultActions = getDefaultActions(config);
