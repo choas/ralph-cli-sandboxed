@@ -38,12 +38,27 @@ export interface DaemonResponse {
 let telegramClient: { sendMessage: (chatId: string, text: string) => Promise<void> } | null = null;
 let telegramConfig: { botToken: string; allowedChatIds?: string[] } | null = null;
 
+// Slack client for sending messages (lazy loaded)
+let slackClient: { sendMessage: (channelId: string, text: string) => Promise<void> } | null = null;
+let slackConfig: { botToken: string; appToken: string; signingSecret: string; allowedChannelIds?: string[] } | null = null;
+
 /**
  * Check if Telegram is enabled (has token and not explicitly disabled).
  */
 function isTelegramEnabled(config: ReturnType<typeof loadConfig>): boolean {
   if (!config.chat?.telegram?.botToken) return false;
   if (config.chat.telegram.enabled === false) return false;
+  return true;
+}
+
+/**
+ * Check if Slack is enabled (has required tokens and not explicitly disabled).
+ */
+function isSlackEnabled(config: ReturnType<typeof loadConfig>): boolean {
+  if (!config.chat?.slack?.botToken) return false;
+  if (!config.chat?.slack?.appToken) return false;
+  if (!config.chat?.slack?.signingSecret) return false;
+  if (config.chat.slack.enabled === false) return false;
   return true;
 }
 
@@ -56,6 +71,18 @@ async function initTelegramClient(config: ReturnType<typeof loadConfig>): Promis
     // Dynamic import to avoid circular dependency
     const { createTelegramClient } = await import("../providers/telegram.js");
     telegramClient = createTelegramClient(telegramConfig, false);
+  }
+}
+
+/**
+ * Initialize Slack client if configured.
+ */
+async function initSlackClient(config: ReturnType<typeof loadConfig>): Promise<void> {
+  if (isSlackEnabled(config)) {
+    slackConfig = config.chat!.slack!;
+    // Dynamic import to avoid circular dependency
+    const { createSlackClient } = await import("../providers/slack.js");
+    slackClient = createSlackClient(slackConfig, false);
   }
 }
 
@@ -76,6 +103,30 @@ async function sendTelegramMessage(message: string): Promise<{ success: boolean;
 
     for (const chatId of chatIds) {
       await telegramClient.sendMessage(chatId, message);
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
+/**
+ * Send a message via Slack if configured.
+ */
+async function sendSlackMessage(message: string): Promise<{ success: boolean; error?: string }> {
+  if (!slackClient || !slackConfig) {
+    return { success: false, error: "Slack not configured" };
+  }
+
+  try {
+    // Send to all allowed channel IDs, or fail if none configured
+    const channelIds = slackConfig.allowedChannelIds;
+    if (!channelIds || channelIds.length === 0) {
+      return { success: false, error: "No channel IDs configured for Slack" };
+    }
+
+    for (const channelId of channelIds) {
+      await slackClient.sendMessage(channelId, message);
     }
     return { success: true };
   } catch (err) {
@@ -124,6 +175,14 @@ function getDefaultActions(config: ReturnType<typeof loadConfig>): Record<string
     };
   }
 
+  // Add slack_notify action if Slack is enabled
+  if (isSlackEnabled(config)) {
+    actions.slack_notify = {
+      command: "__slack__",  // Special marker for Slack handling
+      description: "Send notification via Slack",
+    };
+  }
+
   // Add chat_status action for querying PRD status from container
   actions.chat_status = {
     command: "ralph prd status --json 2>/dev/null || echo '{}'",
@@ -155,6 +214,17 @@ async function executeAction(
     return {
       success: result.success,
       output: result.success ? "Sent to Telegram" : "",
+      error: result.error,
+    };
+  }
+
+  // Special handling for Slack
+  if (action.command === "__slack__") {
+    const message = args.join(" ") || "Ralph notification";
+    const result = await sendSlackMessage(message);
+    return {
+      success: result.success,
+      output: result.success ? "Sent to Slack" : "",
       error: result.error,
     };
   }
@@ -266,8 +336,9 @@ async function startDaemon(debug: boolean): Promise<void> {
   const config = loadConfig();
   const daemonConfig = config.daemon || {};
 
-  // Initialize Telegram client if configured
+  // Initialize chat clients if configured
   await initTelegramClient(config);
+  await initSlackClient(config);
 
   // Merge default and configured actions
   const defaultActions = getDefaultActions(config);

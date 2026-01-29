@@ -1,5 +1,5 @@
 /**
- * Chat command for managing Telegram (and other) chat integrations.
+ * Chat command for managing Telegram, Slack, and other chat integrations.
  * Allows ralph to receive commands and send notifications via chat services.
  */
 
@@ -8,9 +8,11 @@ import { join, basename } from "path";
 import { spawn } from "child_process";
 import { loadConfig, getRalphDir, isRunningInContainer, RalphConfig } from "../utils/config.js";
 import { createTelegramClient } from "../providers/telegram.js";
+import { createSlackClient } from "../providers/slack.js";
 import {
   ChatClient,
   ChatCommand,
+  ChatProvider,
   InlineButton,
   generateProjectId,
   formatStatusMessage,
@@ -488,23 +490,80 @@ async function handleCommand(
 }
 
 /**
- * Start the chat daemon (listens for messages and handles commands).
+ * Create a chat client based on the provider configuration.
  */
-async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
-  // Check that Telegram is configured
+function createChatClient(config: RalphConfig, debug: boolean): { client: ChatClient; provider: ChatProvider; allowedChatIds?: string[] } {
+  const provider = config.chat?.provider || "telegram";
+
+  if (provider === "slack") {
+    // Check that Slack is configured
+    if (!config.chat?.slack?.botToken) {
+      console.error("Error: Slack bot token not configured");
+      console.error("Set chat.slack.botToken in .ralph/config.json");
+      console.error("Get a token from your Slack app settings: https://api.slack.com/apps");
+      process.exit(1);
+    }
+    if (!config.chat?.slack?.appToken) {
+      console.error("Error: Slack app token not configured");
+      console.error("Set chat.slack.appToken in .ralph/config.json");
+      console.error("Enable Socket Mode in your Slack app and generate an app token");
+      process.exit(1);
+    }
+    if (!config.chat?.slack?.signingSecret) {
+      console.error("Error: Slack signing secret not configured");
+      console.error("Set chat.slack.signingSecret in .ralph/config.json");
+      console.error("Find your signing secret in Slack app Basic Information");
+      process.exit(1);
+    }
+    if (config.chat.slack.enabled === false) {
+      console.error("Error: Slack is disabled in config (slack.enabled = false)");
+      process.exit(1);
+    }
+
+    return {
+      client: createSlackClient(
+        {
+          botToken: config.chat.slack.botToken,
+          appToken: config.chat.slack.appToken,
+          signingSecret: config.chat.slack.signingSecret,
+          allowedChannelIds: config.chat.slack.allowedChannelIds,
+        },
+        debug
+      ),
+      provider: "slack",
+      allowedChatIds: config.chat.slack.allowedChannelIds,
+    };
+  }
+
+  // Default to Telegram
   if (!config.chat?.telegram?.botToken) {
     console.error("Error: Telegram bot token not configured");
     console.error("Set chat.telegram.botToken in .ralph/config.json");
     console.error("Get a token from @BotFather on Telegram");
     process.exit(1);
   }
-
-  // Check if Telegram is explicitly disabled
   if (config.chat.telegram.enabled === false) {
     console.error("Error: Telegram is disabled in config (telegram.enabled = false)");
     process.exit(1);
   }
 
+  return {
+    client: createTelegramClient(
+      {
+        botToken: config.chat.telegram.botToken,
+        allowedChatIds: config.chat.telegram.allowedChatIds,
+      },
+      debug
+    ),
+    provider: "telegram",
+    allowedChatIds: config.chat.telegram.allowedChatIds,
+  };
+}
+
+/**
+ * Start the chat daemon (listens for messages and handles commands).
+ */
+async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
   // Create or load chat state
   let state = loadChatState();
   const projectId = getOrCreateProjectId();
@@ -519,19 +578,13 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     saveChatState(state);
   }
 
-  // Create Telegram client
-  const client = createTelegramClient(
-    {
-      botToken: config.chat.telegram.botToken,
-      allowedChatIds: config.chat.telegram.allowedChatIds,
-    },
-    debug
-  );
+  // Create chat client based on provider
+  const { client, provider, allowedChatIds } = createChatClient(config, debug);
 
   console.log("Ralph Chat Daemon");
   console.log("-".repeat(40));
   console.log(`Project: ${projectName}`);
-  console.log(`Provider: ${config.chat.provider}`);
+  console.log(`Provider: ${provider}`);
   console.log("");
 
   // Connect and start listening
@@ -546,9 +599,9 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
         : undefined
     );
 
-    console.log("Connected to Telegram!");
+    console.log(`Connected to ${provider === "slack" ? "Slack" : "Telegram"}!`);
     console.log("");
-    console.log("Commands (send in Telegram):");
+    console.log(`Commands (send in ${provider === "slack" ? "Slack" : "Telegram"}):`);
     console.log("  /run         - Start ralph automation");
     console.log("  /status      - Show PRD progress");
     console.log("  /add ...     - Add new task to PRD");
@@ -560,8 +613,8 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     console.log("Press Ctrl+C to stop the daemon.");
 
     // Send connected message to all allowed chats
-    if (config.chat.telegram.allowedChatIds && config.chat.telegram.allowedChatIds.length > 0) {
-      for (const chatId of config.chat.telegram.allowedChatIds) {
+    if (allowedChatIds && allowedChatIds.length > 0) {
+      for (const chatId of allowedChatIds) {
         try {
           await client.sendMessage(chatId, `${projectName} connected`);
         } catch (err) {
@@ -581,8 +634,8 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     console.log("\nShutting down chat daemon...");
 
     // Send disconnected message to all allowed chats
-    if (config.chat?.telegram?.allowedChatIds) {
-      for (const chatId of config.chat.telegram.allowedChatIds) {
+    if (allowedChatIds && allowedChatIds.length > 0) {
+      for (const chatId of allowedChatIds) {
         try {
           await client.sendMessage(chatId, `${projectName} disconnected`);
         } catch {
@@ -630,7 +683,22 @@ function showStatus(config: RalphConfig): void {
 
   console.log("");
 
-  if (config.chat.provider === "telegram") {
+  if (config.chat.provider === "slack") {
+    if (config.chat.slack?.botToken && config.chat.slack?.appToken && config.chat.slack?.signingSecret) {
+      console.log("Slack: configured");
+      if (config.chat.slack.allowedChannelIds && config.chat.slack.allowedChannelIds.length > 0) {
+        console.log(`Allowed channels: ${config.chat.slack.allowedChannelIds.join(", ")}`);
+      } else {
+        console.log("Allowed channels: all (no restrictions)");
+      }
+    } else {
+      const missing: string[] = [];
+      if (!config.chat.slack?.botToken) missing.push("botToken");
+      if (!config.chat.slack?.appToken) missing.push("appToken");
+      if (!config.chat.slack?.signingSecret) missing.push("signingSecret");
+      console.log(`Slack: not configured (missing: ${missing.join(", ")})`);
+    }
+  } else if (config.chat.provider === "telegram") {
     if (config.chat.telegram?.botToken) {
       console.log("Telegram: configured");
       if (config.chat.telegram.allowedChatIds && config.chat.telegram.allowedChatIds.length > 0) {
@@ -653,26 +721,54 @@ async function testChat(config: RalphConfig, chatId?: string): Promise<void> {
     process.exit(1);
   }
 
-  if (!config.chat.telegram?.botToken) {
-    console.error("Error: Telegram bot token not configured");
-    process.exit(1);
+  const provider = config.chat.provider || "telegram";
+
+  let client: ChatClient;
+  let targetChatId: string | undefined;
+
+  if (provider === "slack") {
+    if (!config.chat.slack?.botToken || !config.chat.slack?.appToken || !config.chat.slack?.signingSecret) {
+      console.error("Error: Slack configuration incomplete");
+      console.error("Required: botToken, appToken, signingSecret");
+      process.exit(1);
+    }
+
+    targetChatId = chatId || (config.chat.slack.allowedChannelIds?.[0]);
+    if (!targetChatId) {
+      console.error("Error: No channel ID specified and no allowed channel IDs configured");
+      console.error("Usage: ralph chat test <channel_id>");
+      console.error("Or add channel IDs to chat.slack.allowedChannelIds in config.json");
+      process.exit(1);
+    }
+
+    client = createSlackClient({
+      botToken: config.chat.slack.botToken,
+      appToken: config.chat.slack.appToken,
+      signingSecret: config.chat.slack.signingSecret,
+      allowedChannelIds: config.chat.slack.allowedChannelIds,
+    });
+  } else {
+    // Telegram
+    if (!config.chat.telegram?.botToken) {
+      console.error("Error: Telegram bot token not configured");
+      process.exit(1);
+    }
+
+    targetChatId = chatId || (config.chat.telegram.allowedChatIds?.[0]);
+    if (!targetChatId) {
+      console.error("Error: No chat ID specified and no allowed chat IDs configured");
+      console.error("Usage: ralph chat test <chat_id>");
+      console.error("Or add chat IDs to chat.telegram.allowedChatIds in config.json");
+      process.exit(1);
+    }
+
+    client = createTelegramClient({
+      botToken: config.chat.telegram.botToken,
+      allowedChatIds: config.chat.telegram.allowedChatIds,
+    });
   }
 
-  // If no chat ID provided, use the first allowed chat ID
-  const targetChatId = chatId || (config.chat.telegram.allowedChatIds?.[0]);
-  if (!targetChatId) {
-    console.error("Error: No chat ID specified and no allowed chat IDs configured");
-    console.error("Usage: ralph chat test <chat_id>");
-    console.error("Or add chat IDs to chat.telegram.allowedChatIds in config.json");
-    process.exit(1);
-  }
-
-  const client = createTelegramClient({
-    botToken: config.chat.telegram.botToken,
-    allowedChatIds: config.chat.telegram.allowedChatIds,
-  });
-
-  console.log(`Testing connection to chat ${targetChatId}...`);
+  console.log(`Testing connection to ${provider} chat ${targetChatId}...`);
 
   try {
     // Just connect to verify credentials
@@ -705,7 +801,7 @@ export async function chat(args: string[]): Promise<void> {
   // Show help
   if (subcommand === "help" || subcommand === "--help" || subcommand === "-h" || !subcommand) {
     console.log(`
-ralph chat - Chat client integration (Telegram, etc.)
+ralph chat - Chat client integration (Telegram, Slack)
 
 USAGE:
   ralph chat start [--debug]  Start the chat daemon
@@ -716,6 +812,7 @@ USAGE:
 CONFIGURATION:
   Configure chat in .ralph/config.json:
 
+  Telegram:
   {
     "chat": {
       "enabled": true,
@@ -723,6 +820,20 @@ CONFIGURATION:
       "telegram": {
         "botToken": "YOUR_BOT_TOKEN",
         "allowedChatIds": ["123456789"]
+      }
+    }
+  }
+
+  Slack:
+  {
+    "chat": {
+      "enabled": true,
+      "provider": "slack",
+      "slack": {
+        "botToken": "xoxb-YOUR-BOT-TOKEN",
+        "appToken": "xapp-YOUR-APP-TOKEN",
+        "signingSecret": "YOUR_SIGNING_SECRET",
+        "allowedChannelIds": ["C01234567"]
       }
     }
   }
@@ -737,8 +848,25 @@ TELEGRAM SETUP:
      Example: https://api.telegram.org/bot123456:ABC-xyz/getUpdates
   5. Add the chat ID to chat.telegram.allowedChatIds (optional security)
 
+SLACK SETUP:
+  1. Create a Slack app at https://api.slack.com/apps
+  2. Enable Socket Mode in the app settings
+  3. Generate an App-Level Token with connections:write scope (xapp-...)
+  4. Under OAuth & Permissions, add these Bot Token Scopes:
+     - chat:write (send messages)
+     - channels:history (read public channel messages)
+     - groups:history (read private channel messages)
+     - im:history (read direct messages)
+     - commands (for slash commands, optional)
+  5. Install the app to your workspace
+  6. Copy the Bot User OAuth Token (xoxb-...) to chat.slack.botToken
+  7. Copy the App Token (xapp-...) to chat.slack.appToken
+  8. Copy the Signing Secret to chat.slack.signingSecret
+  9. Invite the bot to channels: /invite @your-bot-name
+  10. Add channel IDs to chat.slack.allowedChannelIds (optional security)
+
 CHAT COMMANDS:
-  Once connected, send commands to your Telegram bot:
+  Once connected, send commands to your bot:
 
   /run            - Start ralph automation
   /status         - Show PRD progress
@@ -750,8 +878,8 @@ CHAT COMMANDS:
   /help           - Show help
 
 SECURITY:
-  - Use allowedChatIds to restrict which chats can control ralph
-  - Never share your bot token
+  - Use allowedChatIds/allowedChannelIds to restrict which chats can control ralph
+  - Never share your bot tokens
   - The daemon should run on the host, not in the container
 
 DAEMON ACTIONS:
@@ -772,16 +900,19 @@ DAEMON ACTIONS:
     }
   }
 
-  Then trigger them via Telegram: /action build or /action deploy
+  Then trigger them via chat: /action build or /action deploy
 
 EXAMPLES:
   # Start the chat daemon
   ralph chat start
 
-  # Test the connection
+  # Test the connection (Telegram)
   ralph chat test 123456789
 
-  # In Telegram:
+  # Test the connection (Slack)
+  ralph chat test C01234567
+
+  # In Telegram/Slack:
   /run              # Start ralph automation
   /status           # Show task progress
   /add Fix login    # Add new task
