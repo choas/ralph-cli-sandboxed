@@ -100,11 +100,19 @@ export interface SlackChatSettings {
   allowedChannelIds?: string[];  // Only respond in these channel IDs (security)
 }
 
+export interface DiscordChatSettings {
+  enabled?: boolean;          // Enable/disable Discord (default: true if botToken set)
+  botToken: string;           // Discord Bot Token (from Developer Portal)
+  allowedGuildIds?: string[]; // Only respond in these guild/server IDs (security)
+  allowedChannelIds?: string[];  // Only respond in these channel IDs (security)
+}
+
 export interface ChatConfig {
   enabled?: boolean;          // Enable chat client integration
-  provider?: "telegram" | "slack";  // Chat provider
+  provider?: "telegram" | "slack" | "discord";  // Chat provider
   telegram?: TelegramChatSettings;  // Telegram-specific settings
   slack?: SlackChatSettings;        // Slack-specific settings
+  discord?: DiscordChatSettings;    // Discord-specific settings
 }
 
 export interface RalphConfig {
