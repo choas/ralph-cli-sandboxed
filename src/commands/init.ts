@@ -1,7 +1,8 @@
-import { existsSync, writeFileSync, mkdirSync, copyFileSync } from "fs";
+import { existsSync, writeFileSync, mkdirSync, copyFileSync, chmodSync } from "fs";
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
 import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, getCliProviders, getSkillsForLanguage, type LanguageConfig, type SkillDefinition } from "../templates/prompts.js";
+import { generateGenXcodeScript, hasSwiftUI } from "../templates/macos-scripts.js";
 import { type SkillConfig } from "../utils/config.js";
 import { promptSelectWithArrows, promptConfirm, promptInput, promptMultiSelectWithArrows } from "../utils/prompt.js";
 import { type CliConfig } from "../utils/config.js";
@@ -326,6 +327,31 @@ docker/.config-hash
     console.log(`Created ${RALPH_DIR}/.gitignore`);
   } else {
     console.log(`Skipped ${RALPH_DIR}/.gitignore (already exists)`);
+  }
+
+  // Generate macOS/Swift development scripts if Swift + SwiftUI selected
+  if (selectedKey === "swift" && hasSwiftUI(selectedTechnologies)) {
+    const scriptsDir = join(cwd, "scripts");
+    const genXcodePath = join(scriptsDir, "gen_xcode.sh");
+
+    if (!existsSync(scriptsDir)) {
+      mkdirSync(scriptsDir, { recursive: true });
+      console.log("Created scripts/");
+    }
+
+    if (!existsSync(genXcodePath)) {
+      // Use a clean project name (PascalCase) for the Swift project
+      const swiftProjectName = basename(cwd)
+        .replace(/[^a-zA-Z0-9]+/g, " ")
+        .split(" ")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join("");
+      writeFileSync(genXcodePath, generateGenXcodeScript(swiftProjectName || "App"));
+      chmodSync(genXcodePath, 0o755);
+      console.log("Created scripts/gen_xcode.sh");
+    } else {
+      console.log("Skipped scripts/gen_xcode.sh (already exists)");
+    }
   }
 
   // Copy PRD guide file from package if not exists
