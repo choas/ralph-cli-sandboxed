@@ -2,7 +2,7 @@ import { existsSync, writeFileSync, mkdirSync, copyFileSync, chmodSync } from "f
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
 import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, getCliProviders, getSkillsForLanguage, type LanguageConfig, type SkillDefinition } from "../templates/prompts.js";
-import { generateGenXcodeScript, hasSwiftUI } from "../templates/macos-scripts.js";
+import { generateGenXcodeScript, hasSwiftUI, hasFastlane } from "../templates/macos-scripts.js";
 import { type SkillConfig } from "../utils/config.js";
 import { promptSelectWithArrows, promptConfirm, promptInput, promptMultiSelectWithArrows } from "../utils/prompt.js";
 import { type CliConfig } from "../utils/config.js";
@@ -188,6 +188,35 @@ export async function init(args: string[]): Promise<void> {
   const projectName = basename(cwd).toLowerCase().replace(/[^a-z0-9-]/g, "-");
   const imageName = `ralph-${projectName}`;
 
+  // Generate macOS development actions for Swift + SwiftUI projects
+  const macOsActions: Record<string, { command: string; description: string }> = {};
+  if (selectedKey === "swift" && hasSwiftUI(selectedTechnologies)) {
+    macOsActions.gen_xcode = {
+      command: "./scripts/gen_xcode.sh",
+      description: "Generate Xcode project from Swift package",
+    };
+    macOsActions.build = {
+      command: "xcodebuild -project *.xcodeproj -scheme * -configuration Debug build",
+      description: "Build the Xcode project in Debug mode",
+    };
+    macOsActions.test = {
+      command: "xcodebuild -project *.xcodeproj -scheme * test",
+      description: "Run tests via xcodebuild",
+    };
+
+    // Add Fastlane actions if Fastlane technology is selected
+    if (hasFastlane(selectedTechnologies)) {
+      macOsActions.fastlane_beta = {
+        command: "cd scripts && fastlane beta",
+        description: "Deploy beta build via Fastlane",
+      };
+      macOsActions.fastlane_release = {
+        command: "cd scripts && fastlane release",
+        description: "Deploy release build via Fastlane",
+      };
+    }
+  }
+
   // Write config file with all available options (defaults or empty values)
   const configData: Record<string, unknown> = {
     // Required fields
@@ -254,7 +283,7 @@ export async function init(args: string[]): Promise<void> {
 
     // Daemon configuration for sandbox-to-host communication
     daemon: {
-      actions: {},
+      actions: macOsActions,
       // Event handlers - each event can trigger multiple daemon actions
       // Available events: task_complete, ralph_complete, iteration_complete, error
       events: {
