@@ -113,8 +113,8 @@ export interface EditorPanelProps {
   selectedSection: string;
   /** Currently selected field path (for nested editing) */
   selectedField?: string;
-  /** Callback when a field is selected for editing */
-  onSelectField: (fieldPath: string) => void;
+  /** Callback when a field is selected for editing (useJsonEditor=true for J shortcut) */
+  onSelectField: (fieldPath: string, useJsonEditor?: boolean) => void;
   /** Callback when navigating back (Esc) */
   onBack: () => void;
   /** Whether this component has focus for keyboard input */
@@ -205,7 +205,17 @@ export function EditorPanel({
   const handleSelect = useCallback(() => {
     const field = fields[highlightedIndex];
     if (field) {
-      onSelectField(field.path);
+      onSelectField(field.path, false);
+    }
+  }, [highlightedIndex, fields, onSelectField]);
+
+  // Handle selecting field with JSON editor
+  const handleSelectJson = useCallback(() => {
+    const field = fields[highlightedIndex];
+    if (field) {
+      // JSON editor is useful for arrays, objects, and unknown types
+      const isComplexType = field.type === "array" || field.type === "object" || field.type === "unknown";
+      onSelectField(field.path, isComplexType);
     }
   }, [highlightedIndex, fields, onSelectField]);
 
@@ -225,6 +235,9 @@ export function EditorPanel({
         handlePageDown();
       } else if (key.return) {
         handleSelect();
+      } else if (input === "J") {
+        // J (uppercase) to edit as JSON
+        handleSelectJson();
       } else if (key.escape) {
         onBack();
       }
@@ -363,8 +376,8 @@ export function EditorPanel({
       {/* Navigation hints */}
       <Box marginTop={1}>
         <Text dimColor>
-          j/k: navigate | Enter: edit | Esc: back
-          {hasOverflow && " | PgUp/Dn: scroll"}
+          j/k: navigate | Enter: edit | J: edit as JSON
+          {hasOverflow && " | PgUp/Dn: scroll"} | Esc: back
         </Text>
       </Box>
     </Box>

@@ -9,6 +9,7 @@ import { BooleanToggle } from "./components/BooleanToggle.js";
 import { ArrayEditor } from "./components/ArrayEditor.js";
 import { ObjectEditor } from "./components/ObjectEditor.js";
 import { KeyValueEditor } from "./components/KeyValueEditor.js";
+import { JsonSnippetEditor } from "./components/JsonSnippetEditor.js";
 import { Preview } from "./components/Preview.js";
 import { HelpPanel } from "./components/HelpPanel.js";
 import { PresetSelector } from "./components/PresetSelector.js";
@@ -77,6 +78,9 @@ export function ConfigEditor(): React.ReactElement {
 
   // Help panel visibility
   const [helpVisible, setHelpVisible] = useState(false);
+
+  // JSON edit mode - when true, use JsonSnippetEditor for complex fields
+  const [jsonEditMode, setJsonEditMode] = useState(false);
 
   // Status message for feedback
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -157,8 +161,9 @@ export function ConfigEditor(): React.ReactElement {
   }, []);
 
   // Handle field selection
-  const handleSelectField = useCallback((fieldPath: string) => {
+  const handleSelectField = useCallback((fieldPath: string, useJsonEditor = false) => {
     setSelectedField(fieldPath);
+    setJsonEditMode(useJsonEditor);
     setFocusPane("field-editor");
   }, []);
 
@@ -181,6 +186,7 @@ export function ConfigEditor(): React.ReactElement {
     });
 
     setSelectedField(undefined);
+    setJsonEditMode(false);
     setFocusPane("editor");
     setStatusMessage("Field updated");
     setTimeout(() => setStatusMessage(null), 2000);
@@ -189,6 +195,7 @@ export function ConfigEditor(): React.ReactElement {
   // Handle field edit cancel
   const handleFieldCancel = useCallback(() => {
     setSelectedField(undefined);
+    setJsonEditMode(false);
     setFocusPane("editor");
   }, []);
 
@@ -301,6 +308,20 @@ export function ConfigEditor(): React.ReactElement {
   // Render field editor overlay if a field is selected
   const renderFieldEditor = () => {
     if (!selectedField || focusPane !== "field-editor") return null;
+
+    // Use JsonSnippetEditor for complex fields when J key was pressed or for certain field types
+    if (jsonEditMode) {
+      return (
+        <JsonSnippetEditor
+          label={currentFieldLabel}
+          value={currentFieldValue}
+          onConfirm={handleFieldConfirm}
+          onCancel={handleFieldCancel}
+          isFocused={true}
+          maxHeight={editorMaxHeight}
+        />
+      );
+    }
 
     switch (currentFieldType) {
       case "string":
@@ -502,7 +523,7 @@ export function ConfigEditor(): React.ReactElement {
       <Box marginTop={1}>
         <Text dimColor>
           {focusPane === "nav" && "j/k: navigate | Enter: select | l/→: editor | Tab: toggle preview"}
-          {focusPane === "editor" && "j/k: navigate | Enter: edit | h/←: nav | Tab: toggle preview | p: presets"}
+          {focusPane === "editor" && "j/k: navigate | Enter: edit | J: JSON | h/←: nav | Tab: preview | p: presets"}
           {focusPane === "field-editor" && "Follow editor hints"}
           {focusPane === "preset-selector" && "j/k: navigate | Enter: select | Esc: back"}
         </Text>
