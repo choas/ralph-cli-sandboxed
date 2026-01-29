@@ -220,3 +220,239 @@ export function hasFastlane(technologies: string[]): boolean {
     tech.toLowerCase() === 'fastlane'
   );
 }
+
+/**
+ * Generate Fastfile template for macOS/iOS deployment
+ * This creates a standard Fastfile with beta and release lanes
+ *
+ * @param projectName - Name of the Xcode project/app
+ */
+export function generateFastfile(projectName: string = "App"): string {
+  return `# Fastfile - Fastlane configuration for ${projectName}
+#
+# This file contains lanes for automating builds and deployments.
+# Run lanes from the scripts/ directory: cd scripts && fastlane <lane>
+#
+# SETUP:
+#   1. Run 'fastlane init' in this directory to configure credentials
+#   2. Update the Appfile with your Apple Developer account details
+#   3. Configure signing in Xcode or via match
+#
+# AVAILABLE LANES:
+#   fastlane beta    - Build and upload to TestFlight
+#   fastlane release - Build and submit to App Store
+#   fastlane tests   - Run all tests
+#
+# For more information: https://docs.fastlane.tools
+#
+
+default_platform(:mac)
+
+platform :mac do
+  desc "Run all tests"
+  lane :tests do
+    run_tests(
+      project: "../${projectName}.xcodeproj",
+      scheme: "${projectName}",
+      clean: true,
+      code_coverage: true
+    )
+  end
+
+  desc "Build and upload to TestFlight for beta testing"
+  lane :beta do
+    # Ensure we're on a clean git state
+    ensure_git_status_clean
+
+    # Increment build number
+    increment_build_number(
+      xcodeproj: "../${projectName}.xcodeproj"
+    )
+
+    # Build the app
+    build_mac_app(
+      project: "../${projectName}.xcodeproj",
+      scheme: "${projectName}",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "../build",
+      output_name: "${projectName}.app"
+    )
+
+    # Upload to TestFlight
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+
+    # Commit version bump
+    commit_version_bump(
+      xcodeproj: "../${projectName}.xcodeproj",
+      message: "chore: Bump build number for beta release"
+    )
+
+    # Tag the release
+    add_git_tag(
+      tag: "beta/#{get_version_number(xcodeproj: '../${projectName}.xcodeproj')}-#{get_build_number(xcodeproj: '../${projectName}.xcodeproj')}"
+    )
+
+    # Push to remote
+    push_to_git_remote
+  end
+
+  desc "Build and submit to the App Store"
+  lane :release do
+    # Ensure we're on a clean git state
+    ensure_git_status_clean
+
+    # Run tests first
+    tests
+
+    # Increment version number (patch)
+    increment_version_number(
+      xcodeproj: "../${projectName}.xcodeproj",
+      bump_type: "patch"
+    )
+
+    # Reset build number for new version
+    increment_build_number(
+      xcodeproj: "../${projectName}.xcodeproj",
+      build_number: "1"
+    )
+
+    # Build the app
+    build_mac_app(
+      project: "../${projectName}.xcodeproj",
+      scheme: "${projectName}",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "../build",
+      output_name: "${projectName}.app"
+    )
+
+    # Upload to App Store Connect
+    upload_to_app_store(
+      submit_for_review: false,
+      automatic_release: false,
+      skip_metadata: true,
+      skip_screenshots: true
+    )
+
+    # Commit version bump
+    commit_version_bump(
+      xcodeproj: "../${projectName}.xcodeproj",
+      message: "chore: Bump version for App Store release"
+    )
+
+    # Tag the release
+    add_git_tag(
+      tag: "v#{get_version_number(xcodeproj: '../${projectName}.xcodeproj')}"
+    )
+
+    # Push to remote
+    push_to_git_remote(tags: true)
+  end
+
+  # Error handling
+  error do |lane, exception|
+    # You can add error notifications here (e.g., Slack, email)
+    UI.error("Lane #{lane} failed with error: #{exception.message}")
+  end
+end
+`;
+}
+
+/**
+ * Generate Appfile template for Fastlane
+ * This contains app-specific configuration like bundle ID and Apple ID
+ *
+ * @param projectName - Name of the Xcode project/app
+ */
+export function generateAppfile(projectName: string = "App"): string {
+  const bundleId = `com.example.${projectName.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+  return `# Appfile - Fastlane app configuration
+#
+# This file contains your app's bundle identifier and Apple Developer account info.
+# Update the values below with your actual credentials.
+#
+# For more information: https://docs.fastlane.tools/advanced/Appfile/
+#
+
+# Your app's bundle identifier (must match Xcode project)
+app_identifier "${bundleId}"
+
+# Your Apple Developer email address
+# apple_id "your-email@example.com"
+
+# Your App Store Connect team ID (if you're on multiple teams)
+# itc_team_id "123456789"
+
+# Your Apple Developer Portal team ID (if you're on multiple teams)
+# team_id "XXXXXXXXXX"
+
+# For more information about the Appfile, see:
+# https://docs.fastlane.tools/advanced/Appfile/
+`;
+}
+
+/**
+ * Generate README section for Fastlane setup
+ * This provides documentation on how to use Fastlane with the project
+ *
+ * @param projectName - Name of the Xcode project/app
+ */
+export function generateFastlaneReadmeSection(projectName: string = "App"): string {
+  return `## Fastlane Deployment
+
+This project includes [Fastlane](https://fastlane.tools/) configuration for automated builds and deployments.
+
+### Setup
+
+1. **Install Fastlane** (if not already installed):
+   \`\`\`bash
+   # Using Homebrew
+   brew install fastlane
+
+   # Or using RubyGems
+   gem install fastlane
+   \`\`\`
+
+2. **Configure credentials**:
+   - Edit \`scripts/fastlane/Appfile\` with your Apple Developer account details
+   - Run \`cd scripts && fastlane init\` to set up App Store Connect credentials
+
+3. **Configure code signing** (choose one):
+   - **Xcode automatic signing**: Enable "Automatically manage signing" in Xcode
+   - **Fastlane match**: Run \`fastlane match init\` to set up certificate/profile management
+
+### Available Lanes
+
+Run Fastlane commands from the \`scripts/\` directory:
+
+| Lane | Description |
+|------|-------------|
+| \`fastlane tests\` | Run all unit and UI tests |
+| \`fastlane beta\` | Build and upload to TestFlight |
+| \`fastlane release\` | Build and submit to App Store |
+
+### Using with Ralph
+
+Ralph can trigger Fastlane lanes via daemon actions:
+
+\`\`\`bash
+# From inside the sandbox (via ralph action)
+ralph action fastlane_beta
+ralph action fastlane_release
+
+# From Telegram chat
+/notify fastlane_beta
+/notify fastlane_release
+\`\`\`
+
+### Customization
+
+- **Fastfile** (\`scripts/fastlane/Fastfile\`): Add custom lanes for your workflow
+- **Appfile** (\`scripts/fastlane/Appfile\`): Configure app bundle ID and team settings
+
+For more information, see the [Fastlane documentation](https://docs.fastlane.tools/).
+`;
+}

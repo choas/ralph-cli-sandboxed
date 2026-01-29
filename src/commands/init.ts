@@ -2,7 +2,7 @@ import { existsSync, writeFileSync, mkdirSync, copyFileSync, chmodSync } from "f
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
 import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, getCliProviders, getSkillsForLanguage, type LanguageConfig, type SkillDefinition } from "../templates/prompts.js";
-import { generateGenXcodeScript, hasSwiftUI, hasFastlane } from "../templates/macos-scripts.js";
+import { generateGenXcodeScript, hasSwiftUI, hasFastlane, generateFastfile, generateAppfile, generateFastlaneReadmeSection } from "../templates/macos-scripts.js";
 import { type SkillConfig } from "../utils/config.js";
 import { promptSelectWithArrows, promptConfirm, promptInput, promptMultiSelectWithArrows } from "../utils/prompt.js";
 import { type CliConfig } from "../utils/config.js";
@@ -206,12 +206,16 @@ export async function init(args: string[]): Promise<void> {
 
     // Add Fastlane actions if Fastlane technology is selected
     if (hasFastlane(selectedTechnologies)) {
+      macOsActions.fastlane_init = {
+        command: "cd scripts/fastlane && fastlane init",
+        description: "Initialize Fastlane credentials (interactive)",
+      };
       macOsActions.fastlane_beta = {
-        command: "cd scripts && fastlane beta",
+        command: "cd scripts/fastlane && fastlane beta",
         description: "Deploy beta build via Fastlane",
       };
       macOsActions.fastlane_release = {
-        command: "cd scripts && fastlane release",
+        command: "cd scripts/fastlane && fastlane release",
         description: "Deploy release build via Fastlane",
       };
     }
@@ -368,18 +372,53 @@ docker/.config-hash
       console.log("Created scripts/");
     }
 
+    // Use a clean project name (PascalCase) for the Swift project
+    const swiftProjectName = basename(cwd)
+      .replace(/[^a-zA-Z0-9]+/g, " ")
+      .split(" ")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join("") || "App";
+
     if (!existsSync(genXcodePath)) {
-      // Use a clean project name (PascalCase) for the Swift project
-      const swiftProjectName = basename(cwd)
-        .replace(/[^a-zA-Z0-9]+/g, " ")
-        .split(" ")
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join("");
-      writeFileSync(genXcodePath, generateGenXcodeScript(swiftProjectName || "App"));
+      writeFileSync(genXcodePath, generateGenXcodeScript(swiftProjectName));
       chmodSync(genXcodePath, 0o755);
       console.log("Created scripts/gen_xcode.sh");
     } else {
       console.log("Skipped scripts/gen_xcode.sh (already exists)");
+    }
+
+    // Generate Fastlane configuration if Fastlane technology is selected
+    if (hasFastlane(selectedTechnologies)) {
+      const fastlaneDir = join(scriptsDir, "fastlane");
+      const fastfilePath = join(fastlaneDir, "Fastfile");
+      const appfilePath = join(fastlaneDir, "Appfile");
+      const readmePath = join(fastlaneDir, "README.md");
+
+      if (!existsSync(fastlaneDir)) {
+        mkdirSync(fastlaneDir, { recursive: true });
+        console.log("Created scripts/fastlane/");
+      }
+
+      if (!existsSync(fastfilePath)) {
+        writeFileSync(fastfilePath, generateFastfile(swiftProjectName));
+        console.log("Created scripts/fastlane/Fastfile");
+      } else {
+        console.log("Skipped scripts/fastlane/Fastfile (already exists)");
+      }
+
+      if (!existsSync(appfilePath)) {
+        writeFileSync(appfilePath, generateAppfile(swiftProjectName));
+        console.log("Created scripts/fastlane/Appfile");
+      } else {
+        console.log("Skipped scripts/fastlane/Appfile (already exists)");
+      }
+
+      if (!existsSync(readmePath)) {
+        writeFileSync(readmePath, generateFastlaneReadmeSection(swiftProjectName));
+        console.log("Created scripts/fastlane/README.md");
+      } else {
+        console.log("Skipped scripts/fastlane/README.md (already exists)");
+      }
     }
   }
 
