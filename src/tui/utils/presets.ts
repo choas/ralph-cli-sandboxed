@@ -3,7 +3,7 @@
  * Provides quick setup templates for common integrations.
  */
 
-import type { RalphConfig, NotificationProviderConfig, TelegramChatSettings, SlackChatSettings } from "../../utils/config.js";
+import type { RalphConfig, NotificationProviderConfig, TelegramChatSettings, SlackChatSettings, DiscordChatSettings } from "../../utils/config.js";
 
 /**
  * A preset defines default values for a specific integration.
@@ -57,11 +57,17 @@ export const CHAT_PRESETS: ConfigPreset[] = [
   {
     id: "discord",
     name: "Discord",
-    description: "Discord Bot for chat control (coming soon)",
+    description: "Discord Bot for chat control via Discord Gateway",
     category: "chat",
     fields: {
       "chat.enabled": true,
       "chat.provider": "discord",
+      "chat.discord": {
+        enabled: true,
+        botToken: "",         // Bot token from Discord Developer Portal > Bot > Token
+        allowedGuildIds: [],  // Server/guild IDs to restrict access (optional)
+        allowedChannelIds: [], // Channel IDs to restrict access (optional)
+      } satisfies DiscordChatSettings,
     },
   },
 ];

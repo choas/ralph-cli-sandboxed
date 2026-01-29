@@ -47,6 +47,12 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
     { key: "allowedChatIds", description: "Only respond in these chat IDs (security)" },
     { key: "enabled", description: "Enable/disable Telegram integration" },
   ],
+  discord: [
+    { key: "botToken", description: "Discord Bot Token from Developer Portal > Bot > Token", required: true },
+    { key: "allowedGuildIds", description: "Only respond in these server/guild IDs (security)" },
+    { key: "allowedChannelIds", description: "Only respond in these channel IDs (security)" },
+    { key: "enabled", description: "Enable/disable Discord integration" },
+  ],
 };
 
 export interface KeyValueEditorProps {
