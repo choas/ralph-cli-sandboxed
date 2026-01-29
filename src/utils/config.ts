@@ -41,16 +41,23 @@ export interface DaemonActionConfig {
   description?: string;       // Human-readable description of the action
 }
 
-// Notification provider configs
+// Notification provider configs - support arbitrary key-value pairs for flexibility
+export interface NotificationProviderConfig {
+  [key: string]: string | undefined;  // Arbitrary key-value pairs (e.g., topic, server, token)
+}
+
+// Legacy interface for backwards compatibility
 export interface NtfyNotificationConfig {
   topic: string;              // ntfy topic name (required)
   server?: string;            // ntfy server URL (default: https://ntfy.sh)
 }
 
 export interface NotificationsConfig {
-  provider: "ntfy" | "command";  // Which notification provider to use
-  ntfy?: NtfyNotificationConfig;
-  command?: string;           // Custom command (for "command" provider)
+  provider: "ntfy" | "pushover" | "gotify" | "command";  // Which notification provider to use
+  ntfy?: NotificationProviderConfig;      // ntfy config (topic, server, etc.)
+  pushover?: NotificationProviderConfig;  // pushover config (user, token, etc.)
+  gotify?: NotificationProviderConfig;    // gotify config (server, token, etc.)
+  command?: string;                       // Custom command (for "command" provider)
 }
 
 /**

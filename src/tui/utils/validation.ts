@@ -130,6 +130,68 @@ function validateDockerPorts(config: RalphConfig): ValidationError[] {
 }
 
 /**
+ * Required keys for each notification provider.
+ */
+const NOTIFICATION_PROVIDER_REQUIRED_KEYS: Record<string, string[]> = {
+  ntfy: ["topic"],
+  pushover: ["user", "token"],
+  gotify: ["server", "token"],
+};
+
+/**
+ * Validate notification provider configuration.
+ * Checks that required keys are present for the selected provider.
+ */
+function validateNotificationProvider(config: RalphConfig): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const notifications = config.notifications;
+
+  if (!notifications || !notifications.provider) {
+    return errors;
+  }
+
+  const provider = notifications.provider;
+
+  // Skip validation for command provider (uses command string instead of key-value)
+  if (provider === "command") {
+    return errors;
+  }
+
+  const requiredKeys = NOTIFICATION_PROVIDER_REQUIRED_KEYS[provider];
+  if (!requiredKeys) {
+    return errors;
+  }
+
+  const providerConfig = notifications[provider as keyof typeof notifications];
+  if (!providerConfig || typeof providerConfig !== "object") {
+    // Provider config is missing entirely
+    for (const key of requiredKeys) {
+      errors.push({
+        field: `notifications.${provider}.${key}`,
+        message: `${key} is required for ${provider} provider`,
+        type: "required",
+      });
+    }
+    return errors;
+  }
+
+  // Check each required key
+  const configObj = providerConfig as Record<string, unknown>;
+  for (const key of requiredKeys) {
+    const value = configObj[key];
+    if (!isRequiredFieldValid(value)) {
+      errors.push({
+        field: `notifications.${provider}.${key}`,
+        message: `${key} is required for ${provider} provider`,
+        type: "required",
+      });
+    }
+  }
+
+  return errors;
+}
+
+/**
  * Validate the entire configuration.
  * @param config - The configuration to validate
  * @returns ValidationResult with valid flag and any errors found
@@ -142,6 +204,9 @@ export function validateConfig(config: RalphConfig): ValidationResult {
 
   // Check docker port format
   errors.push(...validateDockerPorts(config));
+
+  // Check notification provider required keys
+  errors.push(...validateNotificationProvider(config));
 
   return {
     valid: errors.length === 0,

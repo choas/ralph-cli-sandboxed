@@ -50,7 +50,7 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
     id: "notifications",
     label: "Notifications",
     icon: "🔔",
-    fields: ["notifications.provider", "notifications.ntfy", "notifications.command", "notifyCommand"],
+    fields: ["notifications.provider", "notifications.ntfy", "notifications.pushover", "notifications.gotify", "notifications.command", "notifyCommand"],
   },
 ];
 

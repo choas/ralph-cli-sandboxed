@@ -7,6 +7,7 @@ import { StringEditor } from "./components/StringEditor.js";
 import { BooleanToggle } from "./components/BooleanToggle.js";
 import { ArrayEditor } from "./components/ArrayEditor.js";
 import { ObjectEditor } from "./components/ObjectEditor.js";
+import { KeyValueEditor } from "./components/KeyValueEditor.js";
 import { Preview } from "./components/Preview.js";
 import { HelpPanel } from "./components/HelpPanel.js";
 import type { RalphConfig } from "../utils/config.js";
@@ -292,6 +293,31 @@ export function ConfigEditor(): React.ReactElement {
         for (const [k, v] of Object.entries(objValue)) {
           stringEntries[k] = typeof v === "string" ? v : JSON.stringify(v);
         }
+
+        // Check if this is a notification provider config field
+        const isNotificationProvider = selectedField &&
+          (selectedField === "notifications.ntfy" ||
+           selectedField === "notifications.pushover" ||
+           selectedField === "notifications.gotify");
+
+        if (isNotificationProvider) {
+          // Extract provider name from field path
+          const providerName = selectedField.split(".").pop() || "";
+          return (
+            <KeyValueEditor
+              label={currentFieldLabel}
+              entries={stringEntries}
+              providerName={providerName}
+              onConfirm={(entries) => {
+                // For notification providers, keep values as strings
+                handleFieldConfirm(entries);
+              }}
+              onCancel={handleFieldCancel}
+              isFocused={true}
+            />
+          );
+        }
+
         return (
           <ObjectEditor
             label={currentFieldLabel}
