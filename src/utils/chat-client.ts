@@ -170,6 +170,37 @@ export function parseCommand(text: string, message: ChatMessage): ChatCommand | 
 }
 
 /**
+ * Strip ANSI escape codes from a string.
+ * This is useful for cleaning output before sending to chat services
+ * that don't support terminal formatting.
+ */
+export function stripAnsiCodes(text: string): string {
+  // Match ANSI escape sequences: ESC[...m (SGR), ESC[...K (EL), etc.
+  return text.replace(/\x1B\[[0-9;]*[mKJHfsu]/g, "");
+}
+
+/**
+ * Format status output for chat by stripping ANSI codes and removing
+ * progress bars that don't render well in chat.
+ */
+export function formatStatusForChat(output: string): string {
+  // Strip ANSI escape codes
+  let cleaned = stripAnsiCodes(output);
+
+  // Remove progress bar lines (lines with block characters ██░)
+  // These don't render well in chat clients
+  cleaned = cleaned
+    .split("\n")
+    .filter((line) => !line.includes("█") && !line.includes("░"))
+    .join("\n");
+
+  // Clean up extra blank lines that may result from removing progress bar
+  cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
+
+  return cleaned.trim();
+}
+
+/**
  * Format a status message for a project.
  */
 export function formatStatusMessage(

@@ -13,6 +13,7 @@ import {
   ChatCommand,
   generateProjectId,
   formatStatusMessage,
+  formatStatusForChat,
 } from "../utils/chat-client.js";
 import {
   getMessagesPath,
@@ -253,7 +254,9 @@ async function handleCommand(
       // Try sandbox first, fall back to host
       const response = await sendToSandbox("status", [], debug, 5000);
       if (response?.success && response.output) {
-        await client.sendMessage(chatId, `${state.projectName}:\n${response.output}`);
+        // Strip ANSI codes and progress bar for clean chat output
+        const cleanedOutput = formatStatusForChat(response.output);
+        await client.sendMessage(chatId, `${state.projectName}:\n${cleanedOutput}`);
       } else {
         // Fall back to host status
         const prdStatus = getPrdStatus();
