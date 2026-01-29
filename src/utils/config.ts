@@ -92,10 +92,19 @@ export interface TelegramChatSettings {
   allowedChatIds?: string[];  // Only respond in these chat IDs (security)
 }
 
+export interface SlackChatSettings {
+  enabled?: boolean;          // Enable/disable Slack (default: true if tokens set)
+  botToken: string;           // Slack Bot Token (xoxb-...) for Web API calls
+  appToken: string;           // Slack App Token (xapp-...) for Socket Mode connection
+  signingSecret: string;      // Slack Signing Secret for verifying requests
+  allowedChannelIds?: string[];  // Only respond in these channel IDs (security)
+}
+
 export interface ChatConfig {
   enabled?: boolean;          // Enable chat client integration
-  provider?: "telegram";      // Chat provider (currently only telegram supported)
+  provider?: "telegram" | "slack";  // Chat provider
   telegram?: TelegramChatSettings;  // Telegram-specific settings
+  slack?: SlackChatSettings;        // Slack-specific settings
 }
 
 export interface RalphConfig {

@@ -32,10 +32,10 @@ export interface ChatCommand {
 export interface ChatClientConfig {
   /** Whether the chat client is enabled */
   enabled: boolean;
-  /** The chat provider type (e.g., "telegram") */
-  provider: "telegram";
+  /** The chat provider type (e.g., "telegram", "slack") */
+  provider: ChatProvider;
   /** Provider-specific settings */
-  settings: TelegramSettings;
+  settings: TelegramSettings | SlackSettings;
 }
 
 export interface TelegramSettings {
@@ -45,7 +45,18 @@ export interface TelegramSettings {
   allowedChatIds?: string[];
 }
 
-export type ChatProvider = "telegram";
+export interface SlackSettings {
+  /** Slack Bot Token (xoxb-...) - for Web API calls */
+  botToken: string;
+  /** Slack App Token (xapp-...) - for Socket Mode connection */
+  appToken: string;
+  /** Slack Signing Secret - for verifying request signatures */
+  signingSecret: string;
+  /** Allowed channel IDs (for security - only respond in these channels) */
+  allowedChannelIds?: string[];
+}
+
+export type ChatProvider = "telegram" | "slack";
 
 /**
  * Callback for handling incoming chat commands.
