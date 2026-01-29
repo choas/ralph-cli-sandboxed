@@ -198,7 +198,8 @@ export async function once(args: string[]): Promise<void> {
         // Send notification based on outcome
         if (code !== 0) {
           console.error(`\n${cliConfig.command} exited with code ${code}`);
-          await sendNotificationWithDaemonEvents("error", `Ralph: Iteration failed with exit code ${code}`, notifyOptions);
+          const errorMessage = `Iteration failed with exit code ${code}`;
+          await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, { ...notifyOptions, errorMessage });
         } else if (output.includes("<promise>COMPLETE</promise>")) {
           await sendNotificationWithDaemonEvents("prd_complete", undefined, notifyOptions);
         } else {
@@ -227,7 +228,8 @@ export async function once(args: string[]): Promise<void> {
         // Send notification based on outcome
         if (code !== 0) {
           console.error(`\n${cliConfig.command} exited with code ${code}`);
-          await sendNotificationWithDaemonEvents("error", `Ralph: Iteration failed with exit code ${code}`, notifyOptions);
+          const errorMessage = `Iteration failed with exit code ${code}`;
+          await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, { ...notifyOptions, errorMessage });
         } else if (output.includes("<promise>COMPLETE</promise>")) {
           await sendNotificationWithDaemonEvents("prd_complete", undefined, notifyOptions);
         } else {

@@ -687,10 +687,11 @@ export async function run(args: string[]): Promise<void> {
           console.log("Check the PRD and task definitions for issues.");
 
           // Send notification about stopped run
+          const stoppedMessage = `No progress after ${MAX_ITERATIONS_WITHOUT_PROGRESS} iterations. ${progressCounts.incomplete} tasks remaining.`;
           await sendNotificationWithDaemonEvents(
             "run_stopped",
-            `Ralph: Run stopped - no progress after ${MAX_ITERATIONS_WITHOUT_PROGRESS} iterations. ${progressCounts.incomplete} tasks remaining.`,
-            { command: config.notifyCommand, debug, daemonConfig: config.daemon }
+            `Ralph: Run stopped - ${stoppedMessage}`,
+            { command: config.notifyCommand, debug, daemonConfig: config.daemon, errorMessage: stoppedMessage }
           );
 
           break;
@@ -714,10 +715,11 @@ export async function run(args: string[]): Promise<void> {
           console.error("Please check your CLI configuration and try again.");
 
           // Send notification about error
+          const errorMessage = `CLI failed ${consecutiveFailures} times with exit code ${exitCode}. Check configuration.`;
           await sendNotificationWithDaemonEvents(
             "error",
-            `Ralph: CLI failed ${consecutiveFailures} times with exit code ${exitCode}. Check configuration.`,
-            { command: config.notifyCommand, debug, daemonConfig: config.daemon }
+            `Ralph: ${errorMessage}`,
+            { command: config.notifyCommand, debug, daemonConfig: config.daemon, errorMessage }
           );
 
           break;

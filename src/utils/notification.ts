@@ -13,6 +13,8 @@ export interface NotificationOptions {
   daemonConfig?: DaemonConfig;
   /** Task name for task_complete events (used in message placeholders) */
   taskName?: string;
+  /** Error message for error events (used in {{error}} placeholder) */
+  errorMessage?: string;
 }
 
 export type NotificationEvent =
@@ -159,12 +161,12 @@ function mapEventToDaemonEvent(event: NotificationEvent): DaemonEventType | null
  *
  * @param event The daemon event type
  * @param options Notification options containing daemon config
- * @param context Additional context (e.g., task name for task_complete)
+ * @param context Additional context (e.g., task name for task_complete, error message for error)
  */
 export async function triggerDaemonEvents(
   event: DaemonEventType,
   options?: NotificationOptions,
-  context?: { taskName?: string }
+  context?: { taskName?: string; errorMessage?: string }
 ): Promise<void> {
   const { daemonConfig, debug } = options ?? {};
 
@@ -196,6 +198,9 @@ export async function triggerDaemonEvents(
       let message = handler.message || "";
       if (context?.taskName) {
         message = message.replace(/\{\{task\}\}/g, context.taskName);
+      }
+      if (context?.errorMessage) {
+        message = message.replace(/\{\{error\}\}/g, context.errorMessage);
       }
 
       // Build args array
@@ -245,6 +250,9 @@ export async function sendNotificationWithDaemonEvents(
   // Also trigger daemon events if configured
   const daemonEvent = mapEventToDaemonEvent(event);
   if (daemonEvent) {
-    await triggerDaemonEvents(daemonEvent, options, { taskName: options?.taskName });
+    await triggerDaemonEvents(daemonEvent, options, {
+      taskName: options?.taskName,
+      errorMessage: options?.errorMessage,
+    });
   }
 }
