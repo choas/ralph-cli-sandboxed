@@ -10,13 +10,15 @@ import { ObjectEditor } from "./components/ObjectEditor.js";
 import { KeyValueEditor } from "./components/KeyValueEditor.js";
 import { Preview } from "./components/Preview.js";
 import { HelpPanel } from "./components/HelpPanel.js";
+import { PresetSelector } from "./components/PresetSelector.js";
 import type { RalphConfig } from "../utils/config.js";
 import { validateConfig, type ValidationError } from "./utils/validation.js";
+import { sectionHasPresets, applyPreset, type ConfigPreset } from "./utils/presets.js";
 
 /**
  * Focus state for the two-panel layout.
  */
-type FocusPane = "nav" | "editor" | "field-editor";
+type FocusPane = "nav" | "editor" | "field-editor" | "preset-selector";
 
 /**
  * Set a value at a dot-notation path in an object (immutably).
@@ -69,6 +71,9 @@ export function ConfigEditor(): React.ReactElement {
   // Status message for feedback
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  // Track which sections have shown preset selector (to avoid repeat prompts)
+  const [visitedSections, setVisitedSections] = useState<Set<string>>(new Set(["basic"]));
+
   // Validation errors
   const validationErrors = useMemo((): ValidationError[] => {
     if (!config) return [];
@@ -100,7 +105,45 @@ export function ConfigEditor(): React.ReactElement {
   const handleSelectSection = useCallback((sectionId: string) => {
     setSelectedSection(sectionId);
     setSelectedField(undefined);
+
+    // Check if this section has presets and hasn't been visited yet
+    if (sectionHasPresets(sectionId) && !visitedSections.has(sectionId)) {
+      setFocusPane("preset-selector");
+    } else {
+      setFocusPane("editor");
+    }
+  }, [visitedSections]);
+
+  // Handle preset selection
+  const handleSelectPreset = useCallback((preset: ConfigPreset) => {
+    if (!config) return;
+
+    // Apply the preset to the config
+    updateConfig((currentConfig: RalphConfig) => {
+      return applyPreset(currentConfig, preset);
+    });
+
+    // Mark section as visited
+    setVisitedSections((prev) => new Set([...prev, selectedSection]));
+
+    // Show status message
+    setStatusMessage(`Applied "${preset.name}" preset`);
+    setTimeout(() => setStatusMessage(null), 2000);
+
+    // Move to editor
     setFocusPane("editor");
+  }, [config, updateConfig, selectedSection]);
+
+  // Handle skipping preset selection
+  const handleSkipPreset = useCallback(() => {
+    // Mark section as visited
+    setVisitedSections((prev) => new Set([...prev, selectedSection]));
+    setFocusPane("editor");
+  }, [selectedSection]);
+
+  // Handle canceling preset selection (go back to nav)
+  const handleCancelPreset = useCallback(() => {
+    setFocusPane("nav");
   }, []);
 
   // Handle field selection
@@ -183,8 +226,8 @@ export function ConfigEditor(): React.ReactElement {
   // Global keyboard shortcuts (S for Save, Q for Quit, Tab for preview toggle, ? for help)
   useInput(
     (input, key) => {
-      // Only handle global shortcuts when not in field editor
-      if (focusPane === "field-editor") return;
+      // Only handle global shortcuts when not in field editor or preset selector
+      if (focusPane === "field-editor" || focusPane === "preset-selector") return;
 
       // ? key toggles help panel (takes priority when help is visible)
       if (input === "?") {
@@ -212,9 +255,14 @@ export function ConfigEditor(): React.ReactElement {
         if (focusPane === "editor") {
           setFocusPane("nav");
         }
+      } else if (input === "p") {
+        // p to open preset selector if available for current section
+        if (focusPane === "editor" && sectionHasPresets(selectedSection)) {
+          setFocusPane("preset-selector");
+        }
       }
     },
-    { isActive: focusPane !== "field-editor" }
+    { isActive: focusPane !== "field-editor" && focusPane !== "preset-selector" }
   );
 
   // Render loading state
@@ -387,10 +435,21 @@ export function ConfigEditor(): React.ReactElement {
         </Box>
       )}
 
-      {/* Two-panel layout or field editor overlay */}
+      {/* Two-panel layout or overlay views */}
       {focusPane === "field-editor" ? (
         <Box>
           {renderFieldEditor()}
+        </Box>
+      ) : focusPane === "preset-selector" ? (
+        <Box>
+          <PresetSelector
+            sectionId={selectedSection}
+            config={config}
+            onSelectPreset={handleSelectPreset}
+            onSkip={handleSkipPreset}
+            onCancel={handleCancelPreset}
+            isFocused={true}
+          />
         </Box>
       ) : (
         <Box>
@@ -429,8 +488,9 @@ export function ConfigEditor(): React.ReactElement {
       <Box marginTop={1}>
         <Text dimColor>
           {focusPane === "nav" && "j/k: navigate | Enter: select | l/→: editor | Tab: toggle preview"}
-          {focusPane === "editor" && "j/k: navigate | Enter: edit | h/←: nav | Tab: toggle preview"}
+          {focusPane === "editor" && "j/k: navigate | Enter: edit | h/←: nav | Tab: toggle preview | p: presets"}
           {focusPane === "field-editor" && "Follow editor hints"}
+          {focusPane === "preset-selector" && "j/k: navigate | Enter: select | Esc: back"}
         </Text>
       </Box>
     </Box>

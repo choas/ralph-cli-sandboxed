@@ -38,6 +38,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: "S", description: "Save configuration" },
       { keys: "Q", description: "Quit editor" },
       { keys: "Tab", description: "Toggle JSON preview" },
+      { keys: "p", description: "Open presets (Chat/Notifications)" },
       { keys: "?", description: "Toggle this help panel" },
     ],
   },
