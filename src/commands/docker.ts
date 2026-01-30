@@ -212,14 +212,14 @@ RUN cp -r /root/.oh-my-zsh /home/node/.oh-my-zsh && chown -R node:node /home/nod
     echo 'if [ -z "$RALPH_BANNER_SHOWN" ]; then' >> /home/node/.zshrc && \\
     echo '  export RALPH_BANNER_SHOWN=1' >> /home/node/.zshrc && \\
     echo '  echo ""' >> /home/node/.zshrc && \\
-    echo '  echo " ____      _    _     ____  _   _ "' >> /home/node/.zshrc && \\
-    echo '  echo "|  _ \\\\    / \\\\  | |   |  _ \\\\| | | |"' >> /home/node/.zshrc && \\
-    echo '  echo "| |_) |  / _ \\\\ | |   | |_) | |_| |"' >> /home/node/.zshrc && \\
-    echo '  echo "|  _ <  / ___ \\\\| |___|  __/|  _  |"' >> /home/node/.zshrc && \\
-    echo '  echo "|_| \\\\_\\\\/_/   \\\\_\\\\_____|_|   |_| |_|"' >> /home/node/.zshrc && \\
-    echo '  echo ""' >> /home/node/.zshrc && \\
+    echo '  echo "\\033[38;2;255;245;157m██████╗  █████╗ ██╗     ██████╗ ██╗  ██╗     ██████╗██╗     ██╗\\033[0m"' >> /home/node/.zshrc && \\
+    echo '  echo "\\033[38;2;255;238;88m██╔══██╗██╔══██╗██║     ██╔══██╗██║  ██║    ██╔════╝██║     ██║\\033[0m"' >> /home/node/.zshrc && \\
+    echo '  echo "\\033[38;2;255;235;59m██████╔╝███████║██║     ██████╔╝███████║    ██║     ██║     ██║  sandboxed\\033[0m"' >> /home/node/.zshrc && \\
+    echo '  echo "\\033[38;2;253;216;53m██╔══██╗██╔══██║██║     ██╔═══╝ ██╔══██║    ██║     ██║     ██║\\033[0m"' >> /home/node/.zshrc && \\
+    echo '  echo "\\033[38;2;251;192;45m██║  ██║██║  ██║███████╗██║     ██║  ██║    ╚██████╗███████╗██║\\033[0m"' >> /home/node/.zshrc && \\
+    echo '  echo "\\033[38;2;249;168;37m╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝     ╚═════╝╚══════╝╚═╝\\033[0m"' >> /home/node/.zshrc && \\
     echo '  RALPH_VERSION=$(ralph --version 2>/dev/null | head -1 || echo "unknown")' >> /home/node/.zshrc && \\
-    echo '  echo "CLI - Version $RALPH_VERSION"' >> /home/node/.zshrc && \\
+    echo '  echo "\\033[38;5;248mv$RALPH_VERSION\\033[0m"' >> /home/node/.zshrc && \\
     echo '  echo ""' >> /home/node/.zshrc && \\
     echo 'fi' >> /home/node/.zshrc
 
