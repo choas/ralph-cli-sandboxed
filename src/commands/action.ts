@@ -59,8 +59,8 @@ export async function action(args: string[]): Promise<void> {
   const allActions: Record<string, DaemonAction> = { ...builtInActions, ...configuredActions };
   const actionNames = Object.keys(allActions);
 
-  // If --list or no action specified, show available actions
-  if (showList || !actionName) {
+  // If --list, no action specified, or "help" action, show available actions
+  if (showList || !actionName || actionName === "help") {
     if (actionNames.length === 0) {
       console.log("No actions available.");
       console.log("");
@@ -271,6 +271,7 @@ ralph action - Execute host actions from config.json
 USAGE:
   ralph action [name] [args...]    Execute an action
   ralph action --list              List available actions
+  ralph action help                List available actions
   ralph action --help              Show this help
 
 OPTIONS:
@@ -314,6 +315,7 @@ CONFIGURATION:
 EXAMPLES:
   # List available actions
   ralph action --list
+  ralph action help
   ralph action
 
   # Execute an action
