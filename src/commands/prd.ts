@@ -22,7 +22,21 @@ function loadPrd(): PrdEntry[] {
   if (!existsSync(path)) {
     throw new Error(".ralph/prd.json not found. Run 'ralph init' first.");
   }
-  return JSON.parse(readFileSync(path, "utf-8"));
+  const content = readFileSync(path, "utf-8");
+  try {
+    return JSON.parse(content);
+  } catch (err) {
+    const message = err instanceof SyntaxError ? err.message : "Invalid JSON";
+    console.error(`Error parsing .ralph/prd.json: ${message}`);
+    console.error("");
+    console.error("Common issues:");
+    console.error("  - Trailing comma before ] or }");
+    console.error("  - Missing comma between entries");
+    console.error("  - Unescaped quotes in strings");
+    console.error("");
+    console.error("Run 'ralph fix-prd' to attempt automatic repair.");
+    process.exit(1);
+  }
 }
 
 function savePrd(entries: PrdEntry[]): void {
