@@ -184,57 +184,85 @@ export class SlackChatClient implements ChatClient {
       }
     });
 
-    // Handle slash commands
-    const slashCommands = ["run", "status", "add", "exec", "stop", "help", "action", "claude"];
-    for (const cmd of slashCommands) {
-      this.app.command(
-        `/${cmd}`,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        async ({ command, ack, respond }: { command: any; ack: () => Promise<void>; respond: (text: string) => Promise<void> }) => {
-          // Acknowledge the command immediately
-          await ack();
+    // Handle the unified /ralph command
+    // Subcommands: help, status, run, stop, add, exec, action
+    // Anything else is treated as a prompt for Claude
+    const knownSubcommands = ["help", "status", "run", "stop", "add", "exec", "action"];
 
-          const channelId = command.channel_id as string;
+    if (this.debug) {
+      console.log(`[slack] Registering command: /ralph`);
+    }
 
-          // Check if channel is allowed
-          // Silently ignore unauthorized channels (don't respond with error)
-          // This allows multiple daemons to share the same Slack app
-          if (!this.isChannelAllowed(channelId)) {
-            if (this.debug) {
-              console.log(`[slack] Ignoring slash command from unauthorized channel: ${channelId}`);
-            }
-            return;
+    this.app.command(
+      "/ralph",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      async ({ command, ack, respond }: { command: any; ack: () => Promise<void>; respond: (text: string) => Promise<void> }) => {
+        if (this.debug) {
+          console.log(`[slack] Received: /ralph ${command.text} from channel ${command.channel_id}`);
+        }
+        // Acknowledge the command immediately
+        await ack();
+
+        const channelId = command.channel_id as string;
+
+        // Check if channel is allowed
+        if (!this.isChannelAllowed(channelId)) {
+          if (this.debug) {
+            console.log(`[slack] Ignoring command from unauthorized channel: ${channelId}`);
           }
+          return;
+        }
 
-          const chatMessage: ChatMessage = {
-            text: `/${cmd} ${command.text}`.trim(),
-            chatId: channelId,
-            senderId: command.user_id,
-            senderName: command.user_name,
-            timestamp: new Date(),
-            raw: command,
-          };
+        // Parse subcommand from command.text
+        const parts = command.text ? command.text.trim().split(/\s+/) : [];
+        const firstWord = parts[0]?.toLowerCase() || "";
+        const restArgs = parts.slice(1);
 
-          const parsedCommand: ChatCommand = {
-            projectId: "",
-            command: cmd,
-            args: command.text ? command.text.split(/\s+/) : [],
-            message: chatMessage,
-          };
+        let internalCmd: string;
+        let args: string[];
 
-          if (this.onCommand) {
-            try {
-              await this.onCommand(parsedCommand);
-            } catch (err) {
-              if (this.debug) {
-                console.error(`[slack] Slash command error: ${err}`);
-              }
-              await respond(`Error executing /${cmd}: ${err instanceof Error ? err.message : "Unknown error"}`);
+        if (!firstWord || firstWord === "help") {
+          // /ralph or /ralph help -> help
+          internalCmd = "help";
+          args = [];
+        } else if (knownSubcommands.includes(firstWord)) {
+          // /ralph status, /ralph run, etc.
+          internalCmd = firstWord;
+          args = restArgs;
+        } else {
+          // Anything else -> Claude prompt (entire text)
+          internalCmd = "claude";
+          args = parts; // Include all parts as the prompt
+        }
+
+        const chatMessage: ChatMessage = {
+          text: `/ralph ${command.text}`.trim(),
+          chatId: channelId,
+          senderId: command.user_id,
+          senderName: command.user_name,
+          timestamp: new Date(),
+          raw: command,
+        };
+
+        const parsedCommand: ChatCommand = {
+          projectId: "",
+          command: internalCmd,
+          args,
+          message: chatMessage,
+        };
+
+        if (this.onCommand) {
+          try {
+            await this.onCommand(parsedCommand);
+          } catch (err) {
+            if (this.debug) {
+              console.error(`[slack] Command error: ${err}`);
             }
+            await respond(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
           }
         }
-      );
-    }
+      }
+    );
 
     // Handle button actions (Block Kit interactive components)
     this.app.action(

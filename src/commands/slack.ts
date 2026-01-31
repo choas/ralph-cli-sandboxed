@@ -26,7 +26,10 @@ The setup command will:
 
 Prerequisites:
   - A Slack workspace where you have admin permissions
-  - A configuration token from https://api.slack.com/apps (click "Your App Configuration Tokens")
+  - A configuration token from https://api.slack.com/apps
+    → Click "Your App Configuration Tokens" → Generate Token
+    → Use the "Access Token" (not the Refresh Token) - both start with xoxe-
+    → This token is per-account, not per-app - you can reuse it
 
 Why separate apps?
   Slack Socket Mode only allows ONE connection per app. Using the same app
@@ -52,48 +55,9 @@ function createAppManifest(appName: string): object {
       },
       slash_commands: [
         {
-          command: "/run",
-          description: "Run a PRD task or custom prompt",
-          usage_hint: "[task_id | prompt text]",
-          should_escape: false,
-        },
-        {
-          command: "/status",
-          description: "Show current Ralph status and PRD progress",
-          should_escape: false,
-        },
-        {
-          command: "/add",
-          description: "Add a new task to the PRD",
-          usage_hint: "[task description]",
-          should_escape: false,
-        },
-        {
-          command: "/exec",
-          description: "Execute a daemon action",
-          usage_hint: "<action_name> [args]",
-          should_escape: false,
-        },
-        {
-          command: "/stop",
-          description: "Stop the currently running task",
-          should_escape: false,
-        },
-        {
-          command: "/help",
-          description: "Show available commands",
-          should_escape: false,
-        },
-        {
-          command: "/action",
-          description: "Run a predefined action",
-          usage_hint: "<action_name>",
-          should_escape: false,
-        },
-        {
-          command: "/claude",
-          description: "Send a prompt directly to Claude",
-          usage_hint: "<prompt>",
+          command: "/ralph",
+          description: "Ralph AI assistant - run commands or chat with Claude",
+          usage_hint: "<command> [args] or <prompt for Claude>",
           should_escape: false,
         },
       ],
@@ -101,6 +65,7 @@ function createAppManifest(appName: string): object {
     oauth_config: {
       scopes: {
         bot: [
+          "app_mentions:read",
           "chat:write",
           "chat:write.public",
           "commands",
@@ -215,9 +180,11 @@ async function setupSlack(): Promise<void> {
   // Step 1: Get configuration token
   console.log("Step 1: Configuration Token\n");
   console.log("You need a Slack configuration token to create apps programmatically.");
-  console.log("Get one at: https://api.slack.com/apps");
+  console.log("This token is tied to your Slack account (not per-app) - you can reuse it.");
+  console.log("\nGet one at: https://api.slack.com/apps");
   console.log("  → Scroll down to 'Your App Configuration Tokens'");
-  console.log("  → Click 'Generate Token' and select your workspace\n");
+  console.log("  → Click 'Generate Token' and select your workspace");
+  console.log("  → Copy the 'Access Token' (not the Refresh Token)\n");
 
   const configToken = await promptInput("Paste your configuration token (xoxe-...): ");
 
@@ -345,7 +312,7 @@ async function setupSlack(): Promise<void> {
       // Send test message
       await client.chat.postMessage({
         channel: channelId,
-        text: "👋 Ralph is now connected! Use `/help` to see available commands.",
+        text: "👋 Ralph is now connected! Use `/ralph help` to see available commands.",
       });
       console.log(`✓ Test message sent to channel ${channelId}`);
     } catch (err) {
@@ -360,7 +327,7 @@ async function setupSlack(): Promise<void> {
   console.log("\nNext steps:");
   console.log("  1. Start the chat daemon: ralph chat start");
   console.log("  2. Invite the bot to your channel: /invite @" + appName);
-  console.log("  3. Try a command: /status");
+  console.log("  3. Try a command: /ralph status");
   console.log("\nImportant: Each Ralph project should have its own Slack app.");
   console.log("Run 'ralph slack setup' in each project directory.\n");
 }

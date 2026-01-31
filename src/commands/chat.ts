@@ -345,7 +345,8 @@ async function handleCommand(
 
     case "add": {
       if (args.length === 0) {
-        await client.sendMessage(chatId, `${state.projectName}: Usage: /add [task description]`);
+        const usage = client.provider === "slack" ? "/ralph add [task description]" : "/add [task description]";
+        await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
         return;
       }
 
@@ -362,7 +363,8 @@ async function handleCommand(
 
     case "exec": {
       if (args.length === 0) {
-        await client.sendMessage(chatId, `${state.projectName}: Usage: /exec [command]`);
+        const usage = client.provider === "slack" ? "/ralph exec [command]" : "/exec [command]";
+        await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
         return;
       }
 
@@ -397,10 +399,11 @@ async function handleCommand(
 
       if (args.length === 0) {
         // List available actions
+        const usage = client.provider === "slack" ? "/ralph action <name>" : "/action <name>";
         if (actionNames.length === 0) {
           await client.sendMessage(chatId, `${state.projectName}: No actions configured. Add actions to daemon.actions in config.json`);
         } else {
-          await client.sendMessage(chatId, `${state.projectName}: Available actions: ${actionNames.join(", ")}\nUsage: /action <name>`);
+          await client.sendMessage(chatId, `${state.projectName}: Available actions: ${actionNames.join(", ")}\nUsage: ${usage}`);
         }
         return;
       }
@@ -449,7 +452,8 @@ async function handleCommand(
 
     case "claude": {
       if (args.length === 0) {
-        await client.sendMessage(chatId, `${state.projectName}: Usage: /claude [prompt]`);
+        const usage = client.provider === "slack" ? "/ralph <prompt>" : "/claude [prompt]";
+        await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
         return;
       }
 
@@ -489,16 +493,26 @@ async function handleCommand(
     }
 
     case "help": {
-      const helpText = `
-/run - Start automation
-/stop - Stop running automation
+      const isSlack = client.provider === "slack";
+
+      const helpText = isSlack
+        ? `/ralph help - This help
+/ralph status - PRD progress
+/ralph run [category] - Start automation
+/ralph stop - Stop automation
+/ralph add [desc] - Add task
+/ralph exec [cmd] - Shell command
+/ralph action [name] - Run action
+/ralph <prompt> - Run Claude Code`
+        : `/help - This help
 /status - PRD progress
+/run - Start automation
+/stop - Stop automation
 /add [desc] - Add task
 /exec [cmd] - Shell command
 /action [name] - Run action
-/claude [prompt] - Run Claude Code
-/help - This help
-`.trim();
+/claude [prompt] - Run Claude Code`;
+
       await client.sendMessage(chatId, helpText);
       break;
     }
@@ -649,13 +663,24 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     console.log(`Connected to ${providerName}!`);
     console.log("");
     console.log(`Commands (send in ${providerName}):`);
-    console.log("  /run         - Start ralph automation");
-    console.log("  /status      - Show PRD progress");
-    console.log("  /add ...     - Add new task to PRD");
-    console.log("  /exec ...    - Execute shell command");
-    console.log("  /action ...  - Run daemon action");
-    console.log("  /claude ...  - Run Claude Code with prompt (YOLO mode)");
-    console.log("  /help        - Show help");
+    if (provider === "slack") {
+      console.log("  /ralph help       - Show help");
+      console.log("  /ralph status     - Show PRD progress");
+      console.log("  /ralph run        - Start ralph automation");
+      console.log("  /ralph stop       - Stop running automation");
+      console.log("  /ralph add ...    - Add new task to PRD");
+      console.log("  /ralph exec ...   - Execute shell command");
+      console.log("  /ralph action ... - Run daemon action");
+      console.log("  /ralph <prompt>   - Run Claude Code with prompt");
+    } else {
+      console.log("  /run         - Start ralph automation");
+      console.log("  /status      - Show PRD progress");
+      console.log("  /add ...     - Add new task to PRD");
+      console.log("  /exec ...    - Execute shell command");
+      console.log("  /action ...  - Run daemon action");
+      console.log("  /claude ...  - Run Claude Code with prompt (YOLO mode)");
+      console.log("  /help        - Show help");
+    }
     console.log("");
     console.log("Press Ctrl+C to stop the daemon.");
 
