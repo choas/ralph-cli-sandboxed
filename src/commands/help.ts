@@ -21,6 +21,7 @@ COMMANDS:
   notify [msg]      Send notification to host from sandbox
   action [name]     Execute host actions from config.json
   chat <sub>        Chat client integration (Telegram, etc.)
+  slack <sub>       Slack app setup and management
   help              Show this help message
 
   prd <subcommand>  (Alias) Manage PRD entries - same as add/list/status/toggle/clean
@@ -75,6 +76,11 @@ CHAT SUBCOMMANDS:
   chat test [id]    Test connection by sending a message
   chat help         Show chat help message
 
+SLACK SUBCOMMANDS:
+  slack setup       Create a new Slack app for this Ralph instance
+  slack status      Show current Slack configuration
+  slack help        Show slack help message
+
 NOTIFY OPTIONS:
   [message]              Message to send as notification
   --action, -a <name>    Execute specific daemon action (default: notify)
@@ -118,6 +124,7 @@ EXAMPLES:
   ralph notify "Task done!"  # Send notification from sandbox to host
   ralph chat start           # Start Telegram chat daemon
   ralph chat test 123456     # Test chat connection
+  ralph slack setup          # Create new Slack app for this project
   ralph action --list        # List available host actions
   ralph action build         # Execute 'build' action on host
 
@@ -173,7 +180,13 @@ DAEMON CONFIGURATION:
   3. From sandbox, notify:  ralph notify "Task complete!"
 
 CHAT CONFIGURATION:
-  Enable Telegram chat integration to control ralph from your phone:
+  Enable chat integration to control ralph remotely (Telegram, Slack, Discord).
+
+  For Slack (recommended for teams):
+    ralph slack setup          # Interactive wizard creates your Slack app
+    ralph chat start           # Start the chat daemon
+
+  For Telegram:
   {
     "chat": {
       "enabled": true,
@@ -185,11 +198,14 @@ CHAT CONFIGURATION:
     }
   }
 
-  Setup:
+  Telegram Setup:
   1. Create bot with @BotFather on Telegram
   2. Add bot token to config.json
   3. Start chat daemon: ralph chat start
-  4. Send commands to your bot: abc run, abc status, abc add <task>
+  4. Send commands to your bot: /run, /status, /add <task>
+
+  Important: Each Ralph instance needs its own Slack app.
+  Run 'ralph slack setup' in each project directory.
 `;
 
 

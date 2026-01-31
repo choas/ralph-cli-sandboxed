@@ -19,6 +19,7 @@ import { listen } from "./commands/listen.js";
 import { config } from "./commands/config.js";
 import { action } from "./commands/action.js";
 import { logo } from "./commands/logo.js";
+import { slack } from "./commands/slack.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -43,6 +44,7 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   listen,
   config,
   action,
+  slack,
   "fix-prd": (args) => fixPrd(args),
   "fix-config": (args) => fixConfig(args),
   // Hidden easter egg
