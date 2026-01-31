@@ -103,7 +103,14 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): SyncResult {
     const tasks: PrdItem[] = tasksParsed;
 
     const prdContent = readFileSync(prdPath, "utf-8");
-    const prdParsed = JSON.parse(prdContent);
+    let prdParsed: unknown;
+    try {
+      prdParsed = JSON.parse(prdContent);
+    } catch {
+      console.warn("\x1b[33mWarning: prd.json contains invalid JSON - skipping sync.\x1b[0m");
+      console.warn("Run \x1b[36mralph fix-prd\x1b[0m after this session to repair.\n");
+      return { count: 0, taskNames: [] };
+    }
     if (!Array.isArray(prdParsed)) {
       console.warn("\x1b[33mWarning: prd.json is corrupted - skipping sync.\x1b[0m");
       console.warn("Run \x1b[36mralph fix-prd\x1b[0m after this session to repair.\n");
@@ -415,7 +422,13 @@ function validateAndRecoverPrd(prdPath: string, validPrd: PrdEntry[]): { recover
  */
 function loadValidPrd(prdPath: string): PrdEntry[] {
   const content = readFileSync(prdPath, "utf-8");
-  return JSON.parse(content);
+  try {
+    return JSON.parse(content);
+  } catch {
+    console.error("\x1b[31mError: prd.json contains invalid JSON.\x1b[0m");
+    console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
+    process.exit(1);
+  }
 }
 
 export async function run(args: string[]): Promise<void> {
@@ -546,6 +559,58 @@ export async function run(args: string[]): Promise<void> {
   let lastCompletedCount = initialCounts.complete;
   let lastTotalCount = initialCounts.total;
   let iterationsWithoutProgress = 0;
+
+  // Create PID file to prevent multiple concurrent runs
+  const pidFilePath = join(paths.dir, "run.pid");
+
+  // Check if another instance is already running
+  if (existsSync(pidFilePath)) {
+    try {
+      const existingPid = parseInt(readFileSync(pidFilePath, "utf-8").trim(), 10);
+      if (!isNaN(existingPid)) {
+        try {
+          process.kill(existingPid, 0); // Check if process exists
+          console.error(`\x1b[31mError: Another ralph run is already running (PID ${existingPid})\x1b[0m`);
+          console.error("Use 'ralph stop' or '/stop' via Telegram to terminate it first.");
+          process.exit(1);
+        } catch {
+          // Process doesn't exist, stale PID file - clean it up
+          unlinkSync(pidFilePath);
+        }
+      }
+    } catch {
+      // Ignore errors reading PID file, proceed to overwrite
+    }
+  }
+
+  // Write our PID file
+  writeFileSync(pidFilePath, process.pid.toString());
+
+  // Ensure PID file is cleaned up on exit
+  const cleanupPidFile = () => {
+    try {
+      if (existsSync(pidFilePath)) {
+        const storedPid = parseInt(readFileSync(pidFilePath, "utf-8").trim(), 10);
+        // Only delete if it's our PID (in case another instance started)
+        if (storedPid === process.pid) {
+          unlinkSync(pidFilePath);
+        }
+      }
+    } catch {
+      // Ignore cleanup errors
+    }
+  };
+
+  // Register cleanup handlers for various exit scenarios
+  process.on("exit", cleanupPidFile);
+  process.on("SIGINT", () => {
+    cleanupPidFile();
+    process.exit(130);
+  });
+  process.on("SIGTERM", () => {
+    cleanupPidFile();
+    process.exit(143);
+  });
 
   try {
     while (true) {
@@ -782,6 +847,9 @@ export async function run(args: string[]): Promise<void> {
         // Ignore cleanup errors
       }
     }
+
+    // Clean up PID file
+    cleanupPidFile();
   }
 
   const endTime = Date.now();

@@ -4,7 +4,7 @@
  */
 
 import { spawn } from "child_process";
-import { existsSync, watch, FSWatcher } from "fs";
+import { existsSync, readFileSync, unlinkSync, watch, FSWatcher } from "fs";
 import { isRunningInContainer } from "../utils/config.js";
 import {
   getMessagesPath,
@@ -13,6 +13,79 @@ import {
   cleanupOldMessages,
   Message,
 } from "../utils/message-queue.js";
+
+const RUN_PID_FILE = "/workspace/.ralph/run.pid";
+
+/**
+ * Check if a ralph run process is currently running.
+ * Returns the PID if running, null otherwise.
+ */
+function getRunningPid(): number | null {
+  if (!existsSync(RUN_PID_FILE)) {
+    return null;
+  }
+
+  try {
+    const pid = parseInt(readFileSync(RUN_PID_FILE, "utf-8").trim(), 10);
+    if (isNaN(pid)) {
+      return null;
+    }
+
+    // Check if process is still alive
+    try {
+      process.kill(pid, 0); // Signal 0 just checks if process exists
+      return pid;
+    } catch {
+      // Process doesn't exist, clean up stale PID file
+      try {
+        unlinkSync(RUN_PID_FILE);
+      } catch {
+        // Ignore cleanup errors
+      }
+      return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stop a running ralph run process by PID.
+ * Returns true if successfully stopped, false otherwise.
+ */
+function stopRunningProcess(pid: number): { success: boolean; error?: string } {
+  try {
+    // Kill the process group (negative PID) to also kill child processes (claude)
+    try {
+      process.kill(-pid, "SIGTERM");
+    } catch {
+      // If process group kill fails, try killing just the process
+      process.kill(pid, "SIGTERM");
+    }
+
+    // Give it a moment to terminate gracefully
+    setTimeout(() => {
+      try {
+        // Check if still alive and force kill if necessary
+        process.kill(pid, 0);
+        process.kill(-pid, "SIGKILL");
+      } catch {
+        // Already dead, good
+      }
+    }, 2000);
+
+    // Clean up PID file
+    try {
+      unlinkSync(RUN_PID_FILE);
+    } catch {
+      // Ignore
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: `Failed to stop process: ${err}` };
+  }
+}
 
 /**
  * Execute a shell command and return the result.
@@ -118,6 +191,17 @@ async function processMessage(
     }
 
     case "run": {
+      // Check if ralph run is already running
+      const existingPid = getRunningPid();
+      if (existingPid) {
+        console.log(`[listen] Ralph run already running (PID ${existingPid})`);
+        respondToMessage(messagesPath, message.id, {
+          success: false,
+          error: `Ralph run is already running (PID ${existingPid}). Use /stop to terminate it first.`,
+        });
+        return;
+      }
+
       // Start ralph run in background
       // Support optional category filter: run [category]
       const runArgs = ["run"];
@@ -138,6 +222,34 @@ async function processMessage(
         success: true,
         output: message.args?.length ? `Ralph run started (category: ${message.args[0]})` : "Ralph run started",
       });
+      break;
+    }
+
+    case "stop": {
+      // Stop a running ralph run process
+      const runningPid = getRunningPid();
+      if (!runningPid) {
+        respondToMessage(messagesPath, message.id, {
+          success: true,
+          output: "No ralph run process is currently running.",
+        });
+        return;
+      }
+
+      console.log(`[listen] Stopping ralph run (PID ${runningPid})...`);
+      const stopResult = stopRunningProcess(runningPid);
+
+      if (stopResult.success) {
+        respondToMessage(messagesPath, message.id, {
+          success: true,
+          output: `Stopped ralph run (PID ${runningPid})`,
+        });
+      } else {
+        respondToMessage(messagesPath, message.id, {
+          success: false,
+          error: stopResult.error,
+        });
+      }
       break;
     }
 
@@ -202,7 +314,7 @@ async function processMessage(
     default:
       respondToMessage(messagesPath, message.id, {
         success: false,
-        error: `Unknown action: ${action}. Supported: exec, run, status, ping, claude`,
+        error: `Unknown action: ${action}. Supported: exec, run, stop, status, ping, claude`,
       });
   }
 }
@@ -219,7 +331,7 @@ async function startListening(debug: boolean): Promise<void> {
   console.log(`Messages file: ${messagesPath}`);
   console.log("");
   console.log("Listening for commands from host...");
-  console.log("Supported actions: exec, run, status, ping, claude");
+  console.log("Supported actions: exec, run, stop, status, ping, claude");
   console.log("");
   console.log("Press Ctrl+C to stop.");
 
@@ -303,7 +415,8 @@ DESCRIPTION:
 
 SUPPORTED ACTIONS:
   exec [cmd]     Execute a shell command in the sandbox
-  run            Start ralph run
+  run            Start ralph run (fails if already running)
+  stop           Stop a running ralph run process
   status         Get PRD status
   ping           Health check
   claude [prompt] Run Claude Code with prompt (YOLO mode)

@@ -197,11 +197,12 @@ export class SlackChatClient implements ChatClient {
           const channelId = command.channel_id as string;
 
           // Check if channel is allowed
+          // Silently ignore unauthorized channels (don't respond with error)
+          // This allows multiple daemons to share the same Slack app
           if (!this.isChannelAllowed(channelId)) {
             if (this.debug) {
               console.log(`[slack] Ignoring slash command from unauthorized channel: ${channelId}`);
             }
-            await respond("This channel is not authorized to use ralph commands.");
             return;
           }
 

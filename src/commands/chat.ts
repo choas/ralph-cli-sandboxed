@@ -292,6 +292,23 @@ async function handleCommand(
       break;
     }
 
+    case "stop": {
+      // Stop a running ralph run process in the sandbox
+      await client.sendMessage(chatId, `${state.projectName}: Stopping ralph run...`);
+
+      const response = await sendToSandbox("stop", [], debug, 10000);
+      if (response) {
+        if (response.success) {
+          await client.sendMessage(chatId, `${state.projectName}: ${response.output}`);
+        } else {
+          await client.sendMessage(chatId, `${state.projectName}: ${response.error}`);
+        }
+      } else {
+        await client.sendMessage(chatId, `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`);
+      }
+      break;
+    }
+
     case "status": {
       // Try sandbox first, fall back to host
       const response = await sendToSandbox("status", [], debug, 5000);
@@ -474,6 +491,7 @@ async function handleCommand(
     case "help": {
       const helpText = `
 /run - Start automation
+/stop - Stop running automation
 /status - PRD progress
 /add [desc] - Add task
 /exec [cmd] - Shell command
