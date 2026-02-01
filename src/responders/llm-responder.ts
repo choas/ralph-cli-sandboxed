@@ -11,7 +11,9 @@ import {
   LLMProviderConfig,
 } from "../utils/config.js";
 import { createLLMClient, LLMClient, Message, ChatOptions } from "../utils/llm-client.js";
+import { createResponderLog } from "../utils/responder-logger.js";
 import { basename } from "path";
+import { execSync } from "child_process";
 
 /**
  * Result of executing a responder.
@@ -30,6 +32,14 @@ export interface ResponderResult {
 }
 
 /**
+ * A message in conversation history.
+ */
+export interface ConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/**
  * Options for executing an LLM responder.
  */
 export interface LLMResponderOptions {
@@ -39,6 +49,16 @@ export interface LLMResponderOptions {
   maxTokens?: number;
   /** Override default temperature */
   temperature?: number;
+  /** Responder name for logging */
+  responderName?: string;
+  /** Responder trigger for logging */
+  trigger?: string;
+  /** Thread context length for logging */
+  threadContextLength?: number;
+  /** Enable debug logging to console */
+  debug?: boolean;
+  /** Previous conversation messages for multi-turn chat */
+  conversationHistory?: ConversationMessage[];
 }
 
 /**
@@ -63,6 +83,115 @@ export function applyProjectPlaceholder(systemPrompt: string, projectName: strin
  */
 export function getProjectName(): string {
   return basename(process.cwd());
+}
+
+/**
+ * Git diff command patterns and their corresponding git commands.
+ */
+interface GitDiffPattern {
+  pattern: RegExp;
+  command: string;
+  description: string;
+}
+
+const GIT_DIFF_PATTERNS: GitDiffPattern[] = [
+  // "diff" or "changes" - show unstaged changes
+  { pattern: /^(diff|changes)$/i, command: "git diff", description: "unstaged changes" },
+  // "staged" - show staged changes
+  { pattern: /^staged$/i, command: "git diff --cached", description: "staged changes" },
+  // "last" or "last commit" - show last commit
+  {
+    pattern: /^(last|last\s*commit)$/i,
+    command: "git show HEAD --stat --patch",
+    description: "last commit",
+  },
+  // "HEAD~N" - show specific commit
+  { pattern: /^HEAD~(\d+)$/i, command: "git show HEAD~$1 --stat --patch", description: "commit" },
+  // "all" - show all uncommitted changes (staged + unstaged)
+  { pattern: /^all$/i, command: "git diff HEAD", description: "all uncommitted changes" },
+];
+
+/**
+ * Maximum length for git diff output to avoid overwhelming the LLM.
+ */
+const MAX_DIFF_LENGTH = 8000;
+
+/**
+ * Result of processing a git diff request.
+ */
+export interface GitDiffResult {
+  message: string;
+  diffIncluded: boolean;
+  gitCommand?: string;
+  diffLength?: number;
+}
+
+/**
+ * Detects if the message contains a git diff request and fetches the diff.
+ * Returns the message with diff content prepended, or the original message if no diff requested.
+ */
+export function processGitDiffRequest(message: string): GitDiffResult {
+  const trimmed = message.trim();
+
+  // Check each pattern
+  for (const { pattern, command, description } of GIT_DIFF_PATTERNS) {
+    const match = trimmed.match(pattern);
+    if (match) {
+      try {
+        // Build the actual command (replace $1 with capture group if present)
+        let gitCommand = command;
+        if (match[1] && command.includes("$1")) {
+          gitCommand = command.replace("$1", match[1]);
+        }
+
+        // Execute git command
+        const diff = execSync(gitCommand, {
+          encoding: "utf-8",
+          maxBuffer: 1024 * 1024, // 1MB buffer
+          timeout: 10000, // 10 second timeout
+        }).trim();
+
+        if (!diff) {
+          return {
+            message: `No ${description} found. The working directory is clean.`,
+            diffIncluded: false,
+            gitCommand,
+          };
+        }
+
+        // Truncate if too long
+        let diffContent = diff;
+        let truncatedNote = "";
+        if (diff.length > MAX_DIFF_LENGTH) {
+          diffContent = diff.slice(0, MAX_DIFF_LENGTH);
+          truncatedNote = "\n\n[... diff truncated due to length ...]";
+        }
+
+        return {
+          message: `Here is the ${description} to review:\n\n\`\`\`diff\n${diffContent}${truncatedNote}\n\`\`\`\n\nPlease review these changes.`,
+          diffIncluded: true,
+          gitCommand,
+          diffLength: diff.length,
+        };
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err);
+        // Check if it's not a git repository
+        if (error.includes("not a git repository")) {
+          return {
+            message: `Cannot fetch git diff: not in a git repository.`,
+            diffIncluded: false,
+          };
+        }
+        return {
+          message: `Failed to fetch ${description}: ${error}`,
+          diffIncluded: false,
+        };
+      }
+    }
+  }
+
+  // No git diff pattern matched, return original message
+  return { message, diffIncluded: false };
 }
 
 /**
@@ -127,6 +256,10 @@ export async function executeLLMResponder(
   options?: LLMResponderOptions,
 ): Promise<ResponderResult> {
   try {
+    // Process git diff requests (e.g., "@review diff", "@review last")
+    const gitDiffResult = processGitDiffRequest(message);
+    const processedMessage = gitDiffResult.message;
+
     // Load config if not provided
     const ralphConfig = config ?? loadConfig();
 
@@ -172,8 +305,28 @@ export async function executeLLMResponder(
       temperature: options?.temperature,
     };
 
-    // Prepare messages
-    const messages: Message[] = [{ role: "user", content: message }];
+    // Prepare messages (use processed message which may include git diff content)
+    // Include conversation history if provided for multi-turn chat
+    const messages: Message[] = [];
+    if (options?.conversationHistory && options.conversationHistory.length > 0) {
+      for (const msg of options.conversationHistory) {
+        messages.push({ role: msg.role, content: msg.content });
+      }
+    }
+    messages.push({ role: "user", content: processedMessage });
+
+    // Log the responder call
+    createResponderLog({
+      responderName: options?.responderName,
+      responderType: "llm",
+      trigger: options?.trigger,
+      gitCommand: gitDiffResult.gitCommand,
+      gitDiffLength: gitDiffResult.diffLength,
+      threadContextLength: options?.threadContextLength,
+      message: processedMessage,
+      systemPrompt,
+      debug: options?.debug,
+    });
 
     // Execute with timeout
     const timeout = responderConfig.timeout ?? DEFAULT_TIMEOUT;

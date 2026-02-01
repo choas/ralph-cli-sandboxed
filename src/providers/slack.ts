@@ -99,6 +99,25 @@ export type ResponderHandler = (
   message: ChatMessage,
 ) => Promise<string | null>;
 
+/**
+ * Represents a message in a thread conversation.
+ */
+interface ThreadMessage {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+}
+
+/**
+ * Tracks an active conversation in a thread.
+ */
+interface ThreadConversation {
+  responderName: string;
+  responder: ResponderConfig;
+  messages: ThreadMessage[];
+  createdAt: Date;
+}
+
 export class SlackChatClient implements ChatClient {
   readonly provider = "slack" as const;
 
@@ -112,6 +131,8 @@ export class SlackChatClient implements ChatClient {
   private responderMatcher: ResponderMatcher | null = null;
   private respondersConfig: RespondersConfig | null = null;
   private botUserId: string | null = null;
+  // Track active thread conversations for multi-turn chat
+  private threadConversations: Map<string, ThreadConversation> = new Map();
 
   constructor(settings: SlackSettings, debug = false) {
     this.settings = settings;
@@ -145,20 +166,82 @@ export class SlackChatClient implements ChatClient {
   }
 
   /**
+   * Fetch thread context (previous messages in the thread).
+   * Returns formatted context string or empty string if not in a thread.
+   */
+  private async fetchThreadContext(
+    channelId: string,
+    threadTs: string,
+    currentMessageTs: string,
+  ): Promise<string> {
+    if (!this.webClient) return "";
+
+    try {
+      // Fetch thread replies
+      const result = await this.webClient.conversations.replies({
+        channel: channelId,
+        ts: threadTs,
+        limit: 10, // Get last 10 messages in thread
+      });
+
+      if (!result.messages || result.messages.length <= 1) {
+        return ""; // No thread context (only the parent message or current message)
+      }
+
+      // Format thread messages, excluding the current message and bot messages
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const contextMessages = result.messages
+        .filter((msg: any) => {
+          // Exclude current message and bot messages
+          if (msg.ts === currentMessageTs) return false;
+          if (msg.bot_id || msg.subtype === "bot_message") return false;
+          return true;
+        })
+        .map((msg: any) => {
+          const text = msg.text || "[no text]";
+          return `---\n${text}`;
+        });
+
+      if (contextMessages.length === 0) {
+        return "";
+      }
+
+      return `Previous messages in thread:\n${contextMessages.join("\n")}\n---\n\nCurrent request:\n`;
+    } catch (err) {
+      if (this.debug) {
+        console.error(`[slack] Failed to fetch thread context: ${err}`);
+      }
+      return "";
+    }
+  }
+
+  /**
    * Execute a responder and return the result.
    */
-  private async executeResponder(match: ResponderMatch, message: string): Promise<ResponderResult> {
+  private async executeResponder(
+    match: ResponderMatch,
+    message: string,
+    threadContext?: string,
+  ): Promise<ResponderResult> {
     const { responder } = match;
+
+    // Prepend thread context if available
+    const fullMessage = threadContext ? threadContext + message : message;
 
     switch (responder.type) {
       case "llm":
-        return executeLLMResponder(message, responder);
+        return executeLLMResponder(fullMessage, responder, undefined, {
+          responderName: match.name,
+          trigger: responder.trigger,
+          threadContextLength: threadContext?.length,
+          debug: this.debug,
+        });
 
       case "claude-code":
-        return executeClaudeCodeResponder(message, responder);
+        return executeClaudeCodeResponder(fullMessage, responder);
 
       case "cli":
-        return executeCLIResponder(message, responder);
+        return executeCLIResponder(message, responder); // CLI doesn't use thread context
 
       default:
         return {
@@ -170,20 +253,46 @@ export class SlackChatClient implements ChatClient {
   }
 
   /**
-   * Handle a message that might match a responder.
+   * Handle a message that might match a responder or continue an existing thread conversation.
    * Returns true if a responder was matched and executed.
    */
   private async handleResponderMessage(
     message: ChatMessage,
     say: (options: { text: string; thread_ts?: string }) => Promise<unknown>,
     threadTs?: string,
+    messageTs?: string,
   ): Promise<boolean> {
+    // Check if this is a continuation of an existing thread conversation
+    if (threadTs) {
+      const existingConversation = this.threadConversations.get(threadTs);
+      if (existingConversation) {
+        if (this.debug) {
+          console.log(
+            `[slack] Continuing thread conversation with ${existingConversation.responderName}`,
+          );
+        }
+        return this.continueThreadConversation(
+          existingConversation,
+          threadTs,
+          message.text,
+          say,
+        );
+      }
+    }
+
     if (!this.responderMatcher) {
       return false;
     }
 
+    if (this.debug) {
+      console.log(`[slack] Checking responders for message: "${message.text.slice(0, 50)}..."`);
+    }
+
     const match = this.responderMatcher.matchResponder(message.text);
     if (!match) {
+      if (this.debug) {
+        console.log(`[slack] No responder matched for message`);
+      }
       return false;
     }
 
@@ -191,15 +300,91 @@ export class SlackChatClient implements ChatClient {
       console.log(`[slack] Matched responder: ${match.name} (type: ${match.responder.type})`);
     }
 
-    // Execute the responder
-    const result = await this.executeResponder(match, match.args || message.text);
+    // For LLM responders, start a new thread conversation
+    const userMessage = match.args || message.text;
+    const result = await this.executeResponder(match, userMessage, undefined);
 
     // Send the response (use thread_ts for context continuity)
+    const responseThreadTs = threadTs || messageTs;
+    if (result.success) {
+      await say({
+        text: result.response,
+        thread_ts: responseThreadTs,
+      });
+
+      // Start tracking this thread conversation for LLM responders
+      if (match.responder.type === "llm" && responseThreadTs) {
+        this.threadConversations.set(responseThreadTs, {
+          responderName: match.name,
+          responder: match.responder,
+          messages: [
+            { role: "user", content: userMessage, timestamp: messageTs || "" },
+            { role: "assistant", content: result.response, timestamp: new Date().toISOString() },
+          ],
+          createdAt: new Date(),
+        });
+        if (this.debug) {
+          console.log(`[slack] Started thread conversation for ${responseThreadTs}`);
+        }
+      }
+    } else {
+      const errorMsg = result.error
+        ? `Error: ${result.error}`
+        : "An error occurred while processing your message.";
+      await say({
+        text: errorMsg,
+        thread_ts: responseThreadTs,
+      });
+    }
+
+    return true;
+  }
+
+  /**
+   * Continue an existing thread conversation with the LLM.
+   */
+  private async continueThreadConversation(
+    conversation: ThreadConversation,
+    threadTs: string,
+    userMessage: string,
+    say: (options: { text: string; thread_ts?: string }) => Promise<unknown>,
+  ): Promise<boolean> {
+    // Build conversation history for the LLM
+    const conversationHistory = conversation.messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    if (this.debug) {
+      console.log(
+        `[slack] Conversation history: ${conversationHistory.length} messages`,
+      );
+    }
+
+    // Execute responder with conversation history
+    const result = await executeLLMResponder(userMessage, conversation.responder, undefined, {
+      responderName: conversation.responderName,
+      trigger: conversation.responder.trigger,
+      conversationHistory,
+      debug: this.debug,
+    });
+
     if (result.success) {
       await say({
         text: result.response,
         thread_ts: threadTs,
       });
+
+      // Add messages to conversation history
+      conversation.messages.push(
+        { role: "user", content: userMessage, timestamp: new Date().toISOString() },
+        { role: "assistant", content: result.response, timestamp: new Date().toISOString() },
+      );
+
+      // Limit conversation history to prevent token overflow (keep last 20 messages)
+      if (conversation.messages.length > 20) {
+        conversation.messages = conversation.messages.slice(-20);
+      }
     } else {
       const errorMsg = result.error
         ? `Error: ${result.error}`
@@ -270,6 +455,21 @@ export class SlackChatClient implements ChatClient {
   private setupEventHandlers(): void {
     if (!this.app) return;
 
+    // Add global error handler
+    this.app.error(async (error: Error) => {
+      console.error("[slack] App error:", error);
+    });
+
+    // Log all incoming events when debug is enabled
+    if (this.debug) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.app.use(async ({ payload, next }: { payload: any; next: () => Promise<void> }) => {
+        const eventType = payload?.type || payload?.event?.type || "unknown";
+        console.log(`[slack] Event received: ${eventType}`);
+        await next();
+      });
+    }
+
     // Handle app_mention events (when someone @mentions the bot)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.app.event(
@@ -320,6 +520,7 @@ export class SlackChatClient implements ChatClient {
               }
             },
             threadTs,
+            event.ts,
           );
           if (handled) {
             return;
@@ -355,6 +556,13 @@ export class SlackChatClient implements ChatClient {
         message: any;
         say: (options: string | { text: string; thread_ts?: string }) => Promise<unknown>;
       }) => {
+        // Debug: log raw message event before any filtering
+        if (this.debug) {
+          console.log(
+            `[slack] Raw message event: channel=${message.channel}, text="${(message.text || "").slice(0, 50)}", subtype=${message.subtype || "none"}, bot_id=${message.bot_id || "none"}`,
+          );
+        }
+
         // Type guard for message with text
         if (!message.text) return;
         if (!message.channel) return;
@@ -423,9 +631,14 @@ export class SlackChatClient implements ChatClient {
           }
         }
 
-        // If message contains a bot mention or responders are configured,
+        // Check if this is a continuation of an active thread conversation
+        const isActiveThread = threadTs && this.threadConversations.has(threadTs);
+
+        // If message contains a bot mention, responders are configured, or we're in an active thread,
         // try to route through responder matching
-        if (isMention || this.responderMatcher?.hasDefaultResponder()) {
+        // Note: We try matching whenever responders exist, not just on bot mention,
+        // so that @trigger patterns (like @qa) work without requiring @bot first
+        if (isMention || this.responderMatcher || isActiveThread) {
           try {
             const handled = await this.handleResponderMessage(
               chatMessage,
@@ -437,6 +650,7 @@ export class SlackChatClient implements ChatClient {
                 }
               },
               threadTs,
+              message.ts,
             );
             if (handled) {
               return;
@@ -445,8 +659,8 @@ export class SlackChatClient implements ChatClient {
             if (this.debug) {
               console.error(`[slack] Responder error: ${err}`);
             }
-            if (isMention) {
-              // Only reply with error if this was a direct mention
+            if (isMention || isActiveThread) {
+              // Reply with error if this was a direct mention or active thread
               await say({
                 text: `Error processing message: ${err instanceof Error ? err.message : "Unknown error"}`,
                 thread_ts: threadTs,

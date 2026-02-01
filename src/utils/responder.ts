@@ -95,42 +95,53 @@ export class ResponderMatcher {
   }
 
   /**
-   * Match @mention triggers at the start of a message.
+   * Match @mention triggers in a message.
+   * First tries to match at the start of the message, then looks for triggers anywhere.
    * Handles variations like "@qa", "@qa ", "@qa: ", etc.
    */
   private matchMentionTrigger(message: string): ResponderMatch | null {
-    // Check if message starts with @
-    if (!message.startsWith("@")) {
-      return null;
+    // First, try to match at the start of the message (highest priority)
+    if (message.startsWith("@")) {
+      const startMatch = message.match(/^(@\w+)/i);
+      if (startMatch) {
+        const mention = startMatch[1].toLowerCase();
+        const responderName = this.mentionTriggers.get(mention);
+        if (responderName) {
+          const responder = this.responders.get(responderName);
+          if (responder) {
+            const args = this.extractArgsAfterTrigger(message, mention.length);
+            return { name: responderName, responder, args };
+          }
+        }
+      }
     }
 
-    // Extract the mention (everything from @ until whitespace or punctuation)
-    const mentionMatch = message.match(/^(@\w+)/i);
-    if (!mentionMatch) {
-      return null;
+    // If not at start, look for @trigger anywhere in the message
+    // This allows patterns like "need help @qa explain this"
+    for (const [trigger] of this.mentionTriggers) {
+      // Build regex to find trigger as a word boundary (not part of email, etc.)
+      // Match trigger preceded by whitespace or start, followed by whitespace, colon, or end
+      const escapedTrigger = trigger.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`(?:^|\\s)(${escapedTrigger})(?:[:\\s]|$)`, "i");
+      const match = message.match(regex);
+
+      if (match) {
+        const responderName = this.mentionTriggers.get(trigger);
+        if (!responderName) continue;
+
+        const responder = this.responders.get(responderName);
+        if (!responder) continue;
+
+        // Extract args: everything after the trigger
+        const triggerIndex = match.index! + match[0].indexOf(match[1]);
+        const afterTrigger = message.slice(triggerIndex + match[1].length);
+        const args = afterTrigger.replace(/^[:]\s*/, "").replace(/^\s+/, "").trim();
+
+        return { name: responderName, responder, args };
+      }
     }
 
-    const mention = mentionMatch[1].toLowerCase();
-    const responderName = this.mentionTriggers.get(mention);
-
-    if (!responderName) {
-      return null;
-    }
-
-    const responder = this.responders.get(responderName);
-    if (!responder) {
-      return null;
-    }
-
-    // Extract the remaining message after the trigger
-    // Handle optional separators like ":" or just whitespace
-    const args = this.extractArgsAfterTrigger(message, mention.length);
-
-    return {
-      name: responderName,
-      responder,
-      args,
-    };
+    return null;
   }
 
   /**
