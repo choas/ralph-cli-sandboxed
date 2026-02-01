@@ -740,6 +740,7 @@ export async function run(args: string[]): Promise<void> {
             command: config.notifyCommand,
             debug,
             daemonConfig: config.daemon,
+            chatConfig: config.chat,
           });
 
           break;
@@ -770,6 +771,7 @@ export async function run(args: string[]): Promise<void> {
             command: config.notifyCommand,
             debug,
             daemonConfig: config.daemon,
+            chatConfig: config.chat,
             taskName,
           },
         );
@@ -821,6 +823,7 @@ export async function run(args: string[]): Promise<void> {
               command: config.notifyCommand,
               debug,
               daemonConfig: config.daemon,
+              chatConfig: config.chat,
               errorMessage: stoppedMessage,
             },
           );
@@ -853,6 +856,7 @@ export async function run(args: string[]): Promise<void> {
             command: config.notifyCommand,
             debug,
             daemonConfig: config.daemon,
+            chatConfig: config.chat,
             errorMessage,
           });
 
@@ -901,6 +905,7 @@ export async function run(args: string[]): Promise<void> {
             command: config.notifyCommand,
             debug,
             daemonConfig: config.daemon,
+            chatConfig: config.chat,
           });
 
           break;

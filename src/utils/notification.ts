@@ -4,8 +4,16 @@ import {
   DaemonEventType,
   DaemonEventConfig,
   DaemonConfig,
+  ChatConfig,
 } from "./config.js";
-import { isDaemonAvailable, sendDaemonNotification, sendDaemonRequest } from "./daemon-client.js";
+import {
+  isDaemonAvailable,
+  sendDaemonNotification,
+  sendDaemonRequest,
+  sendSlackNotification,
+  sendTelegramNotification,
+  sendDiscordNotification,
+} from "./daemon-client.js";
 
 export interface NotificationOptions {
   /** The notification command from config (e.g., "ntfy pub mytopic" or "notify-send") */
@@ -16,6 +24,8 @@ export interface NotificationOptions {
   useDaemon?: boolean;
   /** Daemon configuration for event-based notifications */
   daemonConfig?: DaemonConfig;
+  /** Chat configuration for automatic chat notifications */
+  chatConfig?: ChatConfig;
   /** Task name for task_complete events (used in message placeholders) */
   taskName?: string;
   /** Error message for error events (used in {{error}} placeholder) */
@@ -242,8 +252,111 @@ export async function triggerDaemonEvents(
 }
 
 /**
+ * Send notifications to connected chat providers (Slack, Telegram, Discord).
+ * This automatically sends notifications to all enabled chat providers when
+ * running inside a container with the daemon available.
+ *
+ * @param message The notification message
+ * @param options Notification options containing chat config
+ */
+async function sendChatNotifications(
+  message: string,
+  options?: NotificationOptions,
+): Promise<void> {
+  const { chatConfig, debug } = options ?? {};
+
+  // Only send chat notifications when in container with daemon available
+  if (!isRunningInContainer() || !isDaemonAvailable()) {
+    return;
+  }
+
+  // Check if Slack is configured and enabled
+  const slackEnabled =
+    chatConfig?.slack?.botToken &&
+    chatConfig?.slack?.appToken &&
+    chatConfig?.slack?.signingSecret &&
+    chatConfig?.slack?.enabled !== false;
+
+  if (slackEnabled) {
+    try {
+      if (debug) {
+        console.error("[notification] Sending Slack notification via daemon");
+      }
+      const response = await sendSlackNotification(message);
+      if (debug) {
+        if (response.success) {
+          console.error("[notification] Slack notification sent successfully");
+        } else {
+          console.error(`[notification] Slack notification failed: ${response.error}`);
+        }
+      }
+    } catch (err) {
+      if (debug) {
+        console.error(
+          `[notification] Slack notification error: ${err instanceof Error ? err.message : "unknown"}`,
+        );
+      }
+    }
+  }
+
+  // Check if Telegram is configured and enabled
+  const telegramEnabled =
+    chatConfig?.telegram?.botToken && chatConfig?.telegram?.enabled !== false;
+
+  if (telegramEnabled) {
+    try {
+      if (debug) {
+        console.error("[notification] Sending Telegram notification via daemon");
+      }
+      const response = await sendTelegramNotification(message);
+      if (debug) {
+        if (response.success) {
+          console.error("[notification] Telegram notification sent successfully");
+        } else {
+          console.error(`[notification] Telegram notification failed: ${response.error}`);
+        }
+      }
+    } catch (err) {
+      if (debug) {
+        console.error(
+          `[notification] Telegram notification error: ${err instanceof Error ? err.message : "unknown"}`,
+        );
+      }
+    }
+  }
+
+  // Check if Discord is configured and enabled
+  const discordEnabled = chatConfig?.discord?.botToken && chatConfig?.discord?.enabled !== false;
+
+  if (discordEnabled) {
+    try {
+      if (debug) {
+        console.error("[notification] Sending Discord notification via daemon");
+      }
+      const response = await sendDiscordNotification(message);
+      if (debug) {
+        if (response.success) {
+          console.error("[notification] Discord notification sent successfully");
+        } else {
+          console.error(`[notification] Discord notification failed: ${response.error}`);
+        }
+      }
+    } catch (err) {
+      if (debug) {
+        console.error(
+          `[notification] Discord notification error: ${err instanceof Error ? err.message : "unknown"}`,
+        );
+      }
+    }
+  }
+}
+
+/**
  * Send notification and also trigger any configured daemon events.
  * This is the recommended function to use for comprehensive notification handling.
+ *
+ * When running in a container with chat providers configured (Slack, Telegram, Discord),
+ * notifications are automatically sent to those channels.
  *
  * @param event The notification event type
  * @param message Optional custom message
@@ -254,6 +367,17 @@ export async function sendNotificationWithDaemonEvents(
   message?: string,
   options?: NotificationOptions,
 ): Promise<void> {
+  // Generate default message based on event type if not provided
+  const defaultMessages: Record<NotificationEvent, string> = {
+    prd_complete: "Ralph: PRD Complete! All tasks finished.",
+    iteration_complete: "Ralph: Iteration complete.",
+    run_stopped: "Ralph: Run stopped.",
+    task_complete: "Ralph: Task complete.",
+    error: "Ralph: An error occurred.",
+  };
+
+  const finalMessage = message ?? defaultMessages[event];
+
   // Send the regular notification
   await sendNotification(event, message, options);
 
@@ -265,4 +389,7 @@ export async function sendNotificationWithDaemonEvents(
       errorMessage: options?.errorMessage,
     });
   }
+
+  // Send automatic chat notifications (Slack, Telegram, Discord)
+  await sendChatNotifications(finalMessage, options);
 }

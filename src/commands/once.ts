@@ -125,7 +125,12 @@ export async function once(args: string[]): Promise<void> {
   const streamJsonParser = getStreamJsonParser(config.cliProvider, debug);
 
   // Notification options for this run
-  const notifyOptions = { command: config.notifyCommand, debug, daemonConfig: config.daemon };
+  const notifyOptions = {
+    command: config.notifyCommand,
+    debug,
+    daemonConfig: config.daemon,
+    chatConfig: config.chat,
+  };
 
   return new Promise((resolve, reject) => {
     let output = ""; // Accumulate output for PRD complete detection

@@ -95,3 +95,33 @@ export async function pingDaemon(): Promise<boolean> {
 export async function sendDaemonNotification(message: string): Promise<DaemonResponse> {
   return sendDaemonRequest("notify", [message]);
 }
+
+/**
+ * Send a notification through Slack via the daemon.
+ * This uses the built-in slack_notify action if Slack is configured.
+ *
+ * @param message The notification message
+ */
+export async function sendSlackNotification(message: string): Promise<DaemonResponse> {
+  return sendDaemonRequest("slack_notify", [message]);
+}
+
+/**
+ * Send a notification through Telegram via the daemon.
+ * This uses the built-in telegram_notify action if Telegram is configured.
+ *
+ * @param message The notification message
+ */
+export async function sendTelegramNotification(message: string): Promise<DaemonResponse> {
+  return sendDaemonRequest("telegram_notify", [message]);
+}
+
+/**
+ * Send a notification through Discord via the daemon.
+ * This uses the built-in discord_notify action if Discord is configured.
+ *
+ * @param message The notification message
+ */
+export async function sendDiscordNotification(message: string): Promise<DaemonResponse> {
+  return sendDaemonRequest("discord_notify", [message]);
+}
