@@ -16,6 +16,11 @@ import {
   SendMessageOptions,
   parseCommand,
 } from "../utils/chat-client.js";
+import { ResponderMatcher, ResponderMatch } from "../utils/responder.js";
+import { ResponderConfig, RespondersConfig, loadConfig } from "../utils/config.js";
+import { executeLLMResponder, ResponderResult } from "../responders/llm-responder.js";
+import { executeClaudeCodeResponder } from "../responders/claude-code-responder.js";
+import { executeCLIResponder } from "../responders/cli-responder.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DiscordClient = any;
@@ -93,10 +98,145 @@ export class DiscordChatClient implements ChatClient {
   private client: DiscordClient | null = null;
   private onCommand: ChatCommandHandler | null = null;
   private onMessage: ChatMessageHandler | null = null;
+  private responderMatcher: ResponderMatcher | null = null;
+  private respondersConfig: RespondersConfig | null = null;
+  private botUserId: string | null = null;
 
   constructor(settings: DiscordSettings, debug = false) {
     this.settings = settings;
     this.debug = debug;
+
+    // Initialize responders from config if available
+    this.initializeResponders();
+  }
+
+  /**
+   * Initialize responder matching from config.
+   */
+  private initializeResponders(): void {
+    try {
+      const config = loadConfig();
+      if (config.chat?.responders) {
+        this.respondersConfig = config.chat.responders;
+        this.responderMatcher = new ResponderMatcher(config.chat.responders);
+        if (this.debug) {
+          console.log(`[discord] Initialized ${Object.keys(config.chat.responders).length} responders`);
+        }
+      }
+    } catch {
+      // Config not available or responders not configured
+      if (this.debug) {
+        console.log("[discord] No responders configured");
+      }
+    }
+  }
+
+  /**
+   * Execute a responder and return the result.
+   */
+  private async executeResponder(
+    match: ResponderMatch,
+    message: string
+  ): Promise<ResponderResult> {
+    const { responder } = match;
+
+    switch (responder.type) {
+      case "llm":
+        return executeLLMResponder(message, responder);
+
+      case "claude-code":
+        return executeClaudeCodeResponder(message, responder);
+
+      case "cli":
+        return executeCLIResponder(message, responder);
+
+      default:
+        return {
+          success: false,
+          response: "",
+          error: `Unknown responder type: ${(responder as ResponderConfig).type}`,
+        };
+    }
+  }
+
+  /**
+   * Handle a message that might match a responder.
+   * Returns true if a responder was matched and executed.
+   */
+  private async handleResponderMessage(
+    originalMessage: DiscordMessage,
+    cleanedText: string
+  ): Promise<boolean> {
+    if (!this.responderMatcher) {
+      return false;
+    }
+
+    const match = this.responderMatcher.matchResponder(cleanedText);
+    if (!match) {
+      return false;
+    }
+
+    if (this.debug) {
+      console.log(`[discord] Matched responder: ${match.name} (type: ${match.responder.type})`);
+    }
+
+    // Execute the responder
+    const result = await this.executeResponder(match, match.args || cleanedText);
+
+    // Send the response (reply to the original message for context)
+    try {
+      if (result.success) {
+        // Truncate to Discord's 2000 char limit
+        const responseText = result.response.substring(0, 2000);
+        await originalMessage.reply(responseText);
+      } else {
+        const errorMsg = result.error
+          ? `Error: ${result.error}`
+          : "An error occurred while processing your message.";
+        await originalMessage.reply(errorMsg);
+      }
+    } catch (err) {
+      if (this.debug) {
+        console.error(`[discord] Failed to send responder reply: ${err}`);
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if the bot is mentioned in a message.
+   */
+  private isBotMentioned(message: DiscordMessage): boolean {
+    if (!this.botUserId) {
+      return false;
+    }
+    // Check if the message mentions the bot user
+    if (message.mentions && typeof message.mentions.has === "function") {
+      return message.mentions.has(this.botUserId);
+    }
+    // Fallback: check text for <@BOT_ID> pattern
+    return message.content?.includes(`<@${this.botUserId}>`) || false;
+  }
+
+  /**
+   * Remove bot mention from message text.
+   */
+  private removeBotMention(text: string): string {
+    if (!this.botUserId) {
+      return text;
+    }
+    // Remove <@BOT_ID> and any surrounding whitespace
+    // Also handles <@!BOT_ID> format (with nickname)
+    return text.replace(new RegExp(`<@!?${this.botUserId}>\\s*`, "g"), "").trim();
+  }
+
+  /**
+   * Check if this is a DM (direct message) channel.
+   */
+  private isDMChannel(message: DiscordMessage): boolean {
+    // DM channels have type 1 (DM) or could check if guild is null
+    return message.channel?.type === 1 || !message.guild;
   }
 
   /**
@@ -208,7 +348,7 @@ export class DiscordChatClient implements ChatClient {
     // Ignore messages from bots (including self)
     if (message.author?.bot) return;
 
-    // Check if guild is allowed
+    // Check if guild is allowed (null guild is ok for DMs)
     if (!this.isGuildAllowed(message.guild?.id)) {
       if (this.debug) {
         console.log(`[discord] Ignoring message from unauthorized guild: ${message.guild?.id}`);
@@ -224,7 +364,24 @@ export class DiscordChatClient implements ChatClient {
       return;
     }
 
-    const chatMessage = this.toMessage(message);
+    // Check if bot is mentioned or if this is a DM
+    const isMention = this.isBotMentioned(message);
+    const isDM = this.isDMChannel(message);
+
+    // Clean the message text (remove bot mention if present)
+    let messageText = message.content || "";
+    if (isMention) {
+      messageText = this.removeBotMention(messageText);
+    }
+
+    const chatMessage: ChatMessage = {
+      text: messageText,
+      chatId: message.channel.id,
+      senderId: message.author?.id,
+      senderName: message.author?.username,
+      timestamp: message.createdAt || new Date(),
+      raw: message,
+    };
 
     // Call raw message handler if provided
     if (this.onMessage) {
@@ -237,11 +394,12 @@ export class DiscordChatClient implements ChatClient {
       }
     }
 
-    // Try to parse as a command
-    const command = parseCommand(chatMessage.text, chatMessage);
+    // Try to parse as a command first
+    const command = parseCommand(messageText, chatMessage);
     if (command && this.onCommand) {
       try {
         await this.onCommand(command);
+        return; // Command handled, don't process as responder message
       } catch (err) {
         if (this.debug) {
           console.error(`[discord] Command handler error: ${err}`);
@@ -249,6 +407,48 @@ export class DiscordChatClient implements ChatClient {
         // Send error message to channel
         try {
           await message.reply(`Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`);
+        } catch {
+          // Ignore reply errors
+        }
+        return;
+      }
+    }
+
+    // For non-command messages, route through responders
+    // In guilds (servers): only respond if bot is mentioned
+    // In DMs: always respond if responders are configured
+    const shouldProcessAsResponder = isDM || isMention;
+
+    if (shouldProcessAsResponder && this.responderMatcher) {
+      // Check if there's a matching responder or a default responder
+      const match = this.responderMatcher.matchResponder(messageText);
+
+      if (match) {
+        try {
+          const handled = await this.handleResponderMessage(message, messageText);
+          if (handled) {
+            return;
+          }
+        } catch (err) {
+          if (this.debug) {
+            console.error(`[discord] Responder error: ${err}`);
+          }
+          try {
+            await message.reply(
+              `Error processing message: ${err instanceof Error ? err.message : "Unknown error"}`
+            );
+          } catch {
+            // Ignore reply errors
+          }
+          return;
+        }
+      } else if (isMention && !this.responderMatcher.hasDefaultResponder()) {
+        // Bot was mentioned but no responder matched and no default responder
+        // Send a helpful message
+        try {
+          await message.reply(
+            "I received your message, but no responders are configured. Use `/help` for available commands."
+          );
         } catch {
           // Ignore reply errors
         }
@@ -465,8 +665,11 @@ export class DiscordChatClient implements ChatClient {
         this.client!.once("ready", async () => {
           clearTimeout(timeout);
 
+          // Store bot user ID for mention detection
+          this.botUserId = this.client!.user?.id || null;
+
           if (this.debug) {
-            console.log(`[discord] Connected as ${this.client!.user?.tag} (ID: ${this.client!.user?.id})`);
+            console.log(`[discord] Connected as ${this.client!.user?.tag} (ID: ${this.botUserId})`);
           }
 
           // Register slash commands after login
