@@ -386,11 +386,6 @@ async function handleCommand(
       break;
     }
 
-    case "stop": {
-      await client.sendMessage(chatId, `${state.projectName}: Stop command received (not implemented yet)`);
-      break;
-    }
-
     case "action": {
       // Reload config to pick up new actions
       const freshConfig = loadConfig();

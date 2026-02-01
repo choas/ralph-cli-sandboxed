@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-console": "off",
+    "eqeqeq": "warn",
+    "no-debugger": "error",
+    "no-duplicate-case": "error",
+    "no-empty": "warn",
+    "no-extra-boolean-cast": "warn",
+    "no-irregular-whitespace": "warn",
+    "no-loss-of-precision": "error",
+    "no-unsafe-finally": "error",
+    "no-unsafe-negation": "error",
+    "no-unused-labels": "warn",
+    "no-useless-catch": "warn",
+    "no-useless-escape": "warn",
+    "require-yield": "error",
+    "valid-typeof": "error",
+    "no-constant-condition": "warn",
+    "no-empty-pattern": "warn"
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    "*.d.ts"
+  ]
+}

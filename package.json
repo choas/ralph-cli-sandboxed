@@ -17,6 +17,7 @@
     "copy-config": "mkdir -p dist/config && cp src/config/*.json dist/config/",
     "dev": "npx tsx src/index.ts",
     "typecheck": "tsc --noEmit",
+    "lint": "oxlint src/",
     "prepublishOnly": "npm run build",
     "prepare": "npm run build"
   },
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.12",
+    "oxlint": "^1.42.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },
