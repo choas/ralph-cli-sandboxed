@@ -83,6 +83,8 @@ export type ChatMessageHandler = (message: ChatMessage) => Promise<void>;
 export interface SendMessageOptions {
   /** Inline keyboard buttons (Telegram-specific) */
   inlineKeyboard?: InlineButton[][];
+  /** Thread timestamp for reply context (Slack-specific) */
+  threadTs?: string;
 }
 
 /**
