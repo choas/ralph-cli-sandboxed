@@ -70,6 +70,12 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
       "notifyCommand",
     ],
   },
+  {
+    id: "llm",
+    label: "LLM Providers",
+    icon: "🧠",
+    fields: ["llmProviders"],
+  },
 ];
 
 export interface SectionNavProps {

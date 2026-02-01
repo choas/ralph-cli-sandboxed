@@ -69,6 +69,35 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
     { key: "allowedChannelIds", description: "Only respond in these channel IDs (security)" },
     { key: "enabled", description: "Enable/disable Discord integration" },
   ],
+  // LLM provider hints
+  anthropic: [
+    { key: "type", description: "Provider type (anthropic)", required: true },
+    {
+      key: "model",
+      description: "Model name (e.g., claude-sonnet-4-20250514, claude-opus-4-20250514)",
+      required: true,
+    },
+    { key: "apiKey", description: "API key (defaults to ANTHROPIC_API_KEY env var)" },
+    { key: "baseUrl", description: "Custom API base URL (optional)" },
+  ],
+  openai: [
+    { key: "type", description: "Provider type (openai)", required: true },
+    { key: "model", description: "Model name (e.g., gpt-4o, gpt-4-turbo, gpt-3.5-turbo)", required: true },
+    { key: "apiKey", description: "API key (defaults to OPENAI_API_KEY env var)" },
+    { key: "baseUrl", description: "Custom API base URL (for OpenAI-compatible services)" },
+  ],
+  ollama: [
+    { key: "type", description: "Provider type (ollama)", required: true },
+    { key: "model", description: "Model name (e.g., llama3, mistral, codellama)", required: true },
+    { key: "baseUrl", description: "Ollama server URL (default: http://localhost:11434)" },
+  ],
+  // Generic LLM provider hint for unknown providers
+  llmprovider: [
+    { key: "type", description: "Provider type (anthropic, openai, or ollama)", required: true },
+    { key: "model", description: "Model name", required: true },
+    { key: "apiKey", description: "API key (optional, uses env var if not set)" },
+    { key: "baseUrl", description: "Custom API base URL (optional)" },
+  ],
 };
 
 export interface KeyValueEditorProps {

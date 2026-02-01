@@ -10,10 +10,11 @@ import { ArrayEditor } from "./components/ArrayEditor.js";
 import { ObjectEditor } from "./components/ObjectEditor.js";
 import { KeyValueEditor } from "./components/KeyValueEditor.js";
 import { JsonSnippetEditor } from "./components/JsonSnippetEditor.js";
+import { LLMProvidersEditor } from "./components/LLMProvidersEditor.js";
 import { Preview } from "./components/Preview.js";
 import { HelpPanel } from "./components/HelpPanel.js";
 import { PresetSelector } from "./components/PresetSelector.js";
-import type { RalphConfig } from "../utils/config.js";
+import type { RalphConfig, LLMProvidersConfig } from "../utils/config.js";
 import { validateConfig, type ValidationError } from "./utils/validation.js";
 import { sectionHasPresets, applyPreset, type ConfigPreset } from "./utils/presets.js";
 
@@ -379,6 +380,22 @@ export function ConfigEditor(): React.ReactElement {
         const stringEntries: Record<string, string> = {};
         for (const [k, v] of Object.entries(objValue)) {
           stringEntries[k] = typeof v === "string" ? v : JSON.stringify(v);
+        }
+
+        // Check if this is the llmProviders field
+        const isLLMProviders = selectedField === "llmProviders";
+
+        if (isLLMProviders) {
+          return (
+            <LLMProvidersEditor
+              label={currentFieldLabel}
+              providers={(currentFieldValue as LLMProvidersConfig) || {}}
+              onConfirm={handleFieldConfirm}
+              onCancel={handleFieldCancel}
+              isFocused={true}
+              maxHeight={editorMaxHeight}
+            />
+          );
         }
 
         // Check if this is a notification provider config field

@@ -49,8 +49,9 @@ SECTIONS:
   Docker      Ports, volumes, environment, packages
   Daemon      Actions, socket path
   Claude      MCP servers, skills
-  Chat        Telegram integration
+  Chat        Telegram, Slack, Discord integration
   Notify      Notification settings
+  LLM         LLM provider configuration (Anthropic, OpenAI, Ollama)
 `;
   console.log(helpText.trim());
 }
