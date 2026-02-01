@@ -57,14 +57,16 @@ export function BooleanToggle({
         onCancel();
       }
     },
-    { isActive: isFocused }
+    { isActive: isFocused },
   );
 
   return (
     <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
       {/* Header */}
       <Box marginBottom={1}>
-        <Text bold color="cyan">Edit: {label}</Text>
+        <Text bold color="cyan">
+          Edit: {label}
+        </Text>
       </Box>
 
       {/* Toggle UI */}
@@ -72,11 +74,7 @@ export function BooleanToggle({
         <Text dimColor>{">"} </Text>
         {/* False option */}
         <Box marginRight={2}>
-          <Text
-            color={!editValue ? "red" : undefined}
-            bold={!editValue}
-            inverse={!editValue}
-          >
+          <Text color={!editValue ? "red" : undefined} bold={!editValue} inverse={!editValue}>
             {!editValue ? " ● " : " ○ "}
           </Text>
           <Text color={!editValue ? "red" : "gray"} bold={!editValue}>
@@ -85,11 +83,7 @@ export function BooleanToggle({
         </Box>
         {/* True option */}
         <Box>
-          <Text
-            color={editValue ? "green" : undefined}
-            bold={editValue}
-            inverse={editValue}
-          >
+          <Text color={editValue ? "green" : undefined} bold={editValue} inverse={editValue}>
             {editValue ? " ● " : " ○ "}
           </Text>
           <Text color={editValue ? "green" : "gray"} bold={editValue}>

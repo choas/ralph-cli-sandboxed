@@ -365,9 +365,10 @@ export class OpenCodeStreamParser extends BaseStreamParser {
             let toolOutput = `\n── Tool: ${json.name || json.tool} ──\n`;
             if (json.input || json.args || json.arguments) {
               const toolInput = json.input || json.args || json.arguments;
-              toolOutput += typeof toolInput === "string"
-                ? toolInput + "\n"
-                : JSON.stringify(toolInput, null, 2) + "\n";
+              toolOutput +=
+                typeof toolInput === "string"
+                  ? toolInput + "\n"
+                  : JSON.stringify(toolInput, null, 2) + "\n";
             }
             return toolOutput;
           }
@@ -616,9 +617,8 @@ export class AiderStreamParser extends BaseStreamParser {
             let toolOutput = `\n── Tool: ${json.name || json.function} ──\n`;
             if (json.arguments || json.args) {
               const args = json.arguments || json.args;
-              toolOutput += typeof args === "string"
-                ? args + "\n"
-                : JSON.stringify(args, null, 2) + "\n";
+              toolOutput +=
+                typeof args === "string" ? args + "\n" : JSON.stringify(args, null, 2) + "\n";
             }
             return toolOutput;
           }
@@ -708,7 +708,10 @@ export class DefaultStreamParser extends BaseStreamParser {
  * @param debug - Enable debug logging
  * @returns The appropriate StreamJsonParser for the provider
  */
-export function getStreamJsonParser(provider: string | undefined, debug: boolean = false): StreamJsonParser {
+export function getStreamJsonParser(
+  provider: string | undefined,
+  debug: boolean = false,
+): StreamJsonParser {
   switch (provider) {
     case "claude":
       return new ClaudeStreamParser(debug);

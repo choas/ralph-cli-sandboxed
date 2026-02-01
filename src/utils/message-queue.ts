@@ -87,7 +87,7 @@ export function sendMessage(
   messagesPath: string,
   from: "sandbox" | "host",
   action: string,
-  args?: string[]
+  args?: string[],
 ): string {
   const messages = readMessages(messagesPath);
   const id = randomUUID();
@@ -119,22 +119,22 @@ export async function waitForResponse(
   messagesPath: string,
   messageId: string,
   timeout: number = 10000,
-  pollInterval: number = 100
+  pollInterval: number = 100,
 ): Promise<MessageResponse | null> {
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeout) {
     const messages = readMessages(messagesPath);
-    const message = messages.find(m => m.id === messageId);
+    const message = messages.find((m) => m.id === messageId);
 
     if (message?.status === "done" && message.response) {
       // Clean up processed message
-      const remaining = messages.filter(m => m.id !== messageId);
+      const remaining = messages.filter((m) => m.id !== messageId);
       writeMessages(messagesPath, remaining);
       return message.response as MessageResponse;
     }
 
-    await new Promise(resolve => setTimeout(resolve, pollInterval));
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
   }
 
   return null;
@@ -143,12 +143,9 @@ export async function waitForResponse(
 /**
  * Get pending messages for a recipient.
  */
-export function getPendingMessages(
-  messagesPath: string,
-  from: "sandbox" | "host"
-): Message[] {
+export function getPendingMessages(messagesPath: string, from: "sandbox" | "host"): Message[] {
   const messages = readMessages(messagesPath);
-  return messages.filter(m => m.from === from && m.status === "pending");
+  return messages.filter((m) => m.from === from && m.status === "pending");
 }
 
 /**
@@ -157,10 +154,10 @@ export function getPendingMessages(
 export function respondToMessage(
   messagesPath: string,
   messageId: string,
-  response: MessageResponse
+  response: MessageResponse,
 ): boolean {
   const messages = readMessages(messagesPath);
-  const message = messages.find(m => m.id === messageId);
+  const message = messages.find((m) => m.id === messageId);
 
   if (!message) {
     return false;
@@ -175,13 +172,10 @@ export function respondToMessage(
 /**
  * Clean up old messages (older than maxAge milliseconds).
  */
-export function cleanupOldMessages(
-  messagesPath: string,
-  maxAge: number = 60000
-): number {
+export function cleanupOldMessages(messagesPath: string, maxAge: number = 60000): number {
   const messages = readMessages(messagesPath);
   const now = Date.now();
-  const remaining = messages.filter(m => now - m.timestamp < maxAge);
+  const remaining = messages.filter((m) => now - m.timestamp < maxAge);
   const removed = messages.length - remaining.length;
 
   if (removed > 0) {

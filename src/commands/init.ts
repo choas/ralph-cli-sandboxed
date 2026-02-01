@@ -1,18 +1,46 @@
 import { existsSync, writeFileSync, mkdirSync, copyFileSync, chmodSync } from "fs";
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
-import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, getCliProviders, getSkillsForLanguage, type LanguageConfig, type SkillDefinition } from "../templates/prompts.js";
-import { generateGenXcodeScript, hasSwiftUI, hasFastlane, generateFastfile, generateAppfile, generateFastlaneReadmeSection } from "../templates/macos-scripts.js";
+import {
+  getLanguages,
+  generatePromptTemplate,
+  DEFAULT_PRD,
+  DEFAULT_PROGRESS,
+  getCliProviders,
+  getSkillsForLanguage,
+  type LanguageConfig,
+  type SkillDefinition,
+} from "../templates/prompts.js";
+import {
+  generateGenXcodeScript,
+  hasSwiftUI,
+  hasFastlane,
+  generateFastfile,
+  generateAppfile,
+  generateFastlaneReadmeSection,
+} from "../templates/macos-scripts.js";
 import { type SkillConfig, type RespondersConfig } from "../utils/config.js";
-import { promptSelectWithArrows, promptConfirm, promptInput, promptMultiSelectWithArrows } from "../utils/prompt.js";
+import {
+  promptSelectWithArrows,
+  promptConfirm,
+  promptInput,
+  promptMultiSelectWithArrows,
+} from "../utils/prompt.js";
 import { type CliConfig } from "../utils/config.js";
 import { dockerInit } from "./docker.js";
-import { getBundleDisplayOptions, displayOptionToBundleId, bundleToRespondersConfig, getPresetDisplayOptions, displayOptionToPresetId, presetsToRespondersConfig } from "../utils/responder-presets.js";
+import {
+  getBundleDisplayOptions,
+  displayOptionToBundleId,
+  bundleToRespondersConfig,
+  getPresetDisplayOptions,
+  displayOptionToPresetId,
+  presetsToRespondersConfig,
+} from "../utils/responder-presets.js";
 
 // Get package root directory (works for both dev and installed package)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const PACKAGE_ROOT = join(__dirname, "..", "..");  // dist/commands -> dist -> package root
+const PACKAGE_ROOT = join(__dirname, "..", ".."); // dist/commands -> dist -> package root
 
 const RALPH_DIR = ".ralph";
 const CONFIG_FILE = "config.json";
@@ -69,13 +97,20 @@ export async function init(args: string[]): Promise<void> {
     checkCommand = config.checkCommand;
     testCommand = config.testCommand;
 
-    console.log(`Using defaults: ${CLI_PROVIDERS[selectedCliProviderKey].name} + ${LANGUAGES[selectedKey].name}`);
+    console.log(
+      `Using defaults: ${CLI_PROVIDERS[selectedCliProviderKey].name} + ${LANGUAGES[selectedKey].name}`,
+    );
   } else {
     // Step 1: Select CLI provider (first)
     const providerKeys = Object.keys(CLI_PROVIDERS);
-    const providerNames = providerKeys.map(k => `${CLI_PROVIDERS[k].name} - ${CLI_PROVIDERS[k].description}`);
+    const providerNames = providerKeys.map(
+      (k) => `${CLI_PROVIDERS[k].name} - ${CLI_PROVIDERS[k].description}`,
+    );
 
-    const selectedProviderName = await promptSelectWithArrows("Select your AI CLI provider:", providerNames);
+    const selectedProviderName = await promptSelectWithArrows(
+      "Select your AI CLI provider:",
+      providerNames,
+    );
     const selectedProviderIndex = providerNames.indexOf(selectedProviderName);
     selectedCliProviderKey = providerKeys[selectedProviderIndex];
     const selectedProvider = CLI_PROVIDERS[selectedCliProviderKey];
@@ -85,10 +120,18 @@ export async function init(args: string[]): Promise<void> {
       const customCommand = await promptInput("\nEnter your CLI command: ");
       const customArgsInput = await promptInput("Enter default arguments (space-separated): ");
       const customArgs = customArgsInput.trim() ? customArgsInput.trim().split(/\s+/) : [];
-      const customYoloArgsInput = await promptInput("Enter yolo/auto-approve arguments (space-separated): ");
-      const customYoloArgs = customYoloArgsInput.trim() ? customYoloArgsInput.trim().split(/\s+/) : [];
-      const customPromptArgsInput = await promptInput("Enter prompt arguments (e.g., -p for flag-based, leave empty for positional): ");
-      const customPromptArgs = customPromptArgsInput.trim() ? customPromptArgsInput.trim().split(/\s+/) : [];
+      const customYoloArgsInput = await promptInput(
+        "Enter yolo/auto-approve arguments (space-separated): ",
+      );
+      const customYoloArgs = customYoloArgsInput.trim()
+        ? customYoloArgsInput.trim().split(/\s+/)
+        : [];
+      const customPromptArgsInput = await promptInput(
+        "Enter prompt arguments (e.g., -p for flag-based, leave empty for positional): ",
+      );
+      const customPromptArgs = customPromptArgsInput.trim()
+        ? customPromptArgsInput.trim().split(/\s+/)
+        : [];
 
       cliConfig = {
         command: customCommand || "claude",
@@ -109,9 +152,14 @@ export async function init(args: string[]): Promise<void> {
 
     // Step 2: Select language (second)
     const languageKeys = Object.keys(LANGUAGES);
-    const languageNames = languageKeys.map(k => `${LANGUAGES[k].name} - ${LANGUAGES[k].description}`);
+    const languageNames = languageKeys.map(
+      (k) => `${LANGUAGES[k].name} - ${LANGUAGES[k].description}`,
+    );
 
-    const selectedName = await promptSelectWithArrows("Select your project language/runtime:", languageNames);
+    const selectedName = await promptSelectWithArrows(
+      "Select your project language/runtime:",
+      languageNames,
+    );
     const selectedIndex = languageNames.indexOf(selectedName);
     selectedKey = languageKeys[selectedIndex];
     const config = LANGUAGES[selectedKey];
@@ -120,16 +168,16 @@ export async function init(args: string[]): Promise<void> {
 
     // Step 3: Select technology stack if available (third)
     if (config.technologies && config.technologies.length > 0) {
-      const techOptions = config.technologies.map(t => `${t.name} - ${t.description}`);
-      const techNames = config.technologies.map(t => t.name);
+      const techOptions = config.technologies.map((t) => `${t.name} - ${t.description}`);
+      const techNames = config.technologies.map((t) => t.name);
 
       selectedTechnologies = await promptMultiSelectWithArrows(
         "Select your technology stack (optional):",
-        techOptions
+        techOptions,
       );
 
       // Convert display names back to just technology names for predefined options
-      selectedTechnologies = selectedTechnologies.map(sel => {
+      selectedTechnologies = selectedTechnologies.map((sel) => {
         const idx = techOptions.indexOf(sel);
         return idx >= 0 ? techNames[idx] : sel;
       });
@@ -144,15 +192,15 @@ export async function init(args: string[]): Promise<void> {
     // Step 4: Select skills if available for this language
     const availableSkills = getSkillsForLanguage(selectedKey);
     if (availableSkills.length > 0) {
-      const skillOptions = availableSkills.map(s => `${s.name} - ${s.description}`);
+      const skillOptions = availableSkills.map((s) => `${s.name} - ${s.description}`);
 
       const selectedSkillNames = await promptMultiSelectWithArrows(
         "Select AI coding rules/skills to enable (optional):",
-        skillOptions
+        skillOptions,
       );
 
       // Convert selected display names to SkillConfig objects
-      selectedSkills = selectedSkillNames.map(sel => {
+      selectedSkills = selectedSkillNames.map((sel) => {
         const idx = skillOptions.indexOf(sel);
         const skill = availableSkills[idx];
         return {
@@ -164,37 +212,46 @@ export async function init(args: string[]): Promise<void> {
       });
 
       if (selectedSkills.length > 0) {
-        console.log(`\nSelected skills: ${selectedSkills.map(s => s.name).join(", ")}`);
+        console.log(`\nSelected skills: ${selectedSkills.map((s) => s.name).join(", ")}`);
       } else {
         console.log("\nNo skills selected.");
       }
     }
 
     // Step 5: Select chat responder presets (optional)
-    const setupResponders = await promptConfirm("\nWould you like to set up chat responders?", false);
+    const setupResponders = await promptConfirm(
+      "\nWould you like to set up chat responders?",
+      false,
+    );
     if (setupResponders) {
       // First, ask if they want a bundle or individual presets
       const selectionType = await promptSelectWithArrows(
         "How would you like to configure responders?",
-        ["Use a preset bundle (recommended)", "Select individual presets", "Skip - configure later"]
+        [
+          "Use a preset bundle (recommended)",
+          "Select individual presets",
+          "Skip - configure later",
+        ],
       );
 
       if (selectionType === "Use a preset bundle (recommended)") {
         const bundleOptions = getBundleDisplayOptions();
         const selectedBundle = await promptSelectWithArrows(
           "Select a responder bundle:",
-          bundleOptions
+          bundleOptions,
         );
         const bundleId = displayOptionToBundleId(selectedBundle);
         if (bundleId) {
           selectedResponders = bundleToRespondersConfig(bundleId);
-          console.log(`\nConfigured responders from bundle: ${Object.keys(selectedResponders).join(", ")}`);
+          console.log(
+            `\nConfigured responders from bundle: ${Object.keys(selectedResponders).join(", ")}`,
+          );
         }
       } else if (selectionType === "Select individual presets") {
         const presetOptions = getPresetDisplayOptions();
         const selectedPresets = await promptMultiSelectWithArrows(
           "Select responder presets to enable:",
-          presetOptions
+          presetOptions,
         );
 
         // Convert display options back to preset IDs
@@ -216,8 +273,8 @@ export async function init(args: string[]): Promise<void> {
     testCommand = config.testCommand;
 
     if (selectedKey === "none") {
-      checkCommand = await promptInput("\nEnter your type/build check command: ") || checkCommand;
-      testCommand = await promptInput("Enter your test command: ") || testCommand;
+      checkCommand = (await promptInput("\nEnter your type/build check command: ")) || checkCommand;
+      testCommand = (await promptInput("Enter your test command: ")) || testCommand;
     }
   }
 
@@ -228,7 +285,9 @@ export async function init(args: string[]): Promise<void> {
   };
 
   // Generate image name from directory name
-  const projectName = basename(cwd).toLowerCase().replace(/[^a-z0-9-]/g, "-");
+  const projectName = basename(cwd)
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-");
   const imageName = `ralph-${projectName}`;
 
   // Generate macOS development actions for Swift + SwiftUI projects
@@ -371,7 +430,9 @@ export async function init(args: string[]): Promise<void> {
   const promptPath = join(ralphDir, PROMPT_FILE);
 
   if (existsSync(promptPath) && !useDefaults) {
-    const overwritePrompt = await promptConfirm(`${RALPH_DIR}/${PROMPT_FILE} already exists. Overwrite?`);
+    const overwritePrompt = await promptConfirm(
+      `${RALPH_DIR}/${PROMPT_FILE} already exists. Overwrite?`,
+    );
     if (overwritePrompt) {
       writeFileSync(promptPath, prompt + "\n");
       console.log(`Updated ${RALPH_DIR}/${PROMPT_FILE}`);
@@ -436,11 +497,12 @@ docker/.config-hash
     }
 
     // Use a clean project name (PascalCase) for the Swift project
-    const swiftProjectName = basename(cwd)
-      .replace(/[^a-zA-Z0-9]+/g, " ")
-      .split(" ")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join("") || "App";
+    const swiftProjectName =
+      basename(cwd)
+        .replace(/[^a-zA-Z0-9]+/g, " ")
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join("") || "App";
 
     if (!existsSync(genXcodePath)) {
       writeFileSync(genXcodePath, generateGenXcodeScript(swiftProjectName));

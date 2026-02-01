@@ -34,7 +34,12 @@ interface RecoveryResult {
 /**
  * Attempts to parse JSON, returning the error position if parsing fails.
  */
-function parseJsonWithError(content: string): { data?: unknown; error?: string; line?: number; column?: number } {
+function parseJsonWithError(content: string): {
+  data?: unknown;
+  error?: string;
+  line?: number;
+  column?: number;
+} {
   try {
     return { data: JSON.parse(content) };
   } catch (err) {
@@ -210,7 +215,10 @@ function extractSectionFromCorrupt(content: string, section: ConfigSection): unk
 /**
  * Attempts to recover valid sections from a corrupt config.
  */
-function recoverSections(corruptContent: string, parsedPartial: Record<string, unknown> | null): RecoveryResult {
+function recoverSections(
+  corruptContent: string,
+  parsedPartial: Record<string, unknown> | null,
+): RecoveryResult {
   const defaultConfig = getDefaultConfig();
   const recoveredConfig: Record<string, unknown> = {};
   const result: RecoveryResult = {
@@ -230,7 +238,10 @@ function recoverSections(corruptContent: string, parsedPartial: Record<string, u
     }
 
     // If not found or invalid, try regex extraction for simple string fields
-    if ((value === undefined || !validateSection(section, value)) && typeof corruptContent === "string") {
+    if (
+      (value === undefined || !validateSection(section, value)) &&
+      typeof corruptContent === "string"
+    ) {
       const extracted = extractSectionFromCorrupt(corruptContent, section);
       if (extracted !== undefined && validateSection(section, extracted)) {
         value = extracted;
@@ -267,7 +278,7 @@ function createBackup(configPath: string): string {
  */
 function buildRecoveredConfig(
   corruptContent: string,
-  parsedPartial: Record<string, unknown> | null
+  parsedPartial: Record<string, unknown> | null,
 ): { config: RalphConfig; result: RecoveryResult } {
   const defaultConfig = getDefaultConfig();
   const result: RecoveryResult = {
@@ -370,7 +381,9 @@ export async function fixConfig(args: string[]): Promise<void> {
 
     // Ensure required fields exist
     for (const field of missingFields) {
-      (fixedConfig as unknown as Record<string, unknown>)[field] = (defaultConfig as unknown as Record<string, unknown>)[field];
+      (fixedConfig as unknown as Record<string, unknown>)[field] = (
+        defaultConfig as unknown as Record<string, unknown>
+      )[field];
     }
 
     writeFileSync(configPath, JSON.stringify(fixedConfig, null, 2) + "\n");
@@ -398,8 +411,8 @@ export async function fixConfig(args: string[]): Promise<void> {
   try {
     // Try JSON5-style parsing by removing trailing commas and comments
     const cleaned = rawContent
-      .replace(/,\s*([\]}])/g, "$1")  // Remove trailing commas
-      .replace(/\/\/.*$/gm, "")       // Remove single-line comments
+      .replace(/,\s*([\]}])/g, "$1") // Remove trailing commas
+      .replace(/\/\/.*$/gm, "") // Remove single-line comments
       .replace(/\/\*[\s\S]*?\*\//g, ""); // Remove multi-line comments
     parsedPartial = JSON.parse(cleaned);
   } catch {

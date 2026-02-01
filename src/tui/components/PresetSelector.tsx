@@ -73,7 +73,7 @@ export function PresetSelector({
         onCancel();
       }
     },
-    { isActive: isFocused }
+    { isActive: isFocused },
   );
 
   // Get section title for display
@@ -83,7 +83,9 @@ export function PresetSelector({
     <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
       {/* Header */}
       <Box marginBottom={1}>
-        <Text bold color="cyan">Use Preset: {sectionTitle}</Text>
+        <Text bold color="cyan">
+          Use Preset: {sectionTitle}
+        </Text>
       </Box>
 
       {/* Description */}
@@ -102,9 +104,7 @@ export function PresetSelector({
           <Box key={preset.id} flexDirection="column">
             <Box>
               {/* Selection indicator */}
-              <Text color={isHighlighted ? "cyan" : undefined}>
-                {isHighlighted ? "▸ " : "  "}
-              </Text>
+              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
               {/* Preset name */}
               <Text
                 bold={isHighlighted}

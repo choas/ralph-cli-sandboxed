@@ -259,15 +259,11 @@ export function Preview({
 
   if (!config || !sectionData || Object.keys(sectionData).length === 0) {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="gray"
-        paddingX={1}
-        width={40}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} width={40}>
         <Box marginBottom={1}>
-          <Text bold color="yellow">JSON Preview</Text>
+          <Text bold color="yellow">
+            JSON Preview
+          </Text>
         </Box>
         <Text dimColor>No data to preview</Text>
       </Box>
@@ -275,16 +271,12 @@ export function Preview({
   }
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="single"
-      borderColor="gray"
-      paddingX={1}
-      width={40}
-    >
+    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} width={40}>
       {/* Header */}
       <Box marginBottom={1} justifyContent="space-between">
-        <Text bold color="yellow">JSON Preview</Text>
+        <Text bold color="yellow">
+          JSON Preview
+        </Text>
         <Text dimColor>{currentSection?.label || selectedSection}</Text>
       </Box>
 
@@ -294,7 +286,7 @@ export function Preview({
           <HighlightedLineComponent key={index} line={line} />
         ))}
         {isOverflowing && (
-          <Text dimColor>  ... ({highlightedLines.length - maxHeight + 1} more lines)</Text>
+          <Text dimColor> ... ({highlightedLines.length - maxHeight + 1} more lines)</Text>
         )}
       </Box>
 

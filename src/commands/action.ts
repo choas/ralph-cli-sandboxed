@@ -1,11 +1,7 @@
 import { spawn } from "child_process";
 import { existsSync } from "fs";
 import { loadConfig, isRunningInContainer } from "../utils/config.js";
-import {
-  getMessagesPath,
-  sendMessage,
-  waitForResponse,
-} from "../utils/message-queue.js";
+import { getMessagesPath, sendMessage, waitForResponse } from "../utils/message-queue.js";
 import { getDefaultActions, getBuiltInActionNames, DaemonAction } from "../utils/daemon-actions.js";
 
 /**
@@ -65,23 +61,27 @@ export async function action(args: string[]): Promise<void> {
       console.log("No actions available.");
       console.log("");
       console.log("Configure actions in .ralph/config.json:");
-      console.log('  {');
+      console.log("  {");
       console.log('    "daemon": {');
       console.log('      "actions": {');
       console.log('        "build": {');
       console.log('          "command": "./scripts/build.sh",');
       console.log('          "description": "Build the project"');
-      console.log('        }');
-      console.log('      }');
-      console.log('    }');
-      console.log('  }');
+      console.log("        }");
+      console.log("      }");
+      console.log("    }");
+      console.log("  }");
     } else {
       console.log("Available actions:");
       console.log("");
 
       // Show built-in actions first
-      const builtInList = actionNames.filter(name => builtInNames.has(name) && !configuredActions[name]);
-      const customList = actionNames.filter(name => !builtInNames.has(name) || configuredActions[name]);
+      const builtInList = actionNames.filter(
+        (name) => builtInNames.has(name) && !configuredActions[name],
+      );
+      const customList = actionNames.filter(
+        (name) => !builtInNames.has(name) || configuredActions[name],
+      );
 
       for (const name of builtInList) {
         const action = allActions[name];
@@ -145,11 +145,7 @@ export async function action(args: string[]): Promise<void> {
 /**
  * Execute action via message queue (when running inside container).
  */
-async function executeViaQueue(
-  actionName: string,
-  args: string[],
-  debug: boolean
-): Promise<void> {
+async function executeViaQueue(actionName: string, args: string[], debug: boolean): Promise<void> {
   const messagesPath = getMessagesPath(true);
 
   if (!existsSync(messagesPath)) {
@@ -166,7 +162,7 @@ async function executeViaQueue(
     messagesPath,
     "sandbox",
     actionName,
-    args.length > 0 ? args : undefined
+    args.length > 0 ? args : undefined,
   );
 
   if (debug) {
@@ -210,16 +206,12 @@ async function executeViaQueue(
 /**
  * Execute action directly on host (when running outside container).
  */
-async function executeDirectly(
-  command: string,
-  args: string[],
-  debug: boolean
-): Promise<void> {
+async function executeDirectly(command: string, args: string[], debug: boolean): Promise<void> {
   return new Promise((resolve, reject) => {
     // Build full command with arguments
     let fullCommand = command;
     if (args.length > 0) {
-      fullCommand = `${command} ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`;
+      fullCommand = `${command} ${args.map((a) => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`;
     }
 
     if (debug) {

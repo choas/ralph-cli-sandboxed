@@ -179,7 +179,17 @@ export function parseCommand(text: string, message: ChatMessage): ChatCommand | 
   if (!trimmed) return null;
 
   // Valid commands
-  const validCommands = ["run", "status", "add", "exec", "stop", "help", "start", "action", "claude"];
+  const validCommands = [
+    "run",
+    "status",
+    "add",
+    "exec",
+    "stop",
+    "help",
+    "start",
+    "action",
+    "claude",
+  ];
 
   // Check for slash command format: /command [args...]
   if (trimmed.startsWith("/")) {
@@ -221,10 +231,7 @@ export function parseCommand(text: string, message: ChatMessage): ChatCommand | 
  * would otherwise be interpreted as HTML tags and cause API errors.
  */
 export function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**
@@ -264,7 +271,7 @@ export function formatStatusForChat(output: string): string {
 export function formatStatusMessage(
   projectName: string,
   status: "running" | "idle" | "completed" | "error",
-  details?: string
+  details?: string,
 ): string {
   const statusIcons: Record<string, string> = {
     running: "[...]",

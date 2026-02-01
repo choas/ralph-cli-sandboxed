@@ -131,7 +131,9 @@ export class TelegramChatClient implements ChatClient {
         this.respondersConfig = config.chat.responders;
         this.responderMatcher = new ResponderMatcher(config.chat.responders);
         if (this.debug) {
-          console.log(`[telegram] Initialized ${Object.keys(config.chat.responders).length} responders`);
+          console.log(
+            `[telegram] Initialized ${Object.keys(config.chat.responders).length} responders`,
+          );
         }
       }
     } catch {
@@ -145,10 +147,7 @@ export class TelegramChatClient implements ChatClient {
   /**
    * Execute a responder and return the result.
    */
-  private async executeResponder(
-    match: ResponderMatch,
-    message: string
-  ): Promise<ResponderResult> {
+  private async executeResponder(match: ResponderMatch, message: string): Promise<ResponderResult> {
     const { responder } = match;
 
     switch (responder.type) {
@@ -174,10 +173,7 @@ export class TelegramChatClient implements ChatClient {
    * Handle a message that might match a responder.
    * Returns true if a responder was matched and executed.
    */
-  private async handleResponderMessage(
-    message: ChatMessage,
-    messageId: number
-  ): Promise<boolean> {
+  private async handleResponderMessage(message: ChatMessage, messageId: number): Promise<boolean> {
     if (!this.responderMatcher) {
       return false;
     }
@@ -292,8 +288,8 @@ export class TelegramChatClient implements ChatClient {
             } else {
               reject(
                 new Error(
-                  `Telegram API error: ${response.description || "Unknown error"} (code: ${response.error_code})`
-                )
+                  `Telegram API error: ${response.description || "Unknown error"} (code: ${response.error_code})`,
+                ),
               );
             }
           } catch (err) {
@@ -381,7 +377,7 @@ export class TelegramChatClient implements ChatClient {
                 }
                 await this.sendMessage(
                   chatId,
-                  `Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`
+                  `Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`,
                 );
               }
             }
@@ -417,7 +413,9 @@ export class TelegramChatClient implements ChatClient {
             chatId,
             senderId: update.message.from ? String(update.message.from.id) : undefined,
             senderName: update.message.from
-              ? [update.message.from.first_name, update.message.from.last_name].filter(Boolean).join(" ")
+              ? [update.message.from.first_name, update.message.from.last_name]
+                  .filter(Boolean)
+                  .join(" ")
               : undefined,
             timestamp: new Date(update.message.date * 1000),
             raw: update,
@@ -444,9 +442,13 @@ export class TelegramChatClient implements ChatClient {
                 console.error(`[telegram] Command handler error: ${err}`);
               }
               // Send error message to chat
-              await this.sendMessage(chatId, `Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`, {
-                replyToMessageId: messageId,
-              });
+              await this.sendMessage(
+                chatId,
+                `Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`,
+                {
+                  replyToMessageId: messageId,
+                },
+              );
             }
             continue; // Command handled, don't process as responder message
           }
@@ -474,7 +476,7 @@ export class TelegramChatClient implements ChatClient {
                 await this.sendMessage(
                   chatId,
                   `Error processing message: ${err instanceof Error ? err.message : "Unknown error"}`,
-                  { replyToMessageId: messageId }
+                  { replyToMessageId: messageId },
                 );
                 continue;
               }
@@ -484,7 +486,7 @@ export class TelegramChatClient implements ChatClient {
               await this.sendMessage(
                 chatId,
                 "I received your message, but no responders are configured. Use /help for available commands.",
-                { replyToMessageId: messageId }
+                { replyToMessageId: messageId },
               );
             }
           }
@@ -511,14 +513,18 @@ export class TelegramChatClient implements ChatClient {
 
     // Verify bot token by calling getMe and store bot info
     try {
-      const me = await this.apiRequest<{ id: number; first_name: string; username?: string }>("getMe");
+      const me = await this.apiRequest<{ id: number; first_name: string; username?: string }>(
+        "getMe",
+      );
       this.botUserId = me.id;
       this.botUsername = me.username || null;
       if (this.debug) {
         console.log(`[telegram] Connected as @${me.username || me.first_name} (ID: ${me.id})`);
       }
     } catch (err) {
-      throw new Error(`Failed to connect to Telegram: ${err instanceof Error ? err.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to connect to Telegram: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
     }
 
     this.connected = true;
@@ -555,7 +561,7 @@ export class TelegramChatClient implements ChatClient {
           text: button.text,
           callback_data: button.callbackData,
           url: button.url,
-        }))
+        })),
       );
       body.reply_markup = { inline_keyboard: inlineKeyboard };
     }

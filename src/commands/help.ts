@@ -208,7 +208,6 @@ CHAT CONFIGURATION:
   Run 'ralph slack setup' in each project directory.
 `;
 
-
 export function help(_args: string[]): void {
   console.log(HELP_TEXT.trim());
 }

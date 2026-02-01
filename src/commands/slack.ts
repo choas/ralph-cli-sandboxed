@@ -106,7 +106,7 @@ function createAppManifest(appName: string): object {
  */
 async function createSlackApp(
   configToken: string,
-  appName: string
+  appName: string,
 ): Promise<{
   appId: string;
   clientId: string;
@@ -119,13 +119,13 @@ async function createSlackApp(
     const response = await fetch("https://slack.com/api/apps.manifest.create", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${configToken}`,
+        Authorization: `Bearer ${configToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ manifest: JSON.stringify(manifest) }),
     });
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       ok: boolean;
       app_id?: string;
       credentials?: {
@@ -265,7 +265,9 @@ async function setupSlack(): Promise<void> {
   // Step 7: Get Channel ID (optional)
   console.log("\nStep 7: Channel Configuration (Optional)\n");
   console.log("For security, you can restrict Ralph to specific channels.");
-  console.log("To get a channel ID: right-click the channel → 'View channel details' → scroll down.\n");
+  console.log(
+    "To get a channel ID: right-click the channel → 'View channel details' → scroll down.\n",
+  );
 
   const channelId = await promptInput("Channel ID to restrict to (leave empty for all): ");
 
@@ -316,7 +318,9 @@ async function setupSlack(): Promise<void> {
       });
       console.log(`✓ Test message sent to channel ${channelId}`);
     } catch (err) {
-      console.error(`\nConnection test failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      console.error(
+        `\nConnection test failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
       console.log("You can test later with: ralph chat test <channel_id>");
     }
   }

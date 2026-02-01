@@ -8,7 +8,7 @@ export interface CliConfig {
   yoloArgs?: string[];
   promptArgs?: string[];
   modelArgs?: string[];
-  fileArgs?: string[];  // Args for including files (e.g., ["--read"] for Aider). If not set, uses @file syntax in prompt.
+  fileArgs?: string[]; // Args for including files (e.g., ["--read"] for Aider). If not set, uses @file syntax in prompt.
 }
 
 /**
@@ -23,10 +23,10 @@ export type LLMProviderType = "anthropic" | "openai" | "ollama";
  * Configuration for a single LLM provider.
  */
 export interface LLMProviderConfig {
-  type: LLMProviderType;          // Provider type
-  model: string;                   // Model name (e.g., "claude-sonnet-4-20250514", "gpt-4o", "llama3")
-  apiKey?: string;                 // API key (optional - falls back to env var if not set)
-  baseUrl?: string;                // Base URL for API (optional - uses default if not set)
+  type: LLMProviderType; // Provider type
+  model: string; // Model name (e.g., "claude-sonnet-4-20250514", "gpt-4o", "llama3")
+  apiKey?: string; // API key (optional - falls back to env var if not set)
+  baseUrl?: string; // Base URL for API (optional - uses default if not set)
 }
 
 /**
@@ -52,43 +52,43 @@ export interface SkillConfig {
   name: string;
   description: string;
   instructions: string;
-  userInvocable?: boolean;  // defaults to true
+  userInvocable?: boolean; // defaults to true
 }
 
 export interface StreamJsonConfig {
-  enabled: boolean;           // Use --output-format stream-json with Claude
-  saveRawJson?: boolean;      // Save raw JSON output alongside recording (default: true)
+  enabled: boolean; // Use --output-format stream-json with Claude
+  saveRawJson?: boolean; // Save raw JSON output alongside recording (default: true)
 }
 
 export interface AsciinemaConfig {
-  enabled: boolean;           // Install asciinema in Docker container
-  autoRecord?: boolean;       // Auto-start recording on container start
-  outputDir?: string;         // Directory for recordings (default: .recordings)
-  streamJson?: StreamJsonConfig;  // Stream JSON output for cleaner recordings
+  enabled: boolean; // Install asciinema in Docker container
+  autoRecord?: boolean; // Auto-start recording on container start
+  outputDir?: string; // Directory for recordings (default: .recordings)
+  streamJson?: StreamJsonConfig; // Stream JSON output for cleaner recordings
 }
 
 export interface DaemonActionConfig {
-  command: string;            // Command to execute on host
-  description?: string;       // Human-readable description of the action
+  command: string; // Command to execute on host
+  description?: string; // Human-readable description of the action
 }
 
 // Notification provider configs - support arbitrary key-value pairs for flexibility
 export interface NotificationProviderConfig {
-  [key: string]: string | undefined;  // Arbitrary key-value pairs (e.g., topic, server, token)
+  [key: string]: string | undefined; // Arbitrary key-value pairs (e.g., topic, server, token)
 }
 
 // Legacy interface for backwards compatibility
 export interface NtfyNotificationConfig {
-  topic: string;              // ntfy topic name (required)
-  server?: string;            // ntfy server URL (default: https://ntfy.sh)
+  topic: string; // ntfy topic name (required)
+  server?: string; // ntfy server URL (default: https://ntfy.sh)
 }
 
 export interface NotificationsConfig {
-  provider: "ntfy" | "pushover" | "gotify" | "command";  // Which notification provider to use
-  ntfy?: NotificationProviderConfig;      // ntfy config (topic, server, etc.)
-  pushover?: NotificationProviderConfig;  // pushover config (user, token, etc.)
-  gotify?: NotificationProviderConfig;    // gotify config (server, token, etc.)
-  command?: string;                       // Custom command (for "command" provider)
+  provider: "ntfy" | "pushover" | "gotify" | "command"; // Which notification provider to use
+  ntfy?: NotificationProviderConfig; // ntfy config (topic, server, etc.)
+  pushover?: NotificationProviderConfig; // pushover config (user, token, etc.)
+  gotify?: NotificationProviderConfig; // gotify config (server, token, etc.)
+  command?: string; // Custom command (for "command" provider)
 }
 
 /**
@@ -99,43 +99,43 @@ export interface NotificationsConfig {
  * - error: Fired when an error occurs
  */
 export type DaemonEventType =
-  | "task_complete"      // After each task finishes
-  | "ralph_complete"     // When ralph finishes all work
+  | "task_complete" // After each task finishes
+  | "ralph_complete" // When ralph finishes all work
   | "iteration_complete" // After each iteration
-  | "error";             // When an error occurs
+  | "error"; // When an error occurs
 
 export interface DaemonEventConfig {
-  action: string;             // Name of the daemon action to call (must exist in actions)
-  args?: string[];            // Additional arguments to pass to the action
-  message?: string;           // Custom message (can include {{task}} placeholder for task_complete)
+  action: string; // Name of the daemon action to call (must exist in actions)
+  args?: string[]; // Additional arguments to pass to the action
+  message?: string; // Custom message (can include {{task}} placeholder for task_complete)
 }
 
 export interface DaemonConfig {
-  enabled?: boolean;          // Enable daemon support (default: true if actions defined)
-  socketPath?: string;        // Deprecated - file-based messaging now used
-  actions?: Record<string, DaemonActionConfig>;  // Custom actions the sandbox can trigger
-  events?: Partial<Record<DaemonEventType, DaemonEventConfig[]>>;  // Event handlers - each event can have multiple daemon calls
+  enabled?: boolean; // Enable daemon support (default: true if actions defined)
+  socketPath?: string; // Deprecated - file-based messaging now used
+  actions?: Record<string, DaemonActionConfig>; // Custom actions the sandbox can trigger
+  events?: Partial<Record<DaemonEventType, DaemonEventConfig[]>>; // Event handlers - each event can have multiple daemon calls
 }
 
 export interface TelegramChatSettings {
-  enabled?: boolean;          // Enable/disable Telegram (default: true if botToken set)
-  botToken: string;           // Telegram Bot API token (from @BotFather)
-  allowedChatIds?: string[];  // Only respond in these chat IDs (security)
+  enabled?: boolean; // Enable/disable Telegram (default: true if botToken set)
+  botToken: string; // Telegram Bot API token (from @BotFather)
+  allowedChatIds?: string[]; // Only respond in these chat IDs (security)
 }
 
 export interface SlackChatSettings {
-  enabled?: boolean;          // Enable/disable Slack (default: true if tokens set)
-  botToken: string;           // Slack Bot Token (xoxb-...) for Web API calls
-  appToken: string;           // Slack App Token (xapp-...) for Socket Mode connection
-  signingSecret: string;      // Slack Signing Secret for verifying requests
-  allowedChannelIds?: string[];  // Only respond in these channel IDs (security)
+  enabled?: boolean; // Enable/disable Slack (default: true if tokens set)
+  botToken: string; // Slack Bot Token (xoxb-...) for Web API calls
+  appToken: string; // Slack App Token (xapp-...) for Socket Mode connection
+  signingSecret: string; // Slack Signing Secret for verifying requests
+  allowedChannelIds?: string[]; // Only respond in these channel IDs (security)
 }
 
 export interface DiscordChatSettings {
-  enabled?: boolean;          // Enable/disable Discord (default: true if botToken set)
-  botToken: string;           // Discord Bot Token (from Developer Portal)
+  enabled?: boolean; // Enable/disable Discord (default: true if botToken set)
+  botToken: string; // Discord Bot Token (from Developer Portal)
   allowedGuildIds?: string[]; // Only respond in these guild/server IDs (security)
-  allowedChannelIds?: string[];  // Only respond in these channel IDs (security)
+  allowedChannelIds?: string[]; // Only respond in these channel IDs (security)
 }
 
 /**
@@ -151,13 +151,13 @@ export type ResponderType = "llm" | "claude-code" | "cli";
  * Responders handle incoming chat messages based on trigger patterns.
  */
 export interface ResponderConfig {
-  type: ResponderType;              // How to process the message
-  trigger?: string;                 // Trigger pattern: '@name' for mentions, 'keyword' for prefix. Omit for default responder.
-  provider?: string;                // LLM provider name (for type: 'llm'). References llmProviders config.
-  systemPrompt?: string;            // System prompt for LLM (supports {{project}} placeholder)
-  command?: string;                 // CLI command (for type: 'cli'). Supports {{message}} placeholder.
-  timeout?: number;                 // Timeout in milliseconds (default: 300000 for claude-code, 60000 for others)
-  maxLength?: number;               // Max response length to send back to chat (default: 2000)
+  type: ResponderType; // How to process the message
+  trigger?: string; // Trigger pattern: '@name' for mentions, 'keyword' for prefix. Omit for default responder.
+  provider?: string; // LLM provider name (for type: 'llm'). References llmProviders config.
+  systemPrompt?: string; // System prompt for LLM (supports {{project}} placeholder)
+  command?: string; // CLI command (for type: 'cli'). Supports {{message}} placeholder.
+  timeout?: number; // Timeout in milliseconds (default: 300000 for claude-code, 60000 for others)
+  maxLength?: number; // Max response length to send back to chat (default: 2000)
 }
 
 /**
@@ -175,12 +175,12 @@ export interface ResponderConfig {
 export type RespondersConfig = Record<string, ResponderConfig>;
 
 export interface ChatConfig {
-  enabled?: boolean;          // Enable chat client integration
-  provider?: "telegram" | "slack" | "discord";  // Chat provider
-  telegram?: TelegramChatSettings;  // Telegram-specific settings
-  slack?: SlackChatSettings;        // Slack-specific settings
-  discord?: DiscordChatSettings;    // Discord-specific settings
-  responders?: RespondersConfig;    // Chat responders for handling messages
+  enabled?: boolean; // Enable chat client integration
+  provider?: "telegram" | "slack" | "discord"; // Chat provider
+  telegram?: TelegramChatSettings; // Telegram-specific settings
+  slack?: SlackChatSettings; // Slack-specific settings
+  discord?: DiscordChatSettings; // Discord-specific settings
+  responders?: RespondersConfig; // Chat responders for handling messages
 }
 
 export interface RalphConfig {
@@ -188,13 +188,13 @@ export interface RalphConfig {
   checkCommand: string;
   testCommand: string;
   imageName?: string;
-  notifyCommand?: string;     // Deprecated - use notifications instead
+  notifyCommand?: string; // Deprecated - use notifications instead
   notifications?: NotificationsConfig;
   technologies?: string[];
   javaVersion?: number;
   cli?: CliConfig;
   cliProvider?: string;
-  llmProviders?: LLMProvidersConfig;  // Named LLM providers for chat responders
+  llmProviders?: LLMProvidersConfig; // Named LLM providers for chat responders
   docker?: {
     ports?: string[];
     volumes?: string[];
@@ -213,8 +213,8 @@ export interface RalphConfig {
     firewall?: {
       allowedDomains?: string[];
     };
-    autoStart?: boolean;  // Automatically restart container when Docker/Podman starts
-    restartCount?: number;  // Max restart attempts on failure (uses on-failure policy). 0 = no restart, >0 = max retries
+    autoStart?: boolean; // Automatically restart container when Docker/Podman starts
+    restartCount?: number; // Max restart attempts on failure (uses on-failure policy). 0 = no restart, >0 = max retries
   };
   claude?: {
     mcpServers?: Record<string, McpServerConfig>;
@@ -348,7 +348,12 @@ export function isRunningInContainer(): boolean {
   // Check /proc/1/cgroup for container hints (works for Docker and Podman)
   try {
     const cgroup = readFileSync("/proc/1/cgroup", "utf-8");
-    if (cgroup.includes("docker") || cgroup.includes("podman") || cgroup.includes("/lxc/") || cgroup.includes("containerd")) {
+    if (
+      cgroup.includes("docker") ||
+      cgroup.includes("podman") ||
+      cgroup.includes("/lxc/") ||
+      cgroup.includes("containerd")
+    ) {
       return true;
     }
   } catch {
@@ -370,7 +375,9 @@ export function requireContainer(commandName: string): void {
   if (!isRunningInContainer()) {
     console.error(`Error: 'ralph ${commandName}' must be run inside a Docker/Podman container.`);
     console.error("");
-    console.error("For security, ralph executes AI agents only in isolated container environments.");
+    console.error(
+      "For security, ralph executes AI agents only in isolated container environments.",
+    );
     console.error("");
     console.error("To set up a container:");
     console.error("  ralph docker init    # Generate Docker configuration files");

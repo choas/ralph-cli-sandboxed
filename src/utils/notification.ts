@@ -1,5 +1,10 @@
 import { spawn } from "child_process";
-import { isRunningInContainer, DaemonEventType, DaemonEventConfig, DaemonConfig } from "./config.js";
+import {
+  isRunningInContainer,
+  DaemonEventType,
+  DaemonEventConfig,
+  DaemonConfig,
+} from "./config.js";
 import { isDaemonAvailable, sendDaemonNotification, sendDaemonRequest } from "./daemon-client.js";
 
 export interface NotificationOptions {
@@ -18,11 +23,11 @@ export interface NotificationOptions {
 }
 
 export type NotificationEvent =
-  | "prd_complete"      // All PRD tasks finished
+  | "prd_complete" // All PRD tasks finished
   | "iteration_complete" // Single iteration finished (ralph once)
-  | "run_stopped"       // Ralph run stopped (max failures, no progress, etc.)
-  | "task_complete"     // A single task completed
-  | "error";            // An error occurred
+  | "run_stopped" // Ralph run stopped (max failures, no progress, etc.)
+  | "task_complete" // A single task completed
+  | "error"; // An error occurred
 
 /**
  * Send a notification using the configured notify command.
@@ -42,7 +47,7 @@ export type NotificationEvent =
 export async function sendNotification(
   event: NotificationEvent,
   message?: string,
-  options?: NotificationOptions
+  options?: NotificationOptions,
 ): Promise<void> {
   const { command, debug, useDaemon } = options ?? {};
 
@@ -78,7 +83,9 @@ export async function sendNotification(
       }
     } catch (err) {
       if (debug) {
-        console.error(`[notification] Daemon error: ${err instanceof Error ? err.message : "unknown"}`);
+        console.error(
+          `[notification] Daemon error: ${err instanceof Error ? err.message : "unknown"}`,
+        );
         console.error("[notification] Falling back to direct command");
       }
     }
@@ -131,8 +138,7 @@ export async function sendNotification(
  * Useful for creating a reusable notifier within a command.
  */
 export function createNotifier(options: NotificationOptions) {
-  return (event: NotificationEvent, message?: string) =>
-    sendNotification(event, message, options);
+  return (event: NotificationEvent, message?: string) => sendNotification(event, message, options);
 }
 
 /**
@@ -166,7 +172,7 @@ function mapEventToDaemonEvent(event: NotificationEvent): DaemonEventType | null
 export async function triggerDaemonEvents(
   event: DaemonEventType,
   options?: NotificationOptions,
-  context?: { taskName?: string; errorMessage?: string }
+  context?: { taskName?: string; errorMessage?: string },
 ): Promise<void> {
   const { daemonConfig, debug } = options ?? {};
 
@@ -210,7 +216,9 @@ export async function triggerDaemonEvents(
       }
 
       if (debug) {
-        console.error(`[daemon-events] Triggering ${event}: action=${handler.action}, args=${JSON.stringify(args)}`);
+        console.error(
+          `[daemon-events] Triggering ${event}: action=${handler.action}, args=${JSON.stringify(args)}`,
+        );
       }
 
       const response = await sendDaemonRequest(handler.action, args);
@@ -224,7 +232,9 @@ export async function triggerDaemonEvents(
       }
     } catch (err) {
       if (debug) {
-        console.error(`[daemon-events] Error executing action ${handler.action}: ${err instanceof Error ? err.message : "unknown"}`);
+        console.error(
+          `[daemon-events] Error executing action ${handler.action}: ${err instanceof Error ? err.message : "unknown"}`,
+        );
       }
       // Continue with other handlers even if one fails
     }
@@ -242,7 +252,7 @@ export async function triggerDaemonEvents(
 export async function sendNotificationWithDaemonEvents(
   event: NotificationEvent,
   message?: string,
-  options?: NotificationOptions
+  options?: NotificationOptions,
 ): Promise<void> {
   // Send the regular notification
   await sendNotification(event, message, options);

@@ -8,7 +8,7 @@ import type { RalphConfig } from "./config.js";
 export interface DaemonAction {
   command: string;
   description?: string;
-  ntfyUrl?: string;  // Special case for ntfy provider - curl target URL
+  ntfyUrl?: string; // Special case for ntfy provider - curl target URL
 }
 
 /**
@@ -57,7 +57,7 @@ export function getDefaultActions(config: RalphConfig): Record<string, DaemonAct
     const server = config.notifications.ntfy.server || "https://ntfy.sh";
     const topic = config.notifications.ntfy.topic;
     actions.notify = {
-      command: "curl",  // Placeholder - ntfyUrl triggers special handling
+      command: "curl", // Placeholder - ntfyUrl triggers special handling
       description: `Send notification via ntfy to ${topic}`,
       ntfyUrl: `${server}/${topic}`,
     };
@@ -77,7 +77,7 @@ export function getDefaultActions(config: RalphConfig): Record<string, DaemonAct
   // Add telegram_notify action if Telegram is enabled
   if (isTelegramEnabled(config)) {
     actions.telegram_notify = {
-      command: "__telegram__",  // Special marker for Telegram handling
+      command: "__telegram__", // Special marker for Telegram handling
       description: "Send notification via Telegram",
     };
   }
@@ -85,7 +85,7 @@ export function getDefaultActions(config: RalphConfig): Record<string, DaemonAct
   // Add slack_notify action if Slack is enabled
   if (isSlackEnabled(config)) {
     actions.slack_notify = {
-      command: "__slack__",  // Special marker for Slack handling
+      command: "__slack__", // Special marker for Slack handling
       description: "Send notification via Slack",
     };
   }
@@ -93,7 +93,7 @@ export function getDefaultActions(config: RalphConfig): Record<string, DaemonAct
   // Add discord_notify action if Discord is enabled
   if (isDiscordEnabled(config)) {
     actions.discord_notify = {
-      command: "__discord__",  // Special marker for Discord handling
+      command: "__discord__", // Special marker for Discord handling
       description: "Send notification via Discord",
     };
   }

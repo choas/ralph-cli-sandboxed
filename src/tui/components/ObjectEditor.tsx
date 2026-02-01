@@ -206,7 +206,7 @@ export function ObjectEditor({
         onConfirm(editEntries);
       }
     },
-    { isActive: isFocused && mode === "list" }
+    { isActive: isFocused && mode === "list" },
   );
 
   // Handle keyboard input for text editing modes
@@ -218,7 +218,7 @@ export function ObjectEditor({
         handleTextCancel();
       }
     },
-    { isActive: isFocused && mode !== "list" }
+    { isActive: isFocused && mode !== "list" },
   );
 
   // Calculate visible items based on scroll offset
@@ -239,7 +239,9 @@ export function ObjectEditor({
       <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         {/* Header */}
         <Box marginBottom={1}>
-          <Text bold color="cyan">Add New Entry - Enter Key</Text>
+          <Text bold color="cyan">
+            Add New Entry - Enter Key
+          </Text>
         </Box>
 
         {/* Input field */}
@@ -304,10 +306,15 @@ export function ObjectEditor({
     <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
       {/* Header */}
       <Box marginBottom={1}>
-        <Text bold color="cyan">Edit: {label}</Text>
+        <Text bold color="cyan">
+          Edit: {label}
+        </Text>
         <Text dimColor> ({keys.length} entries)</Text>
         {hasOverflow && (
-          <Text dimColor> [{highlightedIndex + 1}/{totalOptions}]</Text>
+          <Text dimColor>
+            {" "}
+            [{highlightedIndex + 1}/{totalOptions}]
+          </Text>
         )}
       </Box>
 
@@ -323,7 +330,9 @@ export function ObjectEditor({
       {/* Visible entries list */}
       {keys.length === 0 && scrollOffset === 0 ? (
         <Box marginBottom={1}>
-          <Text dimColor italic>No entries</Text>
+          <Text dimColor italic>
+            No entries
+          </Text>
         </Box>
       ) : (
         visibleItems.map((key, visibleIndex) => {
@@ -363,9 +372,7 @@ export function ObjectEditor({
                   {isHighlighted ? "▸ " : "  "}
                 </Text>
                 {/* Expand indicator */}
-                <Text dimColor>
-                  {isExpanded ? "▼ " : "▶ "}
-                </Text>
+                <Text dimColor>{isExpanded ? "▼ " : "▶ "}</Text>
                 {/* Key name */}
                 <Text
                   bold={isHighlighted}

@@ -4,8 +4,8 @@ import type { RalphConfig } from "../../utils/config.js";
  * Validation error for a specific field.
  */
 export interface ValidationError {
-  field: string;        // Dot notation path: "language", "docker.ports[0]"
-  message: string;      // Human readable error
+  field: string; // Dot notation path: "language", "docker.ports[0]"
+  message: string; // Human readable error
   type: "required" | "format" | "pattern";
 }
 

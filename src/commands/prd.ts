@@ -276,7 +276,12 @@ export function parseListArgs(args: string[]): { category?: string; passesFilter
       }
     } else if (args[i] === "--passes" || args[i] === "--passed") {
       passesFilter = true;
-    } else if (args[i] === "--no-passes" || args[i] === "--no-passed" || args[i] === "--not-passed" || args[i] === "--not-passes") {
+    } else if (
+      args[i] === "--no-passes" ||
+      args[i] === "--no-passed" ||
+      args[i] === "--not-passed" ||
+      args[i] === "--not-passes"
+    ) {
       passesFilter = false;
     }
   }
@@ -318,7 +323,9 @@ export async function prd(args: string[]): Promise<void> {
       console.error("  add                         Add a new PRD entry");
       console.error("  list [options]              List all PRD entries");
       console.error("  status                      Show completion status");
-      console.error("  toggle <n> ...              Toggle passes status for entry n (accepts multiple)");
+      console.error(
+        "  toggle <n> ...              Toggle passes status for entry n (accepts multiple)",
+      );
       console.error("  toggle --all                Toggle all PRD entries");
       console.error("  clean                       Remove all passing entries from the PRD");
       console.error("\nList options:");

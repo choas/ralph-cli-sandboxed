@@ -50,14 +50,16 @@ export function StringEditor({
         onCancel();
       }
     },
-    { isActive: isFocused }
+    { isActive: isFocused },
   );
 
   return (
     <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
       {/* Header */}
       <Box marginBottom={1}>
-        <Text bold color="cyan">Edit: {label}</Text>
+        <Text bold color="cyan">
+          Edit: {label}
+        </Text>
       </Box>
 
       {/* Input field */}

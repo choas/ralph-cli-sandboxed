@@ -29,12 +29,14 @@ type SlackWebClient = any;
 
 // Dynamic imports for @slack/bolt and @slack/web-api
 // These packages may not be installed in all environments
-let AppConstructor: (new (options: {
-  token: string;
-  appToken: string;
-  signingSecret: string;
-  socketMode: boolean;
-}) => SlackApp) | null = null;
+let AppConstructor:
+  | (new (options: {
+      token: string;
+      appToken: string;
+      signingSecret: string;
+      socketMode: boolean;
+    }) => SlackApp)
+  | null = null;
 let WebClientConstructor: (new (token: string) => SlackWebClient) | null = null;
 
 async function loadSlackModules(): Promise<boolean> {
@@ -94,7 +96,7 @@ type SlackBlock = SlackActionsBlock | SlackSectionBlock;
  */
 export type ResponderHandler = (
   match: ResponderMatch,
-  message: ChatMessage
+  message: ChatMessage,
 ) => Promise<string | null>;
 
 export class SlackChatClient implements ChatClient {
@@ -129,7 +131,9 @@ export class SlackChatClient implements ChatClient {
         this.respondersConfig = config.chat.responders;
         this.responderMatcher = new ResponderMatcher(config.chat.responders);
         if (this.debug) {
-          console.log(`[slack] Initialized ${Object.keys(config.chat.responders).length} responders`);
+          console.log(
+            `[slack] Initialized ${Object.keys(config.chat.responders).length} responders`,
+          );
         }
       }
     } catch {
@@ -143,10 +147,7 @@ export class SlackChatClient implements ChatClient {
   /**
    * Execute a responder and return the result.
    */
-  private async executeResponder(
-    match: ResponderMatch,
-    message: string
-  ): Promise<ResponderResult> {
+  private async executeResponder(match: ResponderMatch, message: string): Promise<ResponderResult> {
     const { responder } = match;
 
     switch (responder.type) {
@@ -175,7 +176,7 @@ export class SlackChatClient implements ChatClient {
   private async handleResponderMessage(
     message: ChatMessage,
     say: (options: { text: string; thread_ts?: string }) => Promise<unknown>,
-    threadTs?: string
+    threadTs?: string,
   ): Promise<boolean> {
     if (!this.responderMatcher) {
       return false;
@@ -271,144 +272,43 @@ export class SlackChatClient implements ChatClient {
 
     // Handle app_mention events (when someone @mentions the bot)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.app.event("app_mention", async ({ event, say }: { event: any; say: (options: string | { text: string; thread_ts?: string }) => Promise<unknown> }) => {
-      if (this.debug) {
-        console.log(`[slack] Received app_mention in channel ${event.channel}`);
-      }
-
-      const channelId = event.channel as string;
-
-      // Check if channel is allowed
-      if (!this.isChannelAllowed(channelId)) {
+    this.app.event(
+      "app_mention",
+      async ({
+        event,
+        say,
+      }: {
+        event: any;
+        say: (options: string | { text: string; thread_ts?: string }) => Promise<unknown>;
+      }) => {
         if (this.debug) {
-          console.log(`[slack] Ignoring mention from unauthorized channel: ${channelId}`);
+          console.log(`[slack] Received app_mention in channel ${event.channel}`);
         }
-        return;
-      }
 
-      // Remove the bot mention from the message text
-      const cleanedText = this.removeBotMention(event.text || "");
+        const channelId = event.channel as string;
 
-      const chatMessage = this.toMessage({
-        text: cleanedText,
-        channel: channelId,
-        user: event.user,
-        ts: event.ts || String(Date.now() / 1000),
-      });
-
-      // Get thread_ts for reply context (use parent thread or message ts)
-      const threadTs = event.thread_ts || event.ts;
-
-      // Try responder matching first
-      try {
-        const handled = await this.handleResponderMessage(
-          chatMessage,
-          async (opts) => {
-            if (typeof opts === "string") {
-              await say({ text: opts, thread_ts: threadTs });
-            } else {
-              await say({ ...opts, thread_ts: threadTs });
-            }
-          },
-          threadTs
-        );
-        if (handled) {
+        // Check if channel is allowed
+        if (!this.isChannelAllowed(channelId)) {
+          if (this.debug) {
+            console.log(`[slack] Ignoring mention from unauthorized channel: ${channelId}`);
+          }
           return;
         }
-      } catch (err) {
-        if (this.debug) {
-          console.error(`[slack] Responder error: ${err}`);
-        }
-        await say({
-          text: `Error processing message: ${err instanceof Error ? err.message : "Unknown error"}`,
-          thread_ts: threadTs,
+
+        // Remove the bot mention from the message text
+        const cleanedText = this.removeBotMention(event.text || "");
+
+        const chatMessage = this.toMessage({
+          text: cleanedText,
+          channel: channelId,
+          user: event.user,
+          ts: event.ts || String(Date.now() / 1000),
         });
-        return;
-      }
 
-      // If no responder matched and no default responder, reply with help
-      if (!this.responderMatcher?.hasDefaultResponder()) {
-        await say({
-          text: "I received your message, but no responders are configured. Use /ralph for commands.",
-          thread_ts: threadTs,
-        });
-      }
-    });
+        // Get thread_ts for reply context (use parent thread or message ts)
+        const threadTs = event.thread_ts || event.ts;
 
-    // Handle all messages (including DMs and channel messages)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.app.message(async ({ message, say }: { message: any; say: (options: string | { text: string; thread_ts?: string }) => Promise<unknown> }) => {
-      // Type guard for message with text
-      if (!message.text) return;
-      if (!message.channel) return;
-
-      // Ignore bot messages to prevent loops
-      if (message.bot_id || message.subtype === "bot_message") {
-        return;
-      }
-
-      const channelId = message.channel as string;
-
-      // Check if channel is allowed
-      if (!this.isChannelAllowed(channelId)) {
-        if (this.debug) {
-          console.log(`[slack] Ignoring message from unauthorized channel: ${channelId}`);
-        }
-        return;
-      }
-
-      // Get thread_ts for reply context (use parent thread or message ts)
-      const threadTs = message.thread_ts || message.ts;
-
-      // Check if this is a bot mention - if so, process it
-      const isMention = this.isBotMentioned(message.text);
-
-      // Create chat message
-      let messageText = message.text;
-      if (isMention) {
-        messageText = this.removeBotMention(message.text);
-      }
-
-      const chatMessage = this.toMessage({
-        text: messageText,
-        channel: channelId,
-        user: message.user,
-        ts: message.ts || String(Date.now() / 1000),
-      });
-
-      // Call raw message handler if provided
-      if (this.onMessage) {
-        try {
-          await this.onMessage(chatMessage);
-        } catch (err) {
-          if (this.debug) {
-            console.error(`[slack] Message handler error: ${err}`);
-          }
-        }
-      }
-
-      // Try to parse as a command first
-      const command = parseCommand(chatMessage.text, chatMessage);
-      if (command && this.onCommand) {
-        try {
-          await this.onCommand(command);
-          return; // Command handled, don't process as responder message
-        } catch (err) {
-          if (this.debug) {
-            console.error(`[slack] Command handler error: ${err}`);
-          }
-          // Send error message to channel
-          await say({
-            text: `Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`,
-            thread_ts: threadTs,
-          });
-          return;
-        }
-      }
-
-      // If message contains a bot mention or responders are configured,
-      // try to route through responder matching
-      if (isMention || this.responderMatcher?.hasDefaultResponder()) {
+        // Try responder matching first
         try {
           const handled = await this.handleResponderMessage(
             chatMessage,
@@ -419,7 +319,7 @@ export class SlackChatClient implements ChatClient {
                 await say({ ...opts, thread_ts: threadTs });
               }
             },
-            threadTs
+            threadTs,
           );
           if (handled) {
             return;
@@ -428,16 +328,134 @@ export class SlackChatClient implements ChatClient {
           if (this.debug) {
             console.error(`[slack] Responder error: ${err}`);
           }
-          if (isMention) {
-            // Only reply with error if this was a direct mention
-            await say({
-              text: `Error processing message: ${err instanceof Error ? err.message : "Unknown error"}`,
-              thread_ts: threadTs,
-            });
+          await say({
+            text: `Error processing message: ${err instanceof Error ? err.message : "Unknown error"}`,
+            thread_ts: threadTs,
+          });
+          return;
+        }
+
+        // If no responder matched and no default responder, reply with help
+        if (!this.responderMatcher?.hasDefaultResponder()) {
+          await say({
+            text: "I received your message, but no responders are configured. Use /ralph for commands.",
+            thread_ts: threadTs,
+          });
+        }
+      },
+    );
+
+    // Handle all messages (including DMs and channel messages)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.app.message(
+      async ({
+        message,
+        say,
+      }: {
+        message: any;
+        say: (options: string | { text: string; thread_ts?: string }) => Promise<unknown>;
+      }) => {
+        // Type guard for message with text
+        if (!message.text) return;
+        if (!message.channel) return;
+
+        // Ignore bot messages to prevent loops
+        if (message.bot_id || message.subtype === "bot_message") {
+          return;
+        }
+
+        const channelId = message.channel as string;
+
+        // Check if channel is allowed
+        if (!this.isChannelAllowed(channelId)) {
+          if (this.debug) {
+            console.log(`[slack] Ignoring message from unauthorized channel: ${channelId}`);
+          }
+          return;
+        }
+
+        // Get thread_ts for reply context (use parent thread or message ts)
+        const threadTs = message.thread_ts || message.ts;
+
+        // Check if this is a bot mention - if so, process it
+        const isMention = this.isBotMentioned(message.text);
+
+        // Create chat message
+        let messageText = message.text;
+        if (isMention) {
+          messageText = this.removeBotMention(message.text);
+        }
+
+        const chatMessage = this.toMessage({
+          text: messageText,
+          channel: channelId,
+          user: message.user,
+          ts: message.ts || String(Date.now() / 1000),
+        });
+
+        // Call raw message handler if provided
+        if (this.onMessage) {
+          try {
+            await this.onMessage(chatMessage);
+          } catch (err) {
+            if (this.debug) {
+              console.error(`[slack] Message handler error: ${err}`);
+            }
           }
         }
-      }
-    });
+
+        // Try to parse as a command first
+        const command = parseCommand(chatMessage.text, chatMessage);
+        if (command && this.onCommand) {
+          try {
+            await this.onCommand(command);
+            return; // Command handled, don't process as responder message
+          } catch (err) {
+            if (this.debug) {
+              console.error(`[slack] Command handler error: ${err}`);
+            }
+            // Send error message to channel
+            await say({
+              text: `Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`,
+              thread_ts: threadTs,
+            });
+            return;
+          }
+        }
+
+        // If message contains a bot mention or responders are configured,
+        // try to route through responder matching
+        if (isMention || this.responderMatcher?.hasDefaultResponder()) {
+          try {
+            const handled = await this.handleResponderMessage(
+              chatMessage,
+              async (opts) => {
+                if (typeof opts === "string") {
+                  await say({ text: opts, thread_ts: threadTs });
+                } else {
+                  await say({ ...opts, thread_ts: threadTs });
+                }
+              },
+              threadTs,
+            );
+            if (handled) {
+              return;
+            }
+          } catch (err) {
+            if (this.debug) {
+              console.error(`[slack] Responder error: ${err}`);
+            }
+            if (isMention) {
+              // Only reply with error if this was a direct mention
+              await say({
+                text: `Error processing message: ${err instanceof Error ? err.message : "Unknown error"}`,
+                thread_ts: threadTs,
+              });
+            }
+          }
+        }
+      },
+    );
 
     // Handle the unified /ralph command
     // Subcommands: help, status, run, stop, add, exec, action
@@ -451,9 +469,19 @@ export class SlackChatClient implements ChatClient {
     this.app.command(
       "/ralph",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async ({ command, ack, respond }: { command: any; ack: () => Promise<void>; respond: (text: string) => Promise<void> }) => {
+      async ({
+        command,
+        ack,
+        respond,
+      }: {
+        command: any;
+        ack: () => Promise<void>;
+        respond: (text: string) => Promise<void>;
+      }) => {
         if (this.debug) {
-          console.log(`[slack] Received: /ralph ${command.text} from channel ${command.channel_id}`);
+          console.log(
+            `[slack] Received: /ralph ${command.text} from channel ${command.channel_id}`,
+          );
         }
         // Acknowledge the command immediately
         await ack();
@@ -516,14 +544,24 @@ export class SlackChatClient implements ChatClient {
             await respond(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
           }
         }
-      }
+      },
     );
 
     // Handle button actions (Block Kit interactive components)
     this.app.action(
       /^ralph_action_.*/,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async ({ action, ack, body, respond }: { action: any; ack: () => Promise<void>; body: any; respond: (text: string) => Promise<void> }) => {
+      async ({
+        action,
+        ack,
+        body,
+        respond,
+      }: {
+        action: any;
+        ack: () => Promise<void>;
+        body: any;
+        respond: (text: string) => Promise<void>;
+      }) => {
         await ack();
 
         if (!action.value) return;
@@ -563,7 +601,7 @@ export class SlackChatClient implements ChatClient {
             await respond(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
           }
         }
-      }
+      },
     );
   }
 
@@ -577,7 +615,7 @@ export class SlackChatClient implements ChatClient {
     if (!loaded || !AppConstructor || !WebClientConstructor) {
       throw new Error(
         "Failed to load Slack modules. Make sure @slack/bolt and @slack/web-api are installed:\n" +
-        "  npm install @slack/bolt @slack/web-api"
+          "  npm install @slack/bolt @slack/web-api",
       );
     }
 
@@ -611,7 +649,9 @@ export class SlackChatClient implements ChatClient {
 
       this.connected = true;
     } catch (err) {
-      throw new Error(`Failed to connect to Slack: ${err instanceof Error ? err.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to connect to Slack: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
     }
   }
 

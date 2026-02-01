@@ -19,11 +19,7 @@ import {
   formatStatusMessage,
   formatStatusForChat,
 } from "../utils/chat-client.js";
-import {
-  getMessagesPath,
-  sendMessage,
-  waitForResponse,
-} from "../utils/message-queue.js";
+import { getMessagesPath, sendMessage, waitForResponse } from "../utils/message-queue.js";
 
 const CHAT_STATE_FILE = "chat-state.json";
 
@@ -221,7 +217,7 @@ async function sendToSandbox(
   action: string,
   args: string[],
   debug: boolean,
-  timeout: number = 60000
+  timeout: number = 60000,
 ): Promise<{ success: boolean; output?: string; error?: string } | null> {
   const messagesPath = getMessagesPath(false); // host path
 
@@ -247,7 +243,7 @@ async function handleCommand(
   client: ChatClient,
   config: RalphConfig,
   state: ChatState,
-  debug: boolean
+  debug: boolean,
 ): Promise<void> {
   const { command: cmd, args, message } = command;
   const chatId = message.chatId;
@@ -264,14 +260,17 @@ async function handleCommand(
       // Check PRD status first (from host)
       const prdStatus = getPrdStatus();
       if (prdStatus.incomplete === 0) {
-        await client.sendMessage(chatId, `${state.projectName}: All tasks already complete (${prdStatus.complete}/${prdStatus.total})`);
+        await client.sendMessage(
+          chatId,
+          `${state.projectName}: All tasks already complete (${prdStatus.complete}/${prdStatus.total})`,
+        );
         return;
       }
 
       const categoryInfo = category ? ` (category: ${category})` : "";
       await client.sendMessage(
         chatId,
-        `${state.projectName}: Starting ralph run${categoryInfo} (${prdStatus.incomplete} tasks remaining)...`
+        `${state.projectName}: Starting ralph run${categoryInfo} (${prdStatus.incomplete} tasks remaining)...`,
       );
 
       // Send run command to sandbox with optional category argument
@@ -279,12 +278,21 @@ async function handleCommand(
       const response = await sendToSandbox("run", runArgs, debug, 10000);
       if (response) {
         if (response.success) {
-          await client.sendMessage(chatId, `${state.projectName}: Ralph run started in sandbox${categoryInfo}`);
+          await client.sendMessage(
+            chatId,
+            `${state.projectName}: Ralph run started in sandbox${categoryInfo}`,
+          );
         } else {
-          await client.sendMessage(chatId, `${state.projectName}: Failed to start: ${response.error}`);
+          await client.sendMessage(
+            chatId,
+            `${state.projectName}: Failed to start: ${response.error}`,
+          );
         }
       } else {
-        await client.sendMessage(chatId, `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`);
+        await client.sendMessage(
+          chatId,
+          `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`,
+        );
       }
 
       state.lastActivity = new Date().toISOString();
@@ -304,7 +312,10 @@ async function handleCommand(
           await client.sendMessage(chatId, `${state.projectName}: ${response.error}`);
         }
       } else {
-        await client.sendMessage(chatId, `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`);
+        await client.sendMessage(
+          chatId,
+          `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`,
+        );
       }
       break;
     }
@@ -345,7 +356,8 @@ async function handleCommand(
 
     case "add": {
       if (args.length === 0) {
-        const usage = client.provider === "slack" ? "/ralph add [task description]" : "/add [task description]";
+        const usage =
+          client.provider === "slack" ? "/ralph add [task description]" : "/add [task description]";
         await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
         return;
       }
@@ -356,7 +368,10 @@ async function handleCommand(
       if (success) {
         await client.sendMessage(chatId, `${state.projectName}: Added task: "${description}"`);
       } else {
-        await client.sendMessage(chatId, `${state.projectName}: Failed to add task. Check PRD file.`);
+        await client.sendMessage(
+          chatId,
+          `${state.projectName}: Failed to add task. Check PRD file.`,
+        );
       }
       break;
     }
@@ -381,7 +396,10 @@ async function handleCommand(
 
         await client.sendMessage(chatId, output);
       } else {
-        await client.sendMessage(chatId, `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`);
+        await client.sendMessage(
+          chatId,
+          `${state.projectName}: No response from sandbox. Is 'ralph listen' running?`,
+        );
       }
       break;
     }
@@ -390,15 +408,23 @@ async function handleCommand(
       // Reload config to pick up new actions
       const freshConfig = loadConfig();
       const actions = freshConfig.daemon?.actions || {};
-      const actionNames = Object.keys(actions).filter(name => name !== "notify" && name !== "telegram_notify");
+      const actionNames = Object.keys(actions).filter(
+        (name) => name !== "notify" && name !== "telegram_notify",
+      );
 
       if (args.length === 0) {
         // List available actions
         const usage = client.provider === "slack" ? "/ralph action <name>" : "/action <name>";
         if (actionNames.length === 0) {
-          await client.sendMessage(chatId, `${state.projectName}: No actions configured. Add actions to daemon.actions in config.json`);
+          await client.sendMessage(
+            chatId,
+            `${state.projectName}: No actions configured. Add actions to daemon.actions in config.json`,
+          );
         } else {
-          await client.sendMessage(chatId, `${state.projectName}: Available actions: ${actionNames.join(", ")}\nUsage: ${usage}`);
+          await client.sendMessage(
+            chatId,
+            `${state.projectName}: Available actions: ${actionNames.join(", ")}\nUsage: ${usage}`,
+          );
         }
         return;
       }
@@ -408,9 +434,15 @@ async function handleCommand(
 
       if (!action) {
         if (actionNames.length === 0) {
-          await client.sendMessage(chatId, `${state.projectName}: No actions configured. Add actions to daemon.actions in config.json`);
+          await client.sendMessage(
+            chatId,
+            `${state.projectName}: No actions configured. Add actions to daemon.actions in config.json`,
+          );
         } else {
-          await client.sendMessage(chatId, `${state.projectName}: Unknown action '${actionName}'. Available: ${actionNames.join(", ")}`);
+          await client.sendMessage(
+            chatId,
+            `${state.projectName}: Unknown action '${actionName}'. Available: ${actionNames.join(", ")}`,
+          );
         }
         return;
       }
@@ -453,7 +485,10 @@ async function handleCommand(
       }
 
       const prompt = args.join(" ");
-      await client.sendMessage(chatId, `⏳ ${state.projectName}: Running Claude Code...\n(this may take a few minutes)`);
+      await client.sendMessage(
+        chatId,
+        `⏳ ${state.projectName}: Running Claude Code...\n(this may take a few minutes)`,
+      );
 
       // Send claude command to sandbox with longer timeout (5 minutes)
       const response = await sendToSandbox("claude", args, debug, 300000);
@@ -467,22 +502,31 @@ async function handleCommand(
         }
 
         if (response.success) {
-          await client.sendMessage(chatId, `✅ ${state.projectName}: Claude Code DONE\n\n${output}`);
+          await client.sendMessage(
+            chatId,
+            `✅ ${state.projectName}: Claude Code DONE\n\n${output}`,
+          );
         } else {
           // Check for version mismatch (sandbox has old version without /claude support)
           if (response.error?.includes("Unknown action: claude")) {
             await client.sendMessage(
               chatId,
               `❌ ${state.projectName}: Claude Code failed - sandbox needs update.\n` +
-              `The sandbox listener doesn't support /claude. Rebuild your Docker container:\n` +
-              `  ralph docker build --no-cache`
+                `The sandbox listener doesn't support /claude. Rebuild your Docker container:\n` +
+                `  ralph docker build --no-cache`,
             );
           } else {
-            await client.sendMessage(chatId, `❌ ${state.projectName}: Claude Code FAILED\n\n${output}`);
+            await client.sendMessage(
+              chatId,
+              `❌ ${state.projectName}: Claude Code FAILED\n\n${output}`,
+            );
           }
         }
       } else {
-        await client.sendMessage(chatId, `❌ ${state.projectName}: No response from sandbox. Is 'ralph listen' running?`);
+        await client.sendMessage(
+          chatId,
+          `❌ ${state.projectName}: No response from sandbox. Is 'ralph listen' running?`,
+        );
       }
       break;
     }
@@ -520,7 +564,10 @@ async function handleCommand(
 /**
  * Create a chat client based on the provider configuration.
  */
-function createChatClient(config: RalphConfig, debug: boolean): { client: ChatClient; provider: ChatProvider; allowedChatIds?: string[] } {
+function createChatClient(
+  config: RalphConfig,
+  debug: boolean,
+): { client: ChatClient; provider: ChatProvider; allowedChatIds?: string[] } {
   const provider = config.chat?.provider || "telegram";
 
   if (provider === "slack") {
@@ -556,7 +603,7 @@ function createChatClient(config: RalphConfig, debug: boolean): { client: ChatCl
           signingSecret: config.chat.slack.signingSecret,
           allowedChannelIds: config.chat.slack.allowedChannelIds,
         },
-        debug
+        debug,
       ),
       provider: "slack",
       allowedChatIds: config.chat.slack.allowedChannelIds,
@@ -568,7 +615,9 @@ function createChatClient(config: RalphConfig, debug: boolean): { client: ChatCl
     if (!config.chat?.discord?.botToken) {
       console.error("Error: Discord bot token not configured");
       console.error("Set chat.discord.botToken in .ralph/config.json");
-      console.error("Get a token from the Discord Developer Portal: https://discord.com/developers/applications");
+      console.error(
+        "Get a token from the Discord Developer Portal: https://discord.com/developers/applications",
+      );
       process.exit(1);
     }
     if (config.chat.discord.enabled === false) {
@@ -583,7 +632,7 @@ function createChatClient(config: RalphConfig, debug: boolean): { client: ChatCl
           allowedGuildIds: config.chat.discord.allowedGuildIds,
           allowedChannelIds: config.chat.discord.allowedChannelIds,
         },
-        debug
+        debug,
       ),
       provider: "discord",
       allowedChatIds: config.chat.discord.allowedChannelIds,
@@ -608,7 +657,7 @@ function createChatClient(config: RalphConfig, debug: boolean): { client: ChatCl
         botToken: config.chat.telegram.botToken,
         allowedChatIds: config.chat.telegram.allowedChatIds,
       },
-      debug
+      debug,
     ),
     provider: "telegram",
     allowedChatIds: config.chat.telegram.allowedChatIds,
@@ -648,13 +697,16 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
       (command) => handleCommand(command, client, config, state!, debug),
       debug
         ? (message) => {
-            console.log(`[chat] Message from ${message.senderName || message.senderId}: ${message.text}`);
+            console.log(
+              `[chat] Message from ${message.senderName || message.senderId}: ${message.text}`,
+            );
             return Promise.resolve();
           }
-        : undefined
+        : undefined,
     );
 
-    const providerName = provider === "slack" ? "Slack" : provider === "discord" ? "Discord" : "Telegram";
+    const providerName =
+      provider === "slack" ? "Slack" : provider === "discord" ? "Discord" : "Telegram";
     console.log(`Connected to ${providerName}!`);
     console.log("");
     console.log(`Commands (send in ${providerName}):`);
@@ -751,7 +803,11 @@ function showStatus(config: RalphConfig): void {
   console.log("");
 
   if (config.chat.provider === "slack") {
-    if (config.chat.slack?.botToken && config.chat.slack?.appToken && config.chat.slack?.signingSecret) {
+    if (
+      config.chat.slack?.botToken &&
+      config.chat.slack?.appToken &&
+      config.chat.slack?.signingSecret
+    ) {
       console.log("Slack: configured");
       if (config.chat.slack.allowedChannelIds && config.chat.slack.allowedChannelIds.length > 0) {
         console.log(`Allowed channels: ${config.chat.slack.allowedChannelIds.join(", ")}`);
@@ -773,7 +829,10 @@ function showStatus(config: RalphConfig): void {
       } else {
         console.log("Allowed guilds: all (no restrictions)");
       }
-      if (config.chat.discord.allowedChannelIds && config.chat.discord.allowedChannelIds.length > 0) {
+      if (
+        config.chat.discord.allowedChannelIds &&
+        config.chat.discord.allowedChannelIds.length > 0
+      ) {
         console.log(`Allowed channels: ${config.chat.discord.allowedChannelIds.join(", ")}`);
       } else {
         console.log("Allowed channels: all (no restrictions)");
@@ -810,13 +869,17 @@ async function testChat(config: RalphConfig, chatId?: string): Promise<void> {
   let targetChatId: string | undefined;
 
   if (provider === "slack") {
-    if (!config.chat.slack?.botToken || !config.chat.slack?.appToken || !config.chat.slack?.signingSecret) {
+    if (
+      !config.chat.slack?.botToken ||
+      !config.chat.slack?.appToken ||
+      !config.chat.slack?.signingSecret
+    ) {
       console.error("Error: Slack configuration incomplete");
       console.error("Required: botToken, appToken, signingSecret");
       process.exit(1);
     }
 
-    targetChatId = chatId || (config.chat.slack.allowedChannelIds?.[0]);
+    targetChatId = chatId || config.chat.slack.allowedChannelIds?.[0];
     if (!targetChatId) {
       console.error("Error: No channel ID specified and no allowed channel IDs configured");
       console.error("Usage: ralph chat test <channel_id>");
@@ -836,7 +899,7 @@ async function testChat(config: RalphConfig, chatId?: string): Promise<void> {
       process.exit(1);
     }
 
-    targetChatId = chatId || (config.chat.discord.allowedChannelIds?.[0]);
+    targetChatId = chatId || config.chat.discord.allowedChannelIds?.[0];
     if (!targetChatId) {
       console.error("Error: No channel ID specified and no allowed channel IDs configured");
       console.error("Usage: ralph chat test <channel_id>");
@@ -856,7 +919,7 @@ async function testChat(config: RalphConfig, chatId?: string): Promise<void> {
       process.exit(1);
     }
 
-    targetChatId = chatId || (config.chat.telegram.allowedChatIds?.[0]);
+    targetChatId = chatId || config.chat.telegram.allowedChatIds?.[0];
     if (!targetChatId) {
       console.error("Error: No chat ID specified and no allowed chat IDs configured");
       console.error("Usage: ralph chat test <chat_id>");

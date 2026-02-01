@@ -47,8 +47,8 @@ export interface CliProviderConfig {
   yoloArgs: string[];
   promptArgs: string[];
   modelArgs?: string[];
-  fileArgs?: string[];  // Args for including files (e.g., ["--read"] for Aider). If not set, uses @file syntax in prompt.
-  streamJsonArgs?: string[];  // Provider-specific args for stream-json output (e.g., ['--output-format', 'stream-json'])
+  fileArgs?: string[]; // Args for including files (e.g., ["--read"] for Aider). If not set, uses @file syntax in prompt.
+  streamJsonArgs?: string[]; // Provider-specific args for stream-json output (e.g., ['--output-format', 'stream-json'])
   docker: {
     install: string;
   };
@@ -159,21 +159,24 @@ export function getLanguages(): Record<string, LanguageConfig> {
 }
 
 // Export for backwards compatibility
-export const LANGUAGES: Record<string, LanguageConfig> = new Proxy({} as Record<string, LanguageConfig>, {
-  get(_target, prop: string) {
-    return getLanguages()[prop];
+export const LANGUAGES: Record<string, LanguageConfig> = new Proxy(
+  {} as Record<string, LanguageConfig>,
+  {
+    get(_target, prop: string) {
+      return getLanguages()[prop];
+    },
+    ownKeys() {
+      return Object.keys(getLanguages());
+    },
+    getOwnPropertyDescriptor(_target, prop: string) {
+      const languages = getLanguages();
+      if (prop in languages) {
+        return { enumerable: true, configurable: true, value: languages[prop] };
+      }
+      return undefined;
+    },
   },
-  ownKeys() {
-    return Object.keys(getLanguages());
-  },
-  getOwnPropertyDescriptor(_target, prop: string) {
-    const languages = getLanguages();
-    if (prop in languages) {
-      return { enumerable: true, configurable: true, value: languages[prop] };
-    }
-    return undefined;
-  },
-});
+);
 
 // Generate the prompt template with $variables (stored in prompt.md)
 export function generatePromptTemplate(): string {
@@ -204,15 +207,20 @@ Now, read the PRD and begin working on the highest priority incomplete feature.`
 }
 
 // Resolve template variables using config values
-export function resolvePromptVariables(template: string, config: {
-  language: string;
-  checkCommand: string;
-  testCommand: string;
-  technologies?: string[];
-}): string {
+export function resolvePromptVariables(
+  template: string,
+  config: {
+    language: string;
+    checkCommand: string;
+    testCommand: string;
+    technologies?: string[];
+  },
+): string {
   const languageConfig = LANGUAGES[config.language];
   const languageName = languageConfig?.name || config.language;
-  const technologies = config.technologies?.length ? config.technologies.join(", ") : "(none specified)";
+  const technologies = config.technologies?.length
+    ? config.technologies.join(", ")
+    : "(none specified)";
 
   return template
     .replace(/\$language/g, languageName)
@@ -225,7 +233,7 @@ export function resolvePromptVariables(template: string, config: {
 export function generatePrompt(config: LanguageConfig, technologies?: string[]): string {
   const template = generatePromptTemplate();
   return resolvePromptVariables(template, {
-    language: Object.keys(LANGUAGES).find(k => LANGUAGES[k].name === config.name) || "none",
+    language: Object.keys(LANGUAGES).find((k) => LANGUAGES[k].name === config.name) || "none",
     checkCommand: config.checkCommand,
     testCommand: config.testCommand,
     technologies,

@@ -19,7 +19,14 @@ export interface ScrollableContainerProps {
   /** Show scroll indicators on the right side */
   showScrollIndicators?: boolean;
   /** Border style for the container */
-  borderStyle?: "single" | "double" | "round" | "bold" | "singleDouble" | "doubleSingle" | "classic";
+  borderStyle?:
+    | "single"
+    | "double"
+    | "round"
+    | "bold"
+    | "singleDouble"
+    | "doubleSingle"
+    | "classic";
   /** Border color */
   borderColor?: string;
   /** Padding on the X axis */
@@ -107,7 +114,7 @@ export function ScrollableContainer({
         handlePageDown();
       }
     },
-    { isActive: isFocused }
+    { isActive: isFocused },
   );
 
   // Build the container with optional scroll indicators

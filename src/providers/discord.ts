@@ -120,7 +120,9 @@ export class DiscordChatClient implements ChatClient {
         this.respondersConfig = config.chat.responders;
         this.responderMatcher = new ResponderMatcher(config.chat.responders);
         if (this.debug) {
-          console.log(`[discord] Initialized ${Object.keys(config.chat.responders).length} responders`);
+          console.log(
+            `[discord] Initialized ${Object.keys(config.chat.responders).length} responders`,
+          );
         }
       }
     } catch {
@@ -134,10 +136,7 @@ export class DiscordChatClient implements ChatClient {
   /**
    * Execute a responder and return the result.
    */
-  private async executeResponder(
-    match: ResponderMatch,
-    message: string
-  ): Promise<ResponderResult> {
+  private async executeResponder(match: ResponderMatch, message: string): Promise<ResponderResult> {
     const { responder } = match;
 
     switch (responder.type) {
@@ -165,7 +164,7 @@ export class DiscordChatClient implements ChatClient {
    */
   private async handleResponderMessage(
     originalMessage: DiscordMessage,
-    cleanedText: string
+    cleanedText: string,
   ): Promise<boolean> {
     if (!this.responderMatcher) {
       return false;
@@ -283,20 +282,51 @@ export class DiscordChatClient implements ChatClient {
     if (!this.client || !REST || !Routes || !SlashCommandBuilder) return;
 
     const commands = [
-      { name: "run", description: "Start ralph automation", hasArgs: true, argName: "category", argDesc: "Optional category filter" },
+      {
+        name: "run",
+        description: "Start ralph automation",
+        hasArgs: true,
+        argName: "category",
+        argDesc: "Optional category filter",
+      },
       { name: "status", description: "Show PRD progress", hasArgs: false },
-      { name: "add", description: "Add new task to PRD", hasArgs: true, argName: "description", argDesc: "Task description", required: true },
-      { name: "exec", description: "Execute shell command", hasArgs: true, argName: "command", argDesc: "Shell command to run", required: true },
+      {
+        name: "add",
+        description: "Add new task to PRD",
+        hasArgs: true,
+        argName: "description",
+        argDesc: "Task description",
+        required: true,
+      },
+      {
+        name: "exec",
+        description: "Execute shell command",
+        hasArgs: true,
+        argName: "command",
+        argDesc: "Shell command to run",
+        required: true,
+      },
       { name: "stop", description: "Stop running ralph process", hasArgs: false },
       { name: "help", description: "Show help", hasArgs: false },
-      { name: "action", description: "Run daemon action", hasArgs: true, argName: "name", argDesc: "Action name" },
-      { name: "claude", description: "Run Claude Code with prompt", hasArgs: true, argName: "prompt", argDesc: "Prompt for Claude Code", required: true },
+      {
+        name: "action",
+        description: "Run daemon action",
+        hasArgs: true,
+        argName: "name",
+        argDesc: "Action name",
+      },
+      {
+        name: "claude",
+        description: "Run Claude Code with prompt",
+        hasArgs: true,
+        argName: "prompt",
+        argDesc: "Prompt for Claude Code",
+        required: true,
+      },
     ];
 
     const slashCommands = commands.map((cmd) => {
-      const builder = new SlashCommandBuilder()
-        .setName(cmd.name)
-        .setDescription(cmd.description);
+      const builder = new SlashCommandBuilder().setName(cmd.name).setDescription(cmd.description);
 
       if (cmd.hasArgs && cmd.argName) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -304,7 +334,7 @@ export class DiscordChatClient implements ChatClient {
           option
             .setName(cmd.argName)
             .setDescription(cmd.argDesc || "Argument")
-            .setRequired(cmd.required || false)
+            .setRequired(cmd.required || false),
         );
       }
 
@@ -406,7 +436,9 @@ export class DiscordChatClient implements ChatClient {
         }
         // Send error message to channel
         try {
-          await message.reply(`Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`);
+          await message.reply(
+            `Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`,
+          );
         } catch {
           // Ignore reply errors
         }
@@ -435,7 +467,7 @@ export class DiscordChatClient implements ChatClient {
           }
           try {
             await message.reply(
-              `Error processing message: ${err instanceof Error ? err.message : "Unknown error"}`
+              `Error processing message: ${err instanceof Error ? err.message : "Unknown error"}`,
             );
           } catch {
             // Ignore reply errors
@@ -447,7 +479,7 @@ export class DiscordChatClient implements ChatClient {
         // Send a helpful message
         try {
           await message.reply(
-            "I received your message, but no responders are configured. Use `/help` for available commands."
+            "I received your message, but no responders are configured. Use `/help` for available commands.",
           );
         } catch {
           // Ignore reply errors
@@ -472,7 +504,9 @@ export class DiscordChatClient implements ChatClient {
     // Check if guild is allowed
     if (!this.isGuildAllowed(interaction.guild?.id)) {
       if (this.debug) {
-        console.log(`[discord] Ignoring interaction from unauthorized guild: ${interaction.guild?.id}`);
+        console.log(
+          `[discord] Ignoring interaction from unauthorized guild: ${interaction.guild?.id}`,
+        );
       }
       try {
         await interaction.reply({
@@ -488,7 +522,9 @@ export class DiscordChatClient implements ChatClient {
     // Check if channel is allowed
     if (!this.isChannelAllowed(interaction.channel?.id)) {
       if (this.debug) {
-        console.log(`[discord] Ignoring interaction from unauthorized channel: ${interaction.channel?.id}`);
+        console.log(
+          `[discord] Ignoring interaction from unauthorized channel: ${interaction.channel?.id}`,
+        );
       }
       try {
         await interaction.reply({
@@ -560,7 +596,9 @@ export class DiscordChatClient implements ChatClient {
           console.error(`[discord] Slash command error: ${err}`);
         }
         try {
-          await interaction.editReply(`Error executing /${commandName}: ${err instanceof Error ? err.message : "Unknown error"}`);
+          await interaction.editReply(
+            `Error executing /${commandName}: ${err instanceof Error ? err.message : "Unknown error"}`,
+          );
         } catch {
           // Ignore edit errors
         }
@@ -583,7 +621,9 @@ export class DiscordChatClient implements ChatClient {
     // Check if channel is allowed
     if (!this.isChannelAllowed(interaction.channel?.id)) {
       if (this.debug) {
-        console.log(`[discord] Ignoring button from unauthorized channel: ${interaction.channel?.id}`);
+        console.log(
+          `[discord] Ignoring button from unauthorized channel: ${interaction.channel?.id}`,
+        );
       }
       return;
     }
@@ -634,7 +674,7 @@ export class DiscordChatClient implements ChatClient {
     if (!loaded || !ClientConstructor || !GatewayIntentBits) {
       throw new Error(
         "Failed to load Discord modules. Make sure discord.js is installed:\n" +
-        "  npm install discord.js"
+          "  npm install discord.js",
       );
     }
 
@@ -654,7 +694,9 @@ export class DiscordChatClient implements ChatClient {
 
       // Setup event handlers
       this.client.on("messageCreate", (message: DiscordMessage) => this.handleMessage(message));
-      this.client.on("interactionCreate", (interaction: DiscordInteraction) => this.handleInteraction(interaction));
+      this.client.on("interactionCreate", (interaction: DiscordInteraction) =>
+        this.handleInteraction(interaction),
+      );
 
       // Handle ready event
       await new Promise<void>((resolve, reject) => {
@@ -692,7 +734,9 @@ export class DiscordChatClient implements ChatClient {
 
       this.connected = true;
     } catch (err) {
-      throw new Error(`Failed to connect to Discord: ${err instanceof Error ? err.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to connect to Discord: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -706,7 +750,9 @@ export class DiscordChatClient implements ChatClient {
     try {
       channel = await this.client.channels.fetch(chatId);
     } catch (err) {
-      throw new Error(`Failed to fetch channel ${chatId}: ${err instanceof Error ? err.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to fetch channel ${chatId}: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
     }
 
     if (!channel || !channel.send) {
@@ -720,7 +766,13 @@ export class DiscordChatClient implements ChatClient {
     };
 
     // Convert inline keyboard to Discord buttons
-    if (options?.inlineKeyboard && options.inlineKeyboard.length > 0 && ActionRowBuilder && ButtonBuilder && ButtonStyle) {
+    if (
+      options?.inlineKeyboard &&
+      options.inlineKeyboard.length > 0 &&
+      ActionRowBuilder &&
+      ButtonBuilder &&
+      ButtonStyle
+    ) {
       const components: unknown[] = [];
 
       for (const row of options.inlineKeyboard) {

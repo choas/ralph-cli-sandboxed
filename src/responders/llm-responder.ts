@@ -54,10 +54,7 @@ const DEFAULT_TIMEOUT = 60000;
 /**
  * Replaces {{project}} placeholder in system prompt with actual project name.
  */
-export function applyProjectPlaceholder(
-  systemPrompt: string,
-  projectName: string
-): string {
+export function applyProjectPlaceholder(systemPrompt: string, projectName: string): string {
   return systemPrompt.replace(/\{\{project\}\}/g, projectName);
 }
 
@@ -74,7 +71,7 @@ export function getProjectName(): string {
  */
 export function truncateResponse(
   response: string,
-  maxLength: number
+  maxLength: number,
 ): { text: string; truncated: boolean; originalLength: number } {
   const originalLength = response.length;
 
@@ -127,7 +124,7 @@ export async function executeLLMResponder(
   message: string,
   responderConfig: ResponderConfig,
   config?: RalphConfig,
-  options?: LLMResponderOptions
+  options?: LLMResponderOptions,
 ): Promise<ResponderResult> {
   try {
     // Load config if not provided
@@ -176,9 +173,7 @@ export async function executeLLMResponder(
     };
 
     // Prepare messages
-    const messages: Message[] = [
-      { role: "user", content: message },
-    ];
+    const messages: Message[] = [{ role: "user", content: message }];
 
     // Execute with timeout
     const timeout = responderConfig.timeout ?? DEFAULT_TIMEOUT;
@@ -189,7 +184,7 @@ export async function executeLLMResponder(
       response = await Promise.race([
         responsePromise,
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("LLM request timed out")), timeout)
+          setTimeout(() => reject(new Error("LLM request timed out")), timeout),
         ),
       ]);
     } catch (err) {
@@ -231,7 +226,7 @@ export async function executeLLMResponder(
  */
 export function createLLMResponder(
   responderConfig: ResponderConfig,
-  config: RalphConfig
+  config: RalphConfig,
 ): (message: string, options?: LLMResponderOptions) => Promise<ResponderResult> {
   // Pre-load provider and client
   const providers = getLLMProviders(config);
@@ -277,9 +272,7 @@ export function createLLMResponder(
       };
 
       // Prepare messages
-      const messages: Message[] = [
-        { role: "user", content: message },
-      ];
+      const messages: Message[] = [{ role: "user", content: message }];
 
       // Execute with timeout
       const timeout = responderConfig.timeout ?? DEFAULT_TIMEOUT;
@@ -290,7 +283,7 @@ export function createLLMResponder(
         response = await Promise.race([
           responsePromise,
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("LLM request timed out")), timeout)
+            setTimeout(() => reject(new Error("LLM request timed out")), timeout),
           ),
         ]);
       } catch (err) {
@@ -332,7 +325,7 @@ export function createLLMResponder(
  */
 export function validateLLMResponder(
   responderConfig: ResponderConfig,
-  config: RalphConfig
+  config: RalphConfig,
 ): string | null {
   if (responderConfig.type !== "llm") {
     return `Responder type is "${responderConfig.type}", expected "llm"`;

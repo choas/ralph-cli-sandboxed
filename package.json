@@ -18,6 +18,8 @@
     "dev": "npx tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src/",
+    "format": "oxfmt src/",
+    "format:check": "oxfmt --check src/",
     "prepublishOnly": "npm run build",
     "prepare": "npm run build"
   },
@@ -36,6 +38,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.12",
+    "oxfmt": "^0.27.0",
     "oxlint": "^1.42.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"

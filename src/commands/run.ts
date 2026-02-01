@@ -1,9 +1,24 @@
 import { spawn } from "child_process";
 import { existsSync, readFileSync, writeFileSync, unlinkSync, appendFileSync, mkdirSync } from "fs";
 import { join } from "path";
-import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, CliConfig, requireContainer } from "../utils/config.js";
+import {
+  checkFilesExist,
+  loadConfig,
+  loadPrompt,
+  getPaths,
+  getCliConfig,
+  CliConfig,
+  requireContainer,
+} from "../utils/config.js";
 import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
-import { validatePrd, smartMerge, readPrdFile, writePrd, expandPrdFileReferences, PrdEntry } from "../utils/prd-validator.js";
+import {
+  validatePrd,
+  smartMerge,
+  readPrdFile,
+  writePrd,
+  expandPrdFileReferences,
+  PrdEntry,
+} from "../utils/prd-validator.js";
 import { getStreamJsonParser, StreamJsonParser } from "../utils/stream-json.js";
 import { sendNotificationWithDaemonEvents, triggerDaemonEvents } from "../utils/notification.js";
 
@@ -14,8 +29,8 @@ interface StreamJsonOptions {
   enabled: boolean;
   saveRawJson: boolean;
   outputDir: string;
-  args: string[];  // Provider-specific stream-json args (e.g., ['--output-format', 'stream-json'])
-  parser: StreamJsonParser;  // Provider-specific stream-json parser
+  args: string[]; // Provider-specific stream-json args (e.g., ['--output-format', 'stream-json'])
+  parser: StreamJsonParser; // Provider-specific stream-json parser
 }
 
 interface PrdItem {
@@ -33,7 +48,11 @@ const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing"
  * Expands @{filepath} references to include file contents.
  * Returns the path to the temp file, or null if all items pass.
  */
-function createFilteredPrd(prdPath: string, baseDir: string, category?: string): { tempPath: string; hasIncomplete: boolean } {
+function createFilteredPrd(
+  prdPath: string,
+  baseDir: string,
+  category?: string,
+): { tempPath: string; hasIncomplete: boolean } {
   const content = readFileSync(prdPath, "utf-8");
   let parsed: unknown;
   try {
@@ -53,11 +72,11 @@ function createFilteredPrd(prdPath: string, baseDir: string, category?: string):
   }
 
   const items: PrdItem[] = parsed;
-  let filteredItems = items.filter(item => item.passes === false);
+  let filteredItems = items.filter((item) => item.passes === false);
 
   // Apply category filter if specified
   if (category) {
-    filteredItems = filteredItems.filter(item => item.category === category);
+    filteredItems = filteredItems.filter((item) => item.category === category);
   }
 
   // Expand @{filepath} references in description and steps
@@ -69,7 +88,7 @@ function createFilteredPrd(prdPath: string, baseDir: string, category?: string):
 
   return {
     tempPath,
-    hasIncomplete: filteredItems.length > 0
+    hasIncomplete: filteredItems.length > 0,
   };
 }
 
@@ -125,10 +144,11 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): SyncResult {
     for (const task of tasks) {
       if (task.passes === true) {
         // Find matching item in prd by description
-        const match = prd.find(item =>
-          item.description === task.description ||
-          item.description.includes(task.description) ||
-          task.description.includes(item.description)
+        const match = prd.find(
+          (item) =>
+            item.description === task.description ||
+            item.description.includes(task.description) ||
+            task.description.includes(item.description),
         );
 
         if (match && !match.passes) {
@@ -142,7 +162,9 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): SyncResult {
     // Write back if any items were synced
     if (synced > 0) {
       writeFileSync(prdPath, JSON.stringify(prd, null, 2) + "\n");
-      console.log(`\x1b[32mSynced ${synced} completed item(s) from prd-tasks.json to prd.json\x1b[0m`);
+      console.log(
+        `\x1b[32mSynced ${synced} completed item(s) from prd-tasks.json to prd.json\x1b[0m`,
+      );
     }
 
     return { count: synced, taskNames: syncedTaskNames };
@@ -152,16 +174,23 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): SyncResult {
   }
 }
 
-async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string, cliConfig: CliConfig, debug: boolean, model?: string, streamJson?: StreamJsonOptions): Promise<{ exitCode: number; output: string }> {
+async function runIteration(
+  prompt: string,
+  paths: ReturnType<typeof getPaths>,
+  sandboxed: boolean,
+  filteredPrdPath: string,
+  cliConfig: CliConfig,
+  debug: boolean,
+  model?: string,
+  streamJson?: StreamJsonOptions,
+): Promise<{ exitCode: number; output: string }> {
   return new Promise((resolve, reject) => {
     let output = "";
     let jsonLogPath: string | undefined;
     let lineBuffer = ""; // Buffer for incomplete JSON lines
 
     // Build CLI arguments: config args + yolo args + model args + prompt args
-    const cliArgs = [
-      ...(cliConfig.args ?? []),
-    ];
+    const cliArgs = [...(cliConfig.args ?? [])];
 
     // Only add yolo args when running in a container
     // Use yoloArgs from config if available, otherwise default to Claude's --dangerously-skip-permissions
@@ -212,19 +241,17 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
     cliArgs.push(...promptArgs, promptValue);
 
     if (debug) {
-      console.log(`[debug] ${cliConfig.command} ${cliArgs.map(a => a.includes(" ") ? `"${a}"` : a).join(" ")}\n`);
+      console.log(
+        `[debug] ${cliConfig.command} ${cliArgs.map((a) => (a.includes(" ") ? `"${a}"` : a)).join(" ")}\n`,
+      );
       if (jsonLogPath) {
         console.log(`[debug] Saving raw JSON to: ${jsonLogPath}\n`);
       }
     }
 
-    const proc = spawn(
-      cliConfig.command,
-      cliArgs,
-      {
-        stdio: ["inherit", "pipe", "inherit"],
-      }
-    );
+    const proc = spawn(cliConfig.command, cliArgs, {
+      stdio: ["inherit", "pipe", "inherit"],
+    });
 
     proc.stdout.on("data", (data: Buffer) => {
       const chunk = data.toString();
@@ -312,7 +339,7 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
  * Sleep for the specified number of milliseconds.
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -337,7 +364,10 @@ function formatElapsedTime(startTime: number, endTime: number): string {
  * Counts total and incomplete items in the PRD.
  * Optionally filters by category if specified.
  */
-function countPrdItems(prdPath: string, category?: string): { total: number; incomplete: number; complete: number } {
+function countPrdItems(
+  prdPath: string,
+  category?: string,
+): { total: number; incomplete: number; complete: number } {
   const content = readFileSync(prdPath, "utf-8");
   let parsed: unknown;
   try {
@@ -359,16 +389,16 @@ function countPrdItems(prdPath: string, category?: string): { total: number; inc
   const items: PrdItem[] = parsed;
   let filteredItems = items;
   if (category) {
-    filteredItems = items.filter(item => item.category === category);
+    filteredItems = items.filter((item) => item.category === category);
   }
 
-  const complete = filteredItems.filter(item => item.passes === true).length;
-  const incomplete = filteredItems.filter(item => item.passes === false).length;
+  const complete = filteredItems.filter((item) => item.passes === true).length;
+  const incomplete = filteredItems.filter((item) => item.passes === false).length;
 
   return {
     total: filteredItems.length,
     complete,
-    incomplete
+    incomplete,
   };
 }
 
@@ -377,7 +407,10 @@ function countPrdItems(prdPath: string, category?: string): { total: number; inc
  * Uses the validPrd as the source of truth and merges passes flags from the current file.
  * Returns true if the PRD was corrupted and recovered.
  */
-function validateAndRecoverPrd(prdPath: string, validPrd: PrdEntry[]): { recovered: boolean; itemsUpdated: number } {
+function validateAndRecoverPrd(
+  prdPath: string,
+  validPrd: PrdEntry[],
+): { recovered: boolean; itemsUpdated: number } {
   const parsed = readPrdFile(prdPath);
 
   // If we can't even parse the JSON, restore from valid copy
@@ -404,13 +437,15 @@ function validateAndRecoverPrd(prdPath: string, validPrd: PrdEntry[]): { recover
   writePrd(prdPath, mergeResult.merged);
 
   if (mergeResult.itemsUpdated > 0) {
-    console.log(`\x1b[32mRecovered: merged ${mergeResult.itemsUpdated} passes flag(s) into valid PRD structure.\x1b[0m`);
+    console.log(
+      `\x1b[32mRecovered: merged ${mergeResult.itemsUpdated} passes flag(s) into valid PRD structure.\x1b[0m`,
+    );
   } else {
     console.log("\x1b[32mRecovered: restored valid PRD structure.\x1b[0m");
   }
 
   if (mergeResult.warnings.length > 0) {
-    mergeResult.warnings.forEach(w => console.log(`  \x1b[33m${w}\x1b[0m`));
+    mergeResult.warnings.forEach((w) => console.log(`  \x1b[33m${w}\x1b[0m`));
   }
 
   return { recovered: true, itemsUpdated: mergeResult.itemsUpdated };
@@ -480,7 +515,8 @@ export async function run(args: string[]): Promise<void> {
   // - If --loop is specified, use loop mode
   // - If a specific number of iterations is provided, use that
   // - Otherwise, default to --all mode (run until all tasks complete)
-  const hasIterationArg = filteredArgs.length > 0 && !isNaN(parseInt(filteredArgs[0])) && parseInt(filteredArgs[0]) >= 1;
+  const hasIterationArg =
+    filteredArgs.length > 0 && !isNaN(parseInt(filteredArgs[0])) && parseInt(filteredArgs[0]) >= 1;
   const allMode = !loopMode && (allModeExplicit || !hasIterationArg);
 
   requireContainer("run");
@@ -506,13 +542,15 @@ export async function run(args: string[]): Promise<void> {
   // This allows providers without JSON streaming to still have output displayed
   const streamJsonArgs = providerConfig?.streamJsonArgs ?? [];
 
-  const streamJson: StreamJsonOptions | undefined = streamJsonConfig?.enabled ? {
-    enabled: true,
-    saveRawJson: streamJsonConfig.saveRawJson !== false, // default true
-    outputDir: config.docker?.asciinema?.outputDir || ".recordings",
-    args: streamJsonArgs,
-    parser: getStreamJsonParser(config.cliProvider, debug),
-  } : undefined;
+  const streamJson: StreamJsonOptions | undefined = streamJsonConfig?.enabled
+    ? {
+        enabled: true,
+        saveRawJson: streamJsonConfig.saveRawJson !== false, // default true
+        outputDir: config.docker?.asciinema?.outputDir || ".recordings",
+        args: streamJsonArgs,
+        parser: getStreamJsonParser(config.cliProvider, debug),
+      }
+    : undefined;
 
   // Progress tracking: stop only if no tasks complete after N iterations
   const MAX_ITERATIONS_WITHOUT_PROGRESS = 3;
@@ -526,7 +564,9 @@ export async function run(args: string[]): Promise<void> {
   if (allMode) {
     const counts = countPrdItems(paths.prd, category);
     console.log("Starting ralph in --all mode (runs until all tasks complete)...");
-    console.log(`PRD Status: ${counts.complete}/${counts.total} complete, ${counts.incomplete} remaining`);
+    console.log(
+      `PRD Status: ${counts.complete}/${counts.total} complete, ${counts.incomplete} remaining`,
+    );
   } else if (loopMode) {
     console.log("Starting ralph in loop mode (runs until interrupted)...");
   } else {
@@ -570,7 +610,9 @@ export async function run(args: string[]): Promise<void> {
       if (!isNaN(existingPid)) {
         try {
           process.kill(existingPid, 0); // Check if process exists
-          console.error(`\x1b[31mError: Another ralph run is already running (PID ${existingPid})\x1b[0m`);
+          console.error(
+            `\x1b[31mError: Another ralph run is already running (PID ${existingPid})\x1b[0m`,
+          );
           console.error("Use 'ralph stop' or '/stop' via Telegram to terminate it first.");
           process.exit(1);
         } catch {
@@ -627,7 +669,9 @@ export async function run(args: string[]): Promise<void> {
 
       console.log(`\n${"=".repeat(50)}`);
       if (allMode) {
-        console.log(`Iteration ${iterationCount} | Progress: ${currentCounts.complete}/${currentCounts.total} complete`);
+        console.log(
+          `Iteration ${iterationCount} | Progress: ${currentCounts.complete}/${currentCounts.total} complete`,
+        );
       } else if (loopMode) {
         console.log(`Iteration ${iterationCount}`);
       } else {
@@ -702,7 +746,16 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath, cliConfig, debug, model, streamJson);
+      const { exitCode, output } = await runIteration(
+        prompt,
+        paths,
+        sandboxed,
+        filteredPrdPath,
+        cliConfig,
+        debug,
+        model,
+        streamJson,
+      );
 
       // Sync any completed items from prd-tasks.json back to prd.json
       // This catches cases where the LLM updated prd-tasks.json instead of prd.json
@@ -710,12 +763,16 @@ export async function run(args: string[]): Promise<void> {
 
       // Send task_complete notification for each completed task
       for (const taskName of syncResult.taskNames) {
-        await sendNotificationWithDaemonEvents("task_complete", `Ralph: Task complete - ${taskName}`, {
-          command: config.notifyCommand,
-          debug,
-          daemonConfig: config.daemon,
-          taskName,
-        });
+        await sendNotificationWithDaemonEvents(
+          "task_complete",
+          `Ralph: Task complete - ${taskName}`,
+          {
+            command: config.notifyCommand,
+            debug,
+            daemonConfig: config.daemon,
+            taskName,
+          },
+        );
       }
 
       // Clean up temp file after each iteration
@@ -746,9 +803,13 @@ export async function run(args: string[]): Promise<void> {
         }
 
         if (iterationsWithoutProgress >= MAX_ITERATIONS_WITHOUT_PROGRESS) {
-          console.log(`\nStopping: no progress after ${MAX_ITERATIONS_WITHOUT_PROGRESS} consecutive iterations.`);
+          console.log(
+            `\nStopping: no progress after ${MAX_ITERATIONS_WITHOUT_PROGRESS} consecutive iterations.`,
+          );
           console.log(`(No tasks completed and no new tasks added)`);
-          console.log(`Status: ${progressCounts.complete}/${progressCounts.total} complete, ${progressCounts.incomplete} remaining.`);
+          console.log(
+            `Status: ${progressCounts.complete}/${progressCounts.total} complete, ${progressCounts.incomplete} remaining.`,
+          );
           console.log("Check the PRD and task definitions for issues.");
 
           // Send notification about stopped run
@@ -756,7 +817,12 @@ export async function run(args: string[]): Promise<void> {
           await sendNotificationWithDaemonEvents(
             "run_stopped",
             `Ralph: Run stopped - ${stoppedMessage}`,
-            { command: config.notifyCommand, debug, daemonConfig: config.daemon, errorMessage: stoppedMessage }
+            {
+              command: config.notifyCommand,
+              debug,
+              daemonConfig: config.daemon,
+              errorMessage: stoppedMessage,
+            },
           );
 
           break;
@@ -775,17 +841,20 @@ export async function run(args: string[]): Promise<void> {
         }
 
         if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-          console.error(`\nStopping: ${cliConfig.command} failed ${consecutiveFailures} times in a row with exit code ${exitCode}.`);
+          console.error(
+            `\nStopping: ${cliConfig.command} failed ${consecutiveFailures} times in a row with exit code ${exitCode}.`,
+          );
           console.error("This usually indicates a configuration error (e.g., missing API key).");
           console.error("Please check your CLI configuration and try again.");
 
           // Send notification about error
           const errorMessage = `CLI failed ${consecutiveFailures} times with exit code ${exitCode}. Check configuration.`;
-          await sendNotificationWithDaemonEvents(
-            "error",
-            `Ralph: ${errorMessage}`,
-            { command: config.notifyCommand, debug, daemonConfig: config.daemon, errorMessage }
-          );
+          await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, {
+            command: config.notifyCommand,
+            debug,
+            daemonConfig: config.daemon,
+            errorMessage,
+          });
 
           break;
         }

@@ -205,9 +205,8 @@ echo "  ./scripts/gen_xcode.sh"
  * Check if the selected technologies include SwiftUI
  */
 export function hasSwiftUI(technologies: string[]): boolean {
-  return technologies.some(tech =>
-    tech.toLowerCase().includes('swiftui') ||
-    tech.toLowerCase() === 'swiftui'
+  return technologies.some(
+    (tech) => tech.toLowerCase().includes("swiftui") || tech.toLowerCase() === "swiftui",
   );
 }
 
@@ -215,9 +214,8 @@ export function hasSwiftUI(technologies: string[]): boolean {
  * Check if the selected technologies include Fastlane
  */
 export function hasFastlane(technologies: string[]): boolean {
-  return technologies.some(tech =>
-    tech.toLowerCase().includes('fastlane') ||
-    tech.toLowerCase() === 'fastlane'
+  return technologies.some(
+    (tech) => tech.toLowerCase().includes("fastlane") || tech.toLowerCase() === "fastlane",
   );
 }
 

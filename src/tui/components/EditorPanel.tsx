@@ -14,11 +14,11 @@ export type FieldType = "string" | "boolean" | "number" | "array" | "object" | "
  * Field schema describes a configuration field for editing.
  */
 export interface FieldSchema {
-  path: string;           // Dot-notation path (e.g., "docker.ports")
-  label: string;          // Human-readable label
-  type: FieldType;        // Type of field
-  description?: string;   // Optional description
-  required?: boolean;     // Whether field is required
+  path: string; // Dot-notation path (e.g., "docker.ports")
+  label: string; // Human-readable label
+  type: FieldType; // Type of field
+  description?: string; // Optional description
+  required?: boolean; // Whether field is required
 }
 
 /**
@@ -77,7 +77,7 @@ function getDisplayValue(value: unknown, type: FieldType): string {
 
   switch (type) {
     case "string":
-      return value as string || "(empty)";
+      return (value as string) || "(empty)";
     case "boolean":
       return value ? "true" : "false";
     case "number":
@@ -214,7 +214,8 @@ export function EditorPanel({
     const field = fields[highlightedIndex];
     if (field) {
       // JSON editor is useful for arrays, objects, and unknown types
-      const isComplexType = field.type === "array" || field.type === "object" || field.type === "unknown";
+      const isComplexType =
+        field.type === "array" || field.type === "object" || field.type === "unknown";
       onSelectField(field.path, isComplexType);
     }
   }, [highlightedIndex, fields, onSelectField]);
@@ -242,7 +243,7 @@ export function EditorPanel({
         onBack();
       }
     },
-    { isActive: isFocused }
+    { isActive: isFocused },
   );
 
   // Build breadcrumb path
@@ -285,7 +286,9 @@ export function EditorPanel({
     return (
       <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} flexGrow={1}>
         <Box marginBottom={1}>
-          <Text bold color="cyan">{breadcrumb}</Text>
+          <Text bold color="cyan">
+            {breadcrumb}
+          </Text>
         </Box>
         <Text dimColor>No fields in this section</Text>
       </Box>
@@ -296,9 +299,14 @@ export function EditorPanel({
     <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} flexGrow={1}>
       {/* Breadcrumb */}
       <Box marginBottom={1}>
-        <Text bold color="cyan">{breadcrumb}</Text>
+        <Text bold color="cyan">
+          {breadcrumb}
+        </Text>
         {hasOverflow && (
-          <Text dimColor> ({highlightedIndex + 1}/{totalFields})</Text>
+          <Text dimColor>
+            {" "}
+            ({highlightedIndex + 1}/{totalFields})
+          </Text>
         )}
       </Box>
 
@@ -321,11 +329,15 @@ export function EditorPanel({
         const fieldErrors = getFieldErrors(validationErrors, field.path);
 
         // Color based on field type, but red if there's an error
-        const typeColor = fieldHasError ? "red"
-          : field.type === "array" ? "yellow"
-          : field.type === "object" ? "magenta"
-          : field.type === "boolean" ? "blue"
-          : undefined;
+        const typeColor = fieldHasError
+          ? "red"
+          : field.type === "array"
+            ? "yellow"
+            : field.type === "object"
+              ? "magenta"
+              : field.type === "boolean"
+                ? "blue"
+                : undefined;
 
         return (
           <Box key={field.path} flexDirection="column">
@@ -348,9 +360,7 @@ export function EditorPanel({
                 {displayValue}
               </Text>
               {/* Type indicator for complex types */}
-              {(field.type === "array" || field.type === "object") && (
-                <Text dimColor> →</Text>
-              )}
+              {(field.type === "array" || field.type === "object") && <Text dimColor> →</Text>}
             </Box>
             {/* Validation error message */}
             {fieldHasError && fieldErrors.length > 0 && (

@@ -37,11 +37,21 @@ let telegramConfig: { botToken: string; allowedChatIds?: string[] } | null = nul
 
 // Slack client for sending messages (lazy loaded)
 let slackClient: { sendMessage: (channelId: string, text: string) => Promise<void> } | null = null;
-let slackConfig: { botToken: string; appToken: string; signingSecret: string; allowedChannelIds?: string[] } | null = null;
+let slackConfig: {
+  botToken: string;
+  appToken: string;
+  signingSecret: string;
+  allowedChannelIds?: string[];
+} | null = null;
 
 // Discord client for sending messages (lazy loaded)
-let discordClient: { sendMessage: (channelId: string, text: string) => Promise<void> } | null = null;
-let discordConfig: { botToken: string; allowedGuildIds?: string[]; allowedChannelIds?: string[] } | null = null;
+let discordClient: { sendMessage: (channelId: string, text: string) => Promise<void> } | null =
+  null;
+let discordConfig: {
+  botToken: string;
+  allowedGuildIds?: string[];
+  allowedChannelIds?: string[];
+} | null = null;
 
 /**
  * Check if Telegram is enabled (has token and not explicitly disabled).
@@ -182,7 +192,6 @@ async function sendDiscordMessage(message: string): Promise<{ success: boolean; 
   }
 }
 
-
 /**
  * Execute an action command with arguments.
  * Environment variables are passed to the command:
@@ -190,7 +199,7 @@ async function sendDiscordMessage(message: string): Promise<{ success: boolean; 
  */
 async function executeAction(
   action: DaemonAction,
-  args: string[] = []
+  args: string[] = [],
 ): Promise<{ success: boolean; output: string; error?: string }> {
   // Special handling for Telegram
   if (action.command === "__telegram__") {
@@ -242,9 +251,10 @@ async function executeAction(
     } else {
       // Command can use $RALPH_MESSAGE env var
       // Also pass args for backwards compatibility
-      fullCommand = args.length > 0
-        ? `${action.command} ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`
-        : action.command;
+      fullCommand =
+        args.length > 0
+          ? `${action.command} ${args.map((a) => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`
+          : action.command;
     }
 
     const proc = spawn(fullCommand, [], {
@@ -289,7 +299,7 @@ async function processMessage(
   message: Message,
   actions: Record<string, DaemonAction>,
   messagesPath: string,
-  debug: boolean
+  debug: boolean,
 ): Promise<void> {
   if (debug) {
     console.log(`[daemon] Processing: ${message.action} (${message.id})`);

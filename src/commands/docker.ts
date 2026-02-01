@@ -2,7 +2,14 @@ import { existsSync, writeFileSync, readFileSync, mkdirSync, chmodSync, openSync
 import { join, basename } from "path";
 import { spawn, ChildProcess } from "child_process";
 import { createHash } from "crypto";
-import { loadConfig, getRalphDir, RalphConfig, McpServerConfig, SkillConfig, AsciinemaConfig } from "../utils/config.js";
+import {
+  loadConfig,
+  getRalphDir,
+  RalphConfig,
+  McpServerConfig,
+  SkillConfig,
+  AsciinemaConfig,
+} from "../utils/config.js";
 import { promptConfirm } from "../utils/prompt.js";
 import { getLanguagesJson, getCliProvidersJson } from "../templates/prompts.js";
 
@@ -22,12 +29,12 @@ function computeConfigHash(config: RalphConfig): string {
     claude: config.claude,
   };
   const content = JSON.stringify(relevantConfig, null, 2);
-  return createHash('sha256').update(content).digest('hex').substring(0, 16);
+  return createHash("sha256").update(content).digest("hex").substring(0, 16);
 }
 
 // Save config hash to docker directory
 function saveConfigHash(dockerDir: string, hash: string): void {
-  writeFileSync(join(dockerDir, CONFIG_HASH_FILE), hash + '\n');
+  writeFileSync(join(dockerDir, CONFIG_HASH_FILE), hash + "\n");
 }
 
 // Load saved config hash, returns null if not found
@@ -36,7 +43,7 @@ function loadConfigHash(dockerDir: string): string | null {
   if (!existsSync(hashPath)) {
     return null;
   }
-  return readFileSync(hashPath, 'utf-8').trim();
+  return readFileSync(hashPath, "utf-8").trim();
 }
 
 // Check if config has changed since last docker init
@@ -85,20 +92,25 @@ function getCliProviderSnippet(cliProvider?: string): string {
   return provider.docker.install;
 }
 
-function generateDockerfile(language: string, javaVersion?: number, cliProvider?: string, dockerConfig?: RalphConfig['docker']): string {
+function generateDockerfile(
+  language: string,
+  javaVersion?: number,
+  cliProvider?: string,
+  dockerConfig?: RalphConfig["docker"],
+): string {
   const languageSnippet = getLanguageSnippet(language, javaVersion);
   const cliSnippet = getCliProviderSnippet(cliProvider);
 
   // Build custom packages section
-  let customPackages = '';
+  let customPackages = "";
   if (dockerConfig?.packages && dockerConfig.packages.length > 0) {
-    customPackages = dockerConfig.packages.map(pkg => `    ${pkg} \\`).join('\n') + '\n';
+    customPackages = dockerConfig.packages.map((pkg) => `    ${pkg} \\`).join("\n") + "\n";
   }
 
   // Build root build commands section
-  let rootBuildCommands = '';
+  let rootBuildCommands = "";
   if (dockerConfig?.buildCommands?.root && dockerConfig.buildCommands.root.length > 0) {
-    const commands = dockerConfig.buildCommands.root.map(cmd => `RUN ${cmd}`).join('\n');
+    const commands = dockerConfig.buildCommands.root.map((cmd) => `RUN ${cmd}`).join("\n");
     rootBuildCommands = `
 # Custom build commands (root)
 ${commands}
@@ -106,9 +118,9 @@ ${commands}
   }
 
   // Build node build commands section
-  let nodeBuildCommands = '';
+  let nodeBuildCommands = "";
   if (dockerConfig?.buildCommands?.node && dockerConfig.buildCommands.node.length > 0) {
-    const commands = dockerConfig.buildCommands.node.map(cmd => `RUN ${cmd}`).join('\n');
+    const commands = dockerConfig.buildCommands.node.map((cmd) => `RUN ${cmd}`).join("\n");
     nodeBuildCommands = `
 # Custom build commands (node user)
 ${commands}
@@ -116,7 +128,7 @@ ${commands}
   }
 
   // Build git config section if configured
-  let gitConfigSection = '';
+  let gitConfigSection = "";
   if (dockerConfig?.git && (dockerConfig.git.name || dockerConfig.git.email)) {
     const gitCommands: string[] = [];
     if (dockerConfig.git.name) {
@@ -127,16 +139,16 @@ ${commands}
     }
     gitConfigSection = `
 # Configure git identity
-RUN ${gitCommands.join(' \\\n    && ')}
+RUN ${gitCommands.join(" \\\n    && ")}
 `;
   }
 
   // Build asciinema installation section if enabled
-  let asciinemaInstall = '';
-  let asciinemaDir = '';
-  let streamScriptCopy = '';
+  let asciinemaInstall = "";
+  let asciinemaDir = "";
+  let streamScriptCopy = "";
   if (dockerConfig?.asciinema?.enabled) {
-    const outputDir = dockerConfig.asciinema.outputDir || '.recordings';
+    const outputDir = dockerConfig.asciinema.outputDir || ".recordings";
     asciinemaInstall = `
 # Install asciinema for terminal recording/streaming
 RUN apt-get update && apt-get install -y asciinema && rm -rf /var/lib/apt/lists/*
@@ -263,9 +275,9 @@ CMD ["zsh"]
 
 function generateFirewallScript(customDomains: string[] = []): string {
   // Generate custom domains section if any are configured
-  let customDomainsSection = '';
+  let customDomainsSection = "";
   if (customDomains.length > 0) {
-    const domainList = customDomains.join(' ');
+    const domainList = customDomains.join(" ");
     customDomainsSection = `
 # Custom allowed domains (from config)
 for ip in $(dig +short ${domainList}); do
@@ -275,9 +287,10 @@ done
   }
 
   // Generate echo line with custom domains if configured
-  const allowedList = customDomains.length > 0
-    ? `GitHub, npm, Anthropic API, local network, ${customDomains.join(', ')}`
-    : 'GitHub, npm, Anthropic API, local network';
+  const allowedList =
+    customDomains.length > 0
+      ? `GitHub, npm, Anthropic API, local network, ${customDomains.join(", ")}`
+      : "GitHub, npm, Anthropic API, local network";
 
   return `#!/bin/bash
 # Firewall initialization script for Ralph sandbox
@@ -360,32 +373,32 @@ echo "Allowed: ${allowedList}"
 `;
 }
 
-function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig['docker']): string {
+function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig["docker"]): string {
   // Build ports section if configured
-  let portsSection = '';
+  let portsSection = "";
   if (dockerConfig?.ports && dockerConfig.ports.length > 0) {
-    const portLines = dockerConfig.ports.map(port => `      - "${port}"`).join('\n');
+    const portLines = dockerConfig.ports.map((port) => `      - "${port}"`).join("\n");
     portsSection = `    ports:\n${portLines}\n`;
   }
 
   // Build volumes array: base volumes + custom volumes
   const baseVolumes = [
-    '      # Mount project root (two levels up from .ralph/docker/)',
-    '      - ../..:/workspace',
+    "      # Mount project root (two levels up from .ralph/docker/)",
+    "      - ../..:/workspace",
     "      # Mount host's ~/.claude for Pro/Max OAuth credentials",
-    '      - ${HOME}/.claude:/home/node/.claude',
+    "      - ${HOME}/.claude:/home/node/.claude",
     `      - ${imageName}-history:/commandhistory`,
   ];
 
   if (dockerConfig?.volumes && dockerConfig.volumes.length > 0) {
-    const customVolumeLines = dockerConfig.volumes.map(vol => `      - ${vol}`);
+    const customVolumeLines = dockerConfig.volumes.map((vol) => `      - ${vol}`);
     baseVolumes.push(...customVolumeLines);
   }
 
-  const volumesSection = baseVolumes.join('\n');
+  const volumesSection = baseVolumes.join("\n");
 
   // Build environment section if configured
-  let environmentSection = '';
+  let environmentSection = "";
   const envEntries: string[] = [];
 
   // Add user-configured environment variables
@@ -396,7 +409,7 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig['do
   }
 
   if (envEntries.length > 0) {
-    environmentSection = `    environment:\n${envEntries.join('\n')}\n`;
+    environmentSection = `    environment:\n${envEntries.join("\n")}\n`;
   } else {
     // Keep the commented placeholder for users who don't have config
     environmentSection = `    # Uncomment to use API key instead of OAuth:
@@ -405,12 +418,12 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig['do
   }
 
   // Build command section if configured
-  let commandSection = '';
-  let streamJsonNote = '';
+  let commandSection = "";
+  let streamJsonNote = "";
   if (dockerConfig?.asciinema?.enabled && dockerConfig?.asciinema?.autoRecord) {
     // Wrap with asciinema recording
-    const outputDir = dockerConfig.asciinema.outputDir || '.recordings';
-    const innerCommand = dockerConfig.startCommand || 'zsh';
+    const outputDir = dockerConfig.asciinema.outputDir || ".recordings";
+    const innerCommand = dockerConfig.startCommand || "zsh";
     commandSection = `    command: bash -c "mkdir -p /workspace/${outputDir} && asciinema rec -c '${innerCommand}' /workspace/${outputDir}/session-$$(date +%Y%m%d-%H%M%S).cast"\n`;
 
     // Add note about stream-json if enabled
@@ -432,13 +445,13 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig['do
 
   // Build restart policy section
   // Priority: restartCount (on-failure with max retries) > autoStart (unless-stopped)
-  let restartSection = '';
+  let restartSection = "";
   if (dockerConfig?.restartCount !== undefined && dockerConfig.restartCount > 0) {
     // Use on-failure policy with max retry count
     restartSection = `    restart: on-failure:${dockerConfig.restartCount}\n`;
   } else if (dockerConfig?.autoStart) {
     // Use unless-stopped for auto-restart on daemon start
-    restartSection = '    restart: unless-stopped\n';
+    restartSection = "    restart: unless-stopped\n";
   }
 
   return `# Ralph CLI Docker Compose
@@ -472,10 +485,12 @@ dist
 
 // Generate stream wrapper script for clean asciinema recordings
 function generateStreamScript(outputDir: string, saveRawJson: boolean): string {
-  const saveJsonSection = saveRawJson ? `
+  const saveJsonSection = saveRawJson
+    ? `
 # Save raw JSON for later analysis
 JSON_LOG="$OUTPUT_DIR/session-$TIMESTAMP.jsonl"
-TEE_CMD="tee \\"$JSON_LOG\\""` : `
+TEE_CMD="tee \\"$JSON_LOG\\""`
+    : `
 TEE_CMD="cat"`;
 
   return `#!/bin/bash
@@ -555,15 +570,24 @@ function generateMcpJson(mcpServers: Record<string, McpServerConfig>): string {
 
 // Generate skill file content with YAML frontmatter
 function generateSkillFile(skill: SkillConfig): string {
-  const lines = ['---', `description: ${skill.description}`];
+  const lines = ["---", `description: ${skill.description}`];
   if (skill.userInvocable === false) {
-    lines.push('user-invocable: false');
+    lines.push("user-invocable: false");
   }
-  lines.push('---', '', skill.instructions, '');
-  return lines.join('\n');
+  lines.push("---", "", skill.instructions, "");
+  return lines.join("\n");
 }
 
-async function generateFiles(ralphDir: string, language: string, imageName: string, force: boolean = false, javaVersion?: number, cliProvider?: string, dockerConfig?: RalphConfig['docker'], claudeConfig?: RalphConfig['claude']): Promise<void> {
+async function generateFiles(
+  ralphDir: string,
+  language: string,
+  imageName: string,
+  force: boolean = false,
+  javaVersion?: number,
+  cliProvider?: string,
+  dockerConfig?: RalphConfig["docker"],
+  claudeConfig?: RalphConfig["claude"],
+): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
 
   // Create docker directory
@@ -574,7 +598,10 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
 
   const customDomains = dockerConfig?.firewall?.allowedDomains || [];
   const files: { name: string; content: string }[] = [
-    { name: "Dockerfile", content: generateDockerfile(language, javaVersion, cliProvider, dockerConfig) },
+    {
+      name: "Dockerfile",
+      content: generateDockerfile(language, javaVersion, cliProvider, dockerConfig),
+    },
     { name: "init-firewall.sh", content: generateFirewallScript(customDomains) },
     { name: "docker-compose.yml", content: generateDockerCompose(imageName, dockerConfig) },
     { name: ".dockerignore", content: DOCKERIGNORE },
@@ -582,7 +609,7 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
 
   // Add stream script if streamJson is enabled
   if (dockerConfig?.asciinema?.enabled && dockerConfig.asciinema.streamJson?.enabled) {
-    const outputDir = dockerConfig.asciinema.outputDir || '.recordings';
+    const outputDir = dockerConfig.asciinema.outputDir || ".recordings";
     const saveRawJson = dockerConfig.asciinema.streamJson.saveRawJson !== false; // default true
     files.push({ name: "ralph-stream.sh", content: generateStreamScript(outputDir, saveRawJson) });
   }
@@ -591,7 +618,9 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
     const filePath = join(dockerDir, file.name);
 
     if (existsSync(filePath) && !force) {
-      const overwrite = await promptConfirm(`${DOCKER_DIR}/${file.name} already exists. Overwrite?`);
+      const overwrite = await promptConfirm(
+        `${DOCKER_DIR}/${file.name} already exists. Overwrite?`,
+      );
       if (!overwrite) {
         console.log(`Skipped ${file.name}`);
         continue;
@@ -612,33 +641,35 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
 
   // Generate .mcp.json if MCP servers are configured
   if (claudeConfig?.mcpServers && Object.keys(claudeConfig.mcpServers).length > 0) {
-    const mcpJsonPath = join(projectRoot, '.mcp.json');
+    const mcpJsonPath = join(projectRoot, ".mcp.json");
     if (existsSync(mcpJsonPath) && !force) {
-      const overwrite = await promptConfirm('.mcp.json already exists. Overwrite?');
+      const overwrite = await promptConfirm(".mcp.json already exists. Overwrite?");
       if (!overwrite) {
-        console.log('Skipped .mcp.json');
+        console.log("Skipped .mcp.json");
       } else {
         writeFileSync(mcpJsonPath, generateMcpJson(claudeConfig.mcpServers));
-        console.log('Created .mcp.json');
+        console.log("Created .mcp.json");
       }
     } else {
       writeFileSync(mcpJsonPath, generateMcpJson(claudeConfig.mcpServers));
-      console.log('Created .mcp.json');
+      console.log("Created .mcp.json");
     }
   }
 
   // Generate skill files if skills are configured
   if (claudeConfig?.skills && claudeConfig.skills.length > 0) {
-    const commandsDir = join(projectRoot, '.claude', 'commands');
+    const commandsDir = join(projectRoot, ".claude", "commands");
     if (!existsSync(commandsDir)) {
       mkdirSync(commandsDir, { recursive: true });
-      console.log('Created .claude/commands/');
+      console.log("Created .claude/commands/");
     }
 
     for (const skill of claudeConfig.skills) {
       const skillPath = join(commandsDir, `${skill.name}.md`);
       if (existsSync(skillPath) && !force) {
-        const overwrite = await promptConfirm(`.claude/commands/${skill.name}.md already exists. Overwrite?`);
+        const overwrite = await promptConfirm(
+          `.claude/commands/${skill.name}.md already exists. Overwrite?`,
+        );
         if (!overwrite) {
           console.log(`Skipped .claude/commands/${skill.name}.md`);
           continue;
@@ -652,8 +683,8 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
   // Save config hash for change detection
   const configForHash: RalphConfig = {
     language,
-    checkCommand: '',
-    testCommand: '',
+    checkCommand: "",
+    testCommand: "",
     javaVersion,
     cliProvider,
     docker: dockerConfig,
@@ -676,15 +707,33 @@ async function buildImage(ralphDir: string): Promise<void> {
 
   // Check if config has changed since last docker init
   if (hasConfigChanged(ralphDir, config)) {
-    const regenerate = await promptConfirm("Config has changed since last docker init. Regenerate Docker files?");
+    const regenerate = await promptConfirm(
+      "Config has changed since last docker init. Regenerate Docker files?",
+    );
     if (regenerate) {
-      await generateFiles(ralphDir, config.language, config.imageName || `ralph-${basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`, true, config.javaVersion, config.cliProvider, config.docker, config.claude);
+      await generateFiles(
+        ralphDir,
+        config.language,
+        config.imageName ||
+          `ralph-${basename(process.cwd())
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, "-")}`,
+        true,
+        config.javaVersion,
+        config.cliProvider,
+        config.docker,
+        config.claude,
+      );
       console.log("");
     }
   }
 
   console.log("Building Docker image...\n");
-  const imageName = config.imageName || `ralph-${basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
+  const imageName =
+    config.imageName ||
+    `ralph-${basename(process.cwd())
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")}`;
 
   return new Promise((resolve, reject) => {
     // Use --no-cache and --pull to ensure we always get the latest CLI versions
@@ -732,7 +781,13 @@ async function imageExists(imageName: string): Promise<boolean> {
 }
 
 // Get CLI provider configuration
-function getCliProviderConfig(cliProvider?: string): { name: string; command: string; yoloArgs: string[]; envVars: string[]; modelConfig?: { envVar?: string; note?: string } } {
+function getCliProviderConfig(cliProvider?: string): {
+  name: string;
+  command: string;
+  yoloArgs: string[];
+  envVars: string[];
+  modelConfig?: { envVar?: string; note?: string };
+} {
   const cliProvidersJson = getCliProvidersJson();
   const providerKey = cliProvider || "claude";
   const provider = cliProvidersJson.providers[providerKey];
@@ -783,8 +838,7 @@ function startBackgroundServices(config: RalphConfig): () => void {
   }
 
   // Start chat if telegram is configured and not explicitly disabled
-  const telegramEnabled = config.chat?.telegram?.botToken &&
-    config.chat.telegram.enabled !== false;
+  const telegramEnabled = config.chat?.telegram?.botToken && config.chat.telegram.enabled !== false;
   if (telegramEnabled) {
     const logPath = join(ralphDir, "chat.log");
     const logFd = openSync(logPath, "w");
@@ -820,7 +874,16 @@ function startBackgroundServices(config: RalphConfig): () => void {
   };
 }
 
-async function runContainer(ralphDir: string, imageName: string, language: string, javaVersion?: number, cliProvider?: string, dockerConfig?: RalphConfig['docker'], claudeConfig?: RalphConfig['claude'], fullConfig?: RalphConfig): Promise<void> {
+async function runContainer(
+  ralphDir: string,
+  imageName: string,
+  language: string,
+  javaVersion?: number,
+  cliProvider?: string,
+  dockerConfig?: RalphConfig["docker"],
+  claudeConfig?: RalphConfig["claude"],
+  fullConfig?: RalphConfig,
+): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
   const dockerfileExists = existsSync(join(dockerDir, "Dockerfile"));
   const hasImage = await imageExists(imageName);
@@ -829,17 +892,28 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
   if (dockerfileExists) {
     const configForHash: RalphConfig = {
       language,
-      checkCommand: '',
-      testCommand: '',
+      checkCommand: "",
+      testCommand: "",
       javaVersion,
       cliProvider,
       docker: dockerConfig,
       claude: claudeConfig,
     };
     if (hasConfigChanged(ralphDir, configForHash)) {
-      const regenerate = await promptConfirm("Config has changed since last docker init. Regenerate Docker files?");
+      const regenerate = await promptConfirm(
+        "Config has changed since last docker init. Regenerate Docker files?",
+      );
       if (regenerate) {
-        await generateFiles(ralphDir, language, imageName, true, javaVersion, cliProvider, dockerConfig, claudeConfig);
+        await generateFiles(
+          ralphDir,
+          language,
+          imageName,
+          true,
+          javaVersion,
+          cliProvider,
+          dockerConfig,
+          claudeConfig,
+        );
         console.log("");
       }
     }
@@ -849,7 +923,16 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
   if (!dockerfileExists || !hasImage) {
     if (!dockerfileExists) {
       console.log("Docker folder not found. Initializing docker setup...\n");
-      await generateFiles(ralphDir, language, imageName, true, javaVersion, cliProvider, dockerConfig, claudeConfig);
+      await generateFiles(
+        ralphDir,
+        language,
+        imageName,
+        true,
+        javaVersion,
+        cliProvider,
+        dockerConfig,
+        claudeConfig,
+      );
       console.log("");
     }
 
@@ -862,9 +945,10 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
 
   // Get CLI provider info for the startup note
   const cliConfig = getCliProviderConfig(cliProvider);
-  const yoloCommand = cliConfig.yoloArgs.length > 0
-    ? `${cliConfig.command} ${cliConfig.yoloArgs.join(" ")}`
-    : cliConfig.command;
+  const yoloCommand =
+    cliConfig.yoloArgs.length > 0
+      ? `${cliConfig.command} ${cliConfig.yoloArgs.join(" ")}`
+      : cliConfig.command;
 
   console.log("Starting Docker container...\n");
 
@@ -962,10 +1046,25 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     // Remove containers, volumes, networks, and local images
     // Use -p to target only this project's resources
     await new Promise<void>((resolve) => {
-      const proc = spawn("docker", ["compose", "-p", imageName, "down", "--rmi", "local", "-v", "--remove-orphans", "--timeout", "5"], {
-        cwd: dockerDir,
-        stdio: "inherit",
-      });
+      const proc = spawn(
+        "docker",
+        [
+          "compose",
+          "-p",
+          imageName,
+          "down",
+          "--rmi",
+          "local",
+          "-v",
+          "--remove-orphans",
+          "--timeout",
+          "5",
+        ],
+        {
+          cwd: dockerDir,
+          stdio: "inherit",
+        },
+      );
 
       proc.on("close", () => {
         // Continue regardless of exit code (image may not exist)
@@ -994,7 +1093,10 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     });
 
     proc.on("close", async () => {
-      const containerIds = output.trim().split("\n").filter((id) => id.length > 0);
+      const containerIds = output
+        .trim()
+        .split("\n")
+        .filter((id) => id.length > 0);
       if (containerIds.length > 0) {
         // Force remove these containers
         await new Promise<void>((innerResolve) => {
@@ -1041,7 +1143,10 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     });
 
     proc.on("close", async () => {
-      const volumeNames = output.trim().split("\n").filter((name) => name.length > 0);
+      const volumeNames = output
+        .trim()
+        .split("\n")
+        .filter((name) => name.length > 0);
       if (volumeNames.length > 0) {
         // Force remove these volumes
         await new Promise<void>((innerResolve) => {
@@ -1089,7 +1194,10 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     });
 
     proc.on("close", async () => {
-      const podIds = output.trim().split("\n").filter((id) => id.length > 0);
+      const podIds = output
+        .trim()
+        .split("\n")
+        .filter((id) => id.length > 0);
       if (podIds.length > 0) {
         // Force remove these pods (this also removes their containers)
         await new Promise<void>((innerResolve) => {
@@ -1136,7 +1244,11 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
 export async function dockerInit(silent: boolean = false): Promise<void> {
   const config = loadConfig();
   const ralphDir = getRalphDir();
-  const imageName = config.imageName ?? `ralph-${basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
+  const imageName =
+    config.imageName ??
+    `ralph-${basename(process.cwd())
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")}`;
 
   console.log(`\nGenerating Docker files for: ${config.language}`);
   if ((config.language === "java" || config.language === "kotlin") && config.javaVersion) {
@@ -1147,7 +1259,16 @@ export async function dockerInit(silent: boolean = false): Promise<void> {
   }
   console.log(`Image name: ${imageName}\n`);
 
-  await generateFiles(ralphDir, config.language, imageName, true, config.javaVersion, config.cliProvider, config.docker, config.claude);
+  await generateFiles(
+    ralphDir,
+    config.language,
+    imageName,
+    true,
+    config.javaVersion,
+    config.cliProvider,
+    config.docker,
+    config.claude,
+  );
 
   if (!silent) {
     console.log(`
@@ -1231,7 +1352,11 @@ INSTALLING PACKAGES (works with Docker & Podman):
   const config = loadConfig();
 
   // Get image name from config or generate default
-  const imageName = config.imageName || `ralph-${basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
+  const imageName =
+    config.imageName ||
+    `ralph-${basename(process.cwd())
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")}`;
 
   const hasFlag = (flag: string): boolean => subArgs.includes(flag);
 
@@ -1247,7 +1372,16 @@ INSTALLING PACKAGES (works with Docker & Podman):
       break;
 
     case "run":
-      await runContainer(ralphDir, imageName, config.language, config.javaVersion, config.cliProvider, config.docker, config.claude, config);
+      await runContainer(
+        ralphDir,
+        imageName,
+        config.language,
+        config.javaVersion,
+        config.cliProvider,
+        config.docker,
+        config.claude,
+        config,
+      );
       break;
 
     case "clean":
@@ -1257,9 +1391,10 @@ INSTALLING PACKAGES (works with Docker & Podman):
     case "init":
     default: {
       // Default to init if no subcommand or unrecognized subcommand
-      const force = subcommand === "init"
-        ? (subArgs[0] === "-y" || subArgs[0] === "--yes")
-        : (subcommand === "-y" || subcommand === "--yes");
+      const force =
+        subcommand === "init"
+          ? subArgs[0] === "-y" || subArgs[0] === "--yes"
+          : subcommand === "-y" || subcommand === "--yes";
       console.log(`Generating Docker files for: ${config.language}`);
       if ((config.language === "java" || config.language === "kotlin") && config.javaVersion) {
         console.log(`Java version: ${config.javaVersion}`);
@@ -1268,7 +1403,16 @@ INSTALLING PACKAGES (works with Docker & Podman):
         console.log(`CLI provider: ${config.cliProvider}`);
       }
       console.log(`Image name: ${imageName}\n`);
-      await generateFiles(ralphDir, config.language, imageName, force, config.javaVersion, config.cliProvider, config.docker, config.claude);
+      await generateFiles(
+        ralphDir,
+        config.language,
+        imageName,
+        force,
+        config.javaVersion,
+        config.cliProvider,
+        config.docker,
+        config.claude,
+      );
 
       console.log(`
 Docker files generated in .ralph/docker/

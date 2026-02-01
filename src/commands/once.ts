@@ -1,7 +1,14 @@
 import { spawn } from "child_process";
 import { existsSync, appendFileSync, mkdirSync } from "fs";
 import { join } from "path";
-import { checkFilesExist, loadConfig, loadPrompt, getPaths, getCliConfig, requireContainer } from "../utils/config.js";
+import {
+  checkFilesExist,
+  loadConfig,
+  loadPrompt,
+  getPaths,
+  getCliConfig,
+  requireContainer,
+} from "../utils/config.js";
 import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
 import { getStreamJsonParser } from "../utils/stream-json.js";
 import { sendNotificationWithDaemonEvents } from "../utils/notification.js";
@@ -64,10 +71,7 @@ export async function once(args: string[]): Promise<void> {
   // Use yoloArgs from config if available, otherwise default to Claude's --dangerously-skip-permissions
   const yoloArgs = cliConfig.yoloArgs ?? ["--dangerously-skip-permissions"];
   const promptArgs = cliConfig.promptArgs ?? ["-p"];
-  const cliArgs = [
-    ...(cliConfig.args ?? []),
-    ...yoloArgs,
-  ];
+  const cliArgs = [...(cliConfig.args ?? []), ...yoloArgs];
 
   // Build the prompt value based on whether fileArgs is configured
   // fileArgs (e.g., ["--read"] for Aider) means files are passed as separate arguments
@@ -109,7 +113,9 @@ export async function once(args: string[]): Promise<void> {
   cliArgs.push(...promptArgs, promptValue);
 
   if (debug) {
-    console.log(`[debug] ${cliConfig.command} ${cliArgs.map(a => a.includes(" ") ? `"${a}"` : a).join(" ")}\n`);
+    console.log(
+      `[debug] ${cliConfig.command} ${cliArgs.map((a) => (a.includes(" ") ? `"${a}"` : a)).join(" ")}\n`,
+    );
     if (jsonLogPath) {
       console.log(`[debug] Saving raw JSON to: ${jsonLogPath}\n`);
     }
@@ -199,7 +205,10 @@ export async function once(args: string[]): Promise<void> {
         if (code !== 0) {
           console.error(`\n${cliConfig.command} exited with code ${code}`);
           const errorMessage = `Iteration failed with exit code ${code}`;
-          await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, { ...notifyOptions, errorMessage });
+          await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, {
+            ...notifyOptions,
+            errorMessage,
+          });
         } else if (output.includes("<promise>COMPLETE</promise>")) {
           await sendNotificationWithDaemonEvents("prd_complete", undefined, notifyOptions);
         } else {
@@ -229,7 +238,10 @@ export async function once(args: string[]): Promise<void> {
         if (code !== 0) {
           console.error(`\n${cliConfig.command} exited with code ${code}`);
           const errorMessage = `Iteration failed with exit code ${code}`;
-          await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, { ...notifyOptions, errorMessage });
+          await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, {
+            ...notifyOptions,
+            errorMessage,
+          });
         } else if (output.includes("<promise>COMPLETE</promise>")) {
           await sendNotificationWithDaemonEvents("prd_complete", undefined, notifyOptions);
         } else {

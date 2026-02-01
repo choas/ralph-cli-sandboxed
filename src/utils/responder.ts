@@ -238,7 +238,7 @@ export class ResponderMatcher {
  */
 export function matchResponder(
   message: string,
-  responders: RespondersConfig
+  responders: RespondersConfig,
 ): ResponderMatch | null {
   const matcher = new ResponderMatcher(responders);
   return matcher.matchResponder(message);

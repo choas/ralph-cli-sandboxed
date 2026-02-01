@@ -52,7 +52,7 @@ const PROGRESS_INTERVAL = 5000;
 export async function executeClaudeCodeResponder(
   prompt: string,
   responderConfig: ResponderConfig,
-  options?: ClaudeCodeResponderOptions
+  options?: ClaudeCodeResponderOptions,
 ): Promise<ResponderResult> {
   const timeout = options?.timeout ?? responderConfig.timeout ?? DEFAULT_TIMEOUT;
   const maxLength = options?.maxLength ?? responderConfig.maxLength ?? DEFAULT_MAX_LENGTH;
@@ -67,12 +67,7 @@ export async function executeClaudeCodeResponder(
     let progressTimer: NodeJS.Timeout | null = null;
 
     // Build the command arguments
-    const args = [
-      "-p",
-      prompt,
-      "--dangerously-skip-permissions",
-      "--print",
-    ];
+    const args = ["-p", prompt, "--dangerously-skip-permissions", "--print"];
 
     // Spawn claude process
     let proc: ChildProcess;
@@ -125,9 +120,8 @@ export async function executeClaudeCodeResponder(
           // Send a progress indicator
           const lines = stdout.split("\n");
           const lastLine = lines[lines.length - 1] || lines[lines.length - 2] || "";
-          const truncatedLine = lastLine.length > 100
-            ? lastLine.substring(0, 100) + "..."
-            : lastLine;
+          const truncatedLine =
+            lastLine.length > 100 ? lastLine.substring(0, 100) + "..." : lastLine;
           onProgress(`⏳ Working... ${truncatedLine}`);
           lastProgressSent = now;
         }
@@ -226,12 +220,9 @@ function formatClaudeCodeOutput(output: string): string {
  * @returns A function that executes the responder with a prompt
  */
 export function createClaudeCodeResponder(
-  responderConfig: ResponderConfig
+  responderConfig: ResponderConfig,
 ): (prompt: string, options?: ClaudeCodeResponderOptions) => Promise<ResponderResult> {
-  return async (
-    prompt: string,
-    options?: ClaudeCodeResponderOptions
-  ): Promise<ResponderResult> => {
+  return async (prompt: string, options?: ClaudeCodeResponderOptions): Promise<ResponderResult> => {
     return executeClaudeCodeResponder(prompt, responderConfig, options);
   };
 }
@@ -242,9 +233,7 @@ export function createClaudeCodeResponder(
  * @param responderConfig The responder configuration to validate
  * @returns An error message if invalid, or null if valid
  */
-export function validateClaudeCodeResponder(
-  responderConfig: ResponderConfig
-): string | null {
+export function validateClaudeCodeResponder(responderConfig: ResponderConfig): string | null {
   if (responderConfig.type !== "claude-code") {
     return `Responder type is "${responderConfig.type}", expected "claude-code"`;
   }

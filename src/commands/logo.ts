@@ -6,11 +6,11 @@
 // Yellow gradient colors (Ralph Wiggum style)
 const GRADIENT = [
   "\x1b[38;2;255;245;157m", // #FFF59D - pale yellow
-  "\x1b[38;2;255;238;88m",  // #FFEE58 - light yellow
-  "\x1b[38;2;255;235;59m",  // #FFEB3B - Simpsons yellow
-  "\x1b[38;2;253;216;53m",  // #FDD835 - medium yellow
-  "\x1b[38;2;251;192;45m",  // #FBC02D - golden yellow
-  "\x1b[38;2;249;168;37m",  // #F9A825 - deep gold
+  "\x1b[38;2;255;238;88m", // #FFEE58 - light yellow
+  "\x1b[38;2;255;235;59m", // #FFEB3B - Simpsons yellow
+  "\x1b[38;2;253;216;53m", // #FDD835 - medium yellow
+  "\x1b[38;2;251;192;45m", // #FBC02D - golden yellow
+  "\x1b[38;2;249;168;37m", // #F9A825 - deep gold
 ];
 
 const RESET = "\x1b[0m";

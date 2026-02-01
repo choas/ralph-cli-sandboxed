@@ -60,16 +60,20 @@ export async function promptSelectWithArrows(message: string, options: string[])
 
     const onKeypress = (key: string) => {
       // Handle arrow keys (escape sequences)
-      if (key === "\x1B[A" || key === "k") { // Up arrow or k
+      if (key === "\x1B[A" || key === "k") {
+        // Up arrow or k
         selectedIndex = (selectedIndex - 1 + options.length) % options.length;
         render();
-      } else if (key === "\x1B[B" || key === "j") { // Down arrow or j
+      } else if (key === "\x1B[B" || key === "j") {
+        // Down arrow or j
         selectedIndex = (selectedIndex + 1) % options.length;
         render();
-      } else if (key === "\r" || key === "\n" || key === " ") { // Enter or space
+      } else if (key === "\r" || key === "\n" || key === " ") {
+        // Enter or space
         cleanup();
         resolve(options[selectedIndex]);
-      } else if (key === "\x03") { // Ctrl+C
+      } else if (key === "\x03") {
+        // Ctrl+C
         cleanup();
         process.exit(0);
       }
@@ -114,7 +118,10 @@ export async function promptSelect(message: string, options: string[]): Promise<
   }
 }
 
-export async function promptConfirm(message: string, defaultValue: boolean = true): Promise<boolean> {
+export async function promptConfirm(
+  message: string,
+  defaultValue: boolean = true,
+): Promise<boolean> {
   const prompt = createPrompt();
   const hint = defaultValue ? "(Y/n)" : "(y/N)";
 
@@ -181,7 +188,10 @@ export async function promptMultiSelect(message: string, options: string[]): Pro
       console.log(`Invalid number. Enter 1-${options.length}, or type text for custom technology.`);
     } else {
       // Text input - treat as custom technology
-      if (!customTechs.includes(trimmed) && !selected.some(s => s.toLowerCase().includes(trimmed.toLowerCase()))) {
+      if (
+        !customTechs.includes(trimmed) &&
+        !selected.some((s) => s.toLowerCase().includes(trimmed.toLowerCase()))
+      ) {
         customTechs.push(trimmed);
         console.log(`Added custom: ${trimmed}`);
       } else {
@@ -191,7 +201,10 @@ export async function promptMultiSelect(message: string, options: string[]): Pro
   }
 }
 
-export async function promptMultiSelectWithArrows(message: string, options: string[]): Promise<string[]> {
+export async function promptMultiSelectWithArrows(
+  message: string,
+  options: string[],
+): Promise<string[]> {
   return new Promise((resolve) => {
     let selectedIndex = 0;
     const selected: Set<number> = new Set();
@@ -208,7 +221,7 @@ export async function promptMultiSelectWithArrows(message: string, options: stri
       allOptions.forEach((opt, i) => {
         const isLastOption = i === allOptions.length - 1;
         const cursor = i === selectedIndex ? "\x1B[36m❯\x1B[0m" : " ";
-        const checkbox = isLastOption ? "" : (selected.has(i) ? "\x1B[32m[x]\x1B[0m" : "[ ]");
+        const checkbox = isLastOption ? "" : selected.has(i) ? "\x1B[32m[x]\x1B[0m" : "[ ]";
         const text = i === selectedIndex ? `\x1B[36m${opt}\x1B[0m` : opt;
         process.stdout.write(`\x1B[2K${cursor} ${checkbox} ${text}\n`);
       });
@@ -220,7 +233,7 @@ export async function promptMultiSelectWithArrows(message: string, options: stri
       allOptions.forEach((opt, i) => {
         const isLastOption = i === allOptions.length - 1;
         const cursor = i === selectedIndex ? "\x1B[36m❯\x1B[0m" : " ";
-        const checkbox = isLastOption ? "" : (selected.has(i) ? "\x1B[32m[x]\x1B[0m" : "[ ]");
+        const checkbox = isLastOption ? "" : selected.has(i) ? "\x1B[32m[x]\x1B[0m" : "[ ]";
         const text = i === selectedIndex ? `\x1B[36m${opt}\x1B[0m` : opt;
         console.log(`${cursor} ${checkbox} ${text}`);
       });
@@ -235,13 +248,16 @@ export async function promptMultiSelectWithArrows(message: string, options: stri
     process.stdin.setEncoding("utf8");
 
     const onKeypress = (key: string) => {
-      if (key === "\x1B[A" || key === "k") { // Up
+      if (key === "\x1B[A" || key === "k") {
+        // Up
         selectedIndex = (selectedIndex - 1 + allOptions.length) % allOptions.length;
         render();
-      } else if (key === "\x1B[B" || key === "j") { // Down
+      } else if (key === "\x1B[B" || key === "j") {
+        // Down
         selectedIndex = (selectedIndex + 1) % allOptions.length;
         render();
-      } else if (key === " ") { // Space - toggle selection
+      } else if (key === " ") {
+        // Space - toggle selection
         const isLastOption = selectedIndex === allOptions.length - 1;
         if (!isLastOption) {
           if (selected.has(selectedIndex)) {
@@ -251,11 +267,13 @@ export async function promptMultiSelectWithArrows(message: string, options: stri
           }
           render();
         }
-      } else if (key === "\r" || key === "\n") { // Enter - confirm
+      } else if (key === "\r" || key === "\n") {
+        // Enter - confirm
         cleanup();
         const result = options.filter((_, i) => selected.has(i));
         resolve(result);
-      } else if (key === "\x03") { // Ctrl+C
+      } else if (key === "\x03") {
+        // Ctrl+C
         cleanup();
         process.exit(0);
       }

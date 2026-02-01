@@ -8,7 +8,7 @@ export interface ConfigSection {
   id: string;
   label: string;
   icon?: string;
-  fields: string[];  // Field paths within this section (e.g., ["language", "checkCommand"])
+  fields: string[]; // Field paths within this section (e.g., ["language", "checkCommand"])
 }
 
 /**
@@ -26,7 +26,18 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
     id: "docker",
     label: "Docker",
     icon: "🐳",
-    fields: ["docker.ports", "docker.volumes", "docker.environment", "docker.packages", "docker.git", "docker.buildCommands", "docker.startCommand", "docker.firewall", "docker.autoStart", "docker.restartCount"],
+    fields: [
+      "docker.ports",
+      "docker.volumes",
+      "docker.environment",
+      "docker.packages",
+      "docker.git",
+      "docker.buildCommands",
+      "docker.startCommand",
+      "docker.firewall",
+      "docker.autoStart",
+      "docker.restartCount",
+    ],
   },
   {
     id: "daemon",
@@ -50,7 +61,14 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
     id: "notifications",
     label: "Notifications",
     icon: "🔔",
-    fields: ["notifications.provider", "notifications.ntfy", "notifications.pushover", "notifications.gotify", "notifications.command", "notifyCommand"],
+    fields: [
+      "notifications.provider",
+      "notifications.ntfy",
+      "notifications.pushover",
+      "notifications.gotify",
+      "notifications.command",
+      "notifyCommand",
+    ],
   },
 ];
 
@@ -143,7 +161,7 @@ export function SectionNav({
         handleSelect();
       }
     },
-    { isActive: isFocused }
+    { isActive: isFocused },
   );
 
   // Calculate visible sections based on scroll offset
@@ -183,9 +201,7 @@ export function SectionNav({
         return (
           <Box key={section.id}>
             {/* Selection indicator */}
-            <Text color={isHighlighted ? "cyan" : undefined}>
-              {isHighlighted ? "▸ " : "  "}
-            </Text>
+            <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
             {/* Section label */}
             <Text
               bold={isSelected}

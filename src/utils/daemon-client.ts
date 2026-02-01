@@ -1,10 +1,6 @@
 import { existsSync } from "fs";
 import { isRunningInContainer } from "./config.js";
-import {
-  getMessagesPath,
-  sendMessage,
-  waitForResponse,
-} from "./message-queue.js";
+import { getMessagesPath, sendMessage, waitForResponse } from "./message-queue.js";
 
 // Re-export types for backwards compatibility
 export interface DaemonRequest {
@@ -52,7 +48,7 @@ export function isDaemonAvailable(): boolean {
 export async function sendDaemonRequest(
   action: string,
   args?: string[],
-  timeout: number = 10000
+  timeout: number = 10000,
 ): Promise<DaemonResponse> {
   const messagesPath = getMessagesPath(isRunningInContainer());
 

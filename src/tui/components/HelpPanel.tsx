@@ -79,10 +79,7 @@ export interface HelpPanelProps {
  * HelpPanel displays all keyboard shortcuts for the config editor.
  * Toggle with the ? key.
  */
-export function HelpPanel({
-  visible,
-  onClose,
-}: HelpPanelProps): React.ReactElement | null {
+export function HelpPanel({ visible, onClose }: HelpPanelProps): React.ReactElement | null {
   // Handle keyboard input to close help
   useInput(
     (input, key) => {
@@ -90,7 +87,7 @@ export function HelpPanel({
         onClose();
       }
     },
-    { isActive: visible }
+    { isActive: visible },
   );
 
   if (!visible) {
@@ -98,13 +95,7 @@ export function HelpPanel({
   }
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="double"
-      borderColor="cyan"
-      paddingX={2}
-      paddingY={1}
-    >
+    <Box flexDirection="column" borderStyle="double" borderColor="cyan" paddingX={2} paddingY={1}>
       {/* Header */}
       <Box marginBottom={1} justifyContent="center">
         <Text bold color="cyan">

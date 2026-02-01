@@ -7,7 +7,15 @@ import { help } from "./commands/help.js";
 import { init } from "./commands/init.js";
 import { once } from "./commands/once.js";
 import { run } from "./commands/run.js";
-import { prd, prdAdd, prdList, prdStatus, prdToggle, prdClean, parseListArgs } from "./commands/prd.js";
+import {
+  prd,
+  prdAdd,
+  prdList,
+  prdStatus,
+  prdToggle,
+  prdClean,
+  parseListArgs,
+} from "./commands/prd.js";
 import { docker } from "./commands/docker.js";
 import { prompt } from "./commands/prompt.js";
 import { fixPrd } from "./commands/fix-prd.js";

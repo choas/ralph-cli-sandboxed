@@ -179,7 +179,7 @@ export function ArrayEditor({
         onConfirm(editItems);
       }
     },
-    { isActive: isFocused && mode === "list" }
+    { isActive: isFocused && mode === "list" },
   );
 
   // Handle keyboard input for text editing mode
@@ -191,7 +191,7 @@ export function ArrayEditor({
         handleTextCancel();
       }
     },
-    { isActive: isFocused && mode !== "list" }
+    { isActive: isFocused && mode !== "list" },
   );
 
   // Calculate visible items based on scroll offset
@@ -241,10 +241,15 @@ export function ArrayEditor({
     <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
       {/* Header */}
       <Box marginBottom={1}>
-        <Text bold color="cyan">Edit: {label}</Text>
+        <Text bold color="cyan">
+          Edit: {label}
+        </Text>
         <Text dimColor> ({editItems.length} items)</Text>
         {hasOverflow && (
-          <Text dimColor> [{highlightedIndex + 1}/{totalOptions}]</Text>
+          <Text dimColor>
+            {" "}
+            [{highlightedIndex + 1}/{totalOptions}]
+          </Text>
         )}
       </Box>
 
@@ -260,7 +265,9 @@ export function ArrayEditor({
       {/* Visible items list */}
       {editItems.length === 0 && scrollOffset === 0 ? (
         <Box marginBottom={1}>
-          <Text dimColor italic>No items</Text>
+          <Text dimColor italic>
+            No items
+          </Text>
         </Box>
       ) : (
         visibleItems.map((item, visibleIndex) => {
@@ -292,9 +299,7 @@ export function ArrayEditor({
           return (
             <Box key={`item-${actualIndex}`}>
               {/* Selection indicator */}
-              <Text color={isHighlighted ? "cyan" : undefined}>
-                {isHighlighted ? "▸ " : "  "}
-              </Text>
+              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
               {/* Item number */}
               <Text dimColor>{String(actualIndex + 1).padStart(2, " ")}. </Text>
               {/* Item value */}
@@ -322,7 +327,9 @@ export function ArrayEditor({
       {/* Help text */}
       <Box marginTop={1} flexDirection="column">
         <Text dimColor>j/k: navigate | Enter/e: edit | d: delete</Text>
-        <Text dimColor>J/K: reorder | s: save | Esc: cancel{hasOverflow && " | PgUp/Dn: scroll"}</Text>
+        <Text dimColor>
+          J/K: reorder | s: save | Esc: cancel{hasOverflow && " | PgUp/Dn: scroll"}
+        </Text>
       </Box>
     </Box>
   );

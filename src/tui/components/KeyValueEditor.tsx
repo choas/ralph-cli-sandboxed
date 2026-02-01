@@ -36,9 +36,21 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
   ],
   // Chat provider hints
   slack: [
-    { key: "botToken", description: "Slack Bot Token (xoxb-...) from OAuth & Permissions", required: true },
-    { key: "appToken", description: "Slack App Token (xapp-...) from Basic Information > App-Level Tokens", required: true },
-    { key: "signingSecret", description: "Slack Signing Secret from Basic Information > App Credentials", required: true },
+    {
+      key: "botToken",
+      description: "Slack Bot Token (xoxb-...) from OAuth & Permissions",
+      required: true,
+    },
+    {
+      key: "appToken",
+      description: "Slack App Token (xapp-...) from Basic Information > App-Level Tokens",
+      required: true,
+    },
+    {
+      key: "signingSecret",
+      description: "Slack Signing Secret from Basic Information > App Credentials",
+      required: true,
+    },
     { key: "allowedChannelIds", description: "Only respond in these channel IDs (security)" },
     { key: "enabled", description: "Enable/disable Slack integration" },
   ],
@@ -48,7 +60,11 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
     { key: "enabled", description: "Enable/disable Telegram integration" },
   ],
   discord: [
-    { key: "botToken", description: "Discord Bot Token from Developer Portal > Bot > Token", required: true },
+    {
+      key: "botToken",
+      description: "Discord Bot Token from Developer Portal > Bot > Token",
+      required: true,
+    },
     { key: "allowedGuildIds", description: "Only respond in these server/guild IDs (security)" },
     { key: "allowedChannelIds", description: "Only respond in these channel IDs (security)" },
     { key: "enabled", description: "Enable/disable Discord integration" },
@@ -100,7 +116,7 @@ export function KeyValueEditor({
 
   // Get hints that are not already in entries
   const availableHints = useMemo(() => {
-    return providerHints.filter(hint => !(hint.key in editEntries));
+    return providerHints.filter((hint) => !(hint.key in editEntries));
   }, [providerHints, editEntries]);
 
   // Get sorted keys for consistent ordering
@@ -260,7 +276,7 @@ export function KeyValueEditor({
         onConfirm(editEntries);
       }
     },
-    { isActive: isFocused && mode === "list" }
+    { isActive: isFocused && mode === "list" },
   );
 
   // Handle keyboard input for hint selection mode
@@ -278,7 +294,7 @@ export function KeyValueEditor({
         setMode("list");
       }
     },
-    { isActive: isFocused && mode === "select-hint" }
+    { isActive: isFocused && mode === "select-hint" },
   );
 
   // Handle keyboard input for text editing modes
@@ -290,7 +306,7 @@ export function KeyValueEditor({
         handleTextCancel();
       }
     },
-    { isActive: isFocused && mode !== "list" && mode !== "select-hint" }
+    { isActive: isFocused && mode !== "list" && mode !== "select-hint" },
   );
 
   // Render hint selection mode
@@ -299,7 +315,9 @@ export function KeyValueEditor({
       <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         {/* Header */}
         <Box marginBottom={1}>
-          <Text bold color="cyan">Select a Common Key</Text>
+          <Text bold color="cyan">
+            Select a Common Key
+          </Text>
           {providerName && <Text dimColor> ({providerName})</Text>}
         </Box>
 
@@ -308,9 +326,7 @@ export function KeyValueEditor({
           const isHighlighted = index === hintIndex;
           return (
             <Box key={hint.key}>
-              <Text color={isHighlighted ? "cyan" : undefined}>
-                {isHighlighted ? "▸ " : "  "}
-              </Text>
+              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
               <Text
                 bold={isHighlighted}
                 color={hint.required ? "yellow" : isHighlighted ? "cyan" : undefined}
@@ -338,7 +354,9 @@ export function KeyValueEditor({
       <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         {/* Header */}
         <Box marginBottom={1}>
-          <Text bold color="cyan">Add New Entry - Enter Key</Text>
+          <Text bold color="cyan">
+            Add New Entry - Enter Key
+          </Text>
         </Box>
 
         {/* Input field */}
@@ -378,7 +396,7 @@ export function KeyValueEditor({
   // Render value input mode (for add or edit)
   if (mode === "add-value" || mode === "edit-value") {
     // Find hint description for the current key
-    const currentHint = providerHints.find(h => h.key === newKey);
+    const currentHint = providerHints.find((h) => h.key === newKey);
 
     return (
       <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
@@ -425,14 +443,16 @@ export function KeyValueEditor({
   }
 
   // Check for missing required keys
-  const missingRequired = providerHints.filter(h => h.required && !(h.key in editEntries));
+  const missingRequired = providerHints.filter((h) => h.required && !(h.key in editEntries));
 
   // Render list mode
   return (
     <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
       {/* Header */}
       <Box marginBottom={1}>
-        <Text bold color="cyan">Edit: {label}</Text>
+        <Text bold color="cyan">
+          Edit: {label}
+        </Text>
         <Text dimColor> ({keys.length} entries)</Text>
         {providerName && <Text dimColor> - {providerName}</Text>}
       </Box>
@@ -441,21 +461,23 @@ export function KeyValueEditor({
       {missingRequired.length > 0 && (
         <Box marginBottom={1}>
           <Text color="yellow">⚠ Missing required: </Text>
-          <Text color="yellow">{missingRequired.map(h => h.key).join(", ")}</Text>
+          <Text color="yellow">{missingRequired.map((h) => h.key).join(", ")}</Text>
         </Box>
       )}
 
       {/* Entries list */}
       {keys.length === 0 ? (
         <Box marginBottom={1}>
-          <Text dimColor italic>No entries</Text>
+          <Text dimColor italic>
+            No entries
+          </Text>
         </Box>
       ) : (
         keys.map((key, index) => {
           const isHighlighted = index === highlightedIndex;
           const isExpanded = expandedKeys.has(key);
           const value = editEntries[key];
-          const hint = providerHints.find(h => h.key === key);
+          const hint = providerHints.find((h) => h.key === key);
 
           return (
             <Box key={`entry-${key}`} flexDirection="column">
@@ -465,9 +487,7 @@ export function KeyValueEditor({
                   {isHighlighted ? "▸ " : "  "}
                 </Text>
                 {/* Expand indicator */}
-                <Text dimColor>
-                  {isExpanded ? "▼ " : "▶ "}
-                </Text>
+                <Text dimColor>{isExpanded ? "▼ " : "▶ "}</Text>
                 {/* Key name */}
                 <Text
                   bold={isHighlighted}
@@ -517,7 +537,11 @@ export function KeyValueEditor({
 
       {/* Add entry option */}
       <Box>
-        <Text color={highlightedIndex === (hasHints ? keys.length + 1 : keys.length) ? "green" : undefined}>
+        <Text
+          color={
+            highlightedIndex === (hasHints ? keys.length + 1 : keys.length) ? "green" : undefined
+          }
+        >
           {highlightedIndex === (hasHints ? keys.length + 1 : keys.length) ? "▸ " : "  "}
         </Text>
         <Text dimColor>{"  "}</Text>

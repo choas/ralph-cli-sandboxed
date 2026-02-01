@@ -79,7 +79,7 @@ export function validatePrd(content: unknown): ValidationResult {
     }
 
     // If no errors for this item, add to valid data
-    if (errors.filter(e => e.startsWith(prefix)).length === 0) {
+    if (errors.filter((e) => e.startsWith(prefix)).length === 0) {
       data.push({
         category: entry.category as string,
         description: entry.description as string,
@@ -175,7 +175,16 @@ function extractFromItem(item: unknown): ExtractedItem | null {
   }
 
   // Find passes status - check various field names and values
-  const passesFields = ["passes", "pass", "passed", "done", "complete", "completed", "status", "finished"];
+  const passesFields = [
+    "passes",
+    "pass",
+    "passed",
+    "done",
+    "complete",
+    "completed",
+    "status",
+    "finished",
+  ];
   let passes = false;
 
   for (const field of passesFields) {
@@ -188,7 +197,15 @@ function extractFromItem(item: unknown): ExtractedItem | null {
 
     if (typeof value === "string") {
       const lower = value.toLowerCase();
-      if (lower === "true" || lower === "pass" || lower === "passed" || lower === "done" || lower === "complete" || lower === "completed" || lower === "finished") {
+      if (
+        lower === "true" ||
+        lower === "pass" ||
+        lower === "passed" ||
+        lower === "done" ||
+        lower === "complete" ||
+        lower === "completed" ||
+        lower === "finished"
+      ) {
         passes = true;
         break;
       }
@@ -202,14 +219,24 @@ function extractFromItem(item: unknown): ExtractedItem | null {
  * Calculates similarity between two strings using Jaccard index on words.
  */
 function similarity(a: string, b: string): number {
-  const wordsA = new Set(a.toLowerCase().split(/\s+/).filter(w => w.length > 2));
-  const wordsB = new Set(b.toLowerCase().split(/\s+/).filter(w => w.length > 2));
+  const wordsA = new Set(
+    a
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 2),
+  );
+  const wordsB = new Set(
+    b
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 2),
+  );
 
   if (wordsA.size === 0 || wordsB.size === 0) {
     return 0;
   }
 
-  const intersection = new Set([...wordsA].filter(x => wordsB.has(x)));
+  const intersection = new Set([...wordsA].filter((x) => wordsB.has(x)));
   const union = new Set([...wordsA, ...wordsB]);
 
   return intersection.size / union.size;
@@ -221,7 +248,7 @@ function similarity(a: string, b: string): number {
  */
 export function smartMerge(original: PrdEntry[], corrupted: unknown): MergeResult {
   const passingItems = extractPassingItems(corrupted);
-  const merged = original.map(entry => ({ ...entry })); // Deep copy
+  const merged = original.map((entry) => ({ ...entry })); // Deep copy
   let updated = 0;
   const warnings: string[] = [];
 
@@ -234,7 +261,10 @@ export function smartMerge(original: PrdEntry[], corrupted: unknown): MergeResul
 
     for (const entry of merged) {
       // Exact substring match
-      if (entry.description.includes(item.description) || item.description.includes(entry.description)) {
+      if (
+        entry.description.includes(item.description) ||
+        item.description.includes(entry.description)
+      ) {
         bestMatch = entry;
         bestScore = 1;
         break;
@@ -327,7 +357,7 @@ function attemptArrayRecovery(items: unknown[]): PrdEntry[] | null {
     const stepsFields = ["steps", "verification", "checks", "tasks"];
     for (const field of stepsFields) {
       if (Array.isArray(obj[field])) {
-        const steps = (obj[field] as unknown[]).filter(s => typeof s === "string") as string[];
+        const steps = (obj[field] as unknown[]).filter((s) => typeof s === "string") as string[];
         if (steps.length > 0) {
           entry.steps = steps;
           break;
@@ -336,7 +366,16 @@ function attemptArrayRecovery(items: unknown[]): PrdEntry[] | null {
     }
 
     // Passes mapping
-    const passesFields = ["passes", "pass", "passed", "done", "complete", "completed", "status", "finished"];
+    const passesFields = [
+      "passes",
+      "pass",
+      "passed",
+      "done",
+      "complete",
+      "completed",
+      "status",
+      "finished",
+    ];
     for (const field of passesFields) {
       const value = obj[field];
       if (typeof value === "boolean") {
@@ -345,11 +384,25 @@ function attemptArrayRecovery(items: unknown[]): PrdEntry[] | null {
       }
       if (typeof value === "string") {
         const lower = value.toLowerCase();
-        if (lower === "true" || lower === "pass" || lower === "passed" || lower === "done" || lower === "complete" || lower === "completed" || lower === "finished") {
+        if (
+          lower === "true" ||
+          lower === "pass" ||
+          lower === "passed" ||
+          lower === "done" ||
+          lower === "complete" ||
+          lower === "completed" ||
+          lower === "finished"
+        ) {
           entry.passes = true;
           break;
         }
-        if (lower === "false" || lower === "fail" || lower === "failed" || lower === "pending" || lower === "incomplete") {
+        if (
+          lower === "false" ||
+          lower === "fail" ||
+          lower === "failed" ||
+          lower === "pending" ||
+          lower === "incomplete"
+        ) {
           entry.passes = false;
           break;
         }
@@ -402,7 +455,7 @@ export function findLatestBackup(prdPath: string): string | null {
 
   const files = readdirSync(dir);
   const backups = files
-    .filter(f => f.startsWith("backup.prd.") && f.endsWith(".json"))
+    .filter((f) => f.startsWith("backup.prd.") && f.endsWith(".json"))
     .sort()
     .reverse();
 
@@ -429,10 +482,10 @@ export function createTemplatePrd(backupPath?: string): PrdEntry[] {
         description: "Fix the PRD entries",
         steps: [
           `Recreate PRD entries based on this corrupted backup content:\n\n@{${absolutePath}}`,
-          "Write valid entries to .ralph/prd.json with format: category (string), description (string), steps (array of strings), passes (boolean)"
+          "Write valid entries to .ralph/prd.json with format: category (string), description (string), steps (array of strings), passes (boolean)",
         ],
         passes: false,
-      }
+      },
     ];
   }
 
@@ -442,10 +495,10 @@ export function createTemplatePrd(backupPath?: string): PrdEntry[] {
       description: "Add PRD entries",
       steps: [
         "Add requirements using 'ralph add' or edit .ralph/prd.json directly",
-        "Verify format: category (string), description (string), steps (array of strings), passes (boolean)"
+        "Verify format: category (string), description (string), steps (array of strings), passes (boolean)",
       ],
       passes: false,
-    }
+    },
   ];
 }
 
@@ -501,9 +554,9 @@ export function expandFileReferences(text: string, baseDir: string): string {
  * Returns a new array with expanded content.
  */
 export function expandPrdFileReferences(entries: PrdEntry[], baseDir: string): PrdEntry[] {
-  return entries.map(entry => ({
+  return entries.map((entry) => ({
     ...entry,
     description: expandFileReferences(entry.description, baseDir),
-    steps: entry.steps.map(step => expandFileReferences(step, baseDir)),
+    steps: entry.steps.map((step) => expandFileReferences(step, baseDir)),
   }));
 }

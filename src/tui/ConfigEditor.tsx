@@ -51,14 +51,7 @@ function setValueAtPath<T extends object>(obj: T, path: string, value: unknown):
 export function ConfigEditor(): React.ReactElement {
   const { exit } = useApp();
   const terminalSize = useTerminalSize();
-  const {
-    config,
-    loading,
-    error,
-    hasChanges,
-    saveConfig,
-    updateConfig,
-  } = useConfig();
+  const { config, loading, error, hasChanges, saveConfig, updateConfig } = useConfig();
 
   // Calculate available height for scrollable content
   // Reserve lines for: header (2), status message (1), footer (2), borders (2)
@@ -116,37 +109,43 @@ export function ConfigEditor(): React.ReactElement {
   }, [selectedField]);
 
   // Handle section selection
-  const handleSelectSection = useCallback((sectionId: string) => {
-    setSelectedSection(sectionId);
-    setSelectedField(undefined);
+  const handleSelectSection = useCallback(
+    (sectionId: string) => {
+      setSelectedSection(sectionId);
+      setSelectedField(undefined);
 
-    // Check if this section has presets and hasn't been visited yet
-    if (sectionHasPresets(sectionId) && !visitedSections.has(sectionId)) {
-      setFocusPane("preset-selector");
-    } else {
-      setFocusPane("editor");
-    }
-  }, [visitedSections]);
+      // Check if this section has presets and hasn't been visited yet
+      if (sectionHasPresets(sectionId) && !visitedSections.has(sectionId)) {
+        setFocusPane("preset-selector");
+      } else {
+        setFocusPane("editor");
+      }
+    },
+    [visitedSections],
+  );
 
   // Handle preset selection
-  const handleSelectPreset = useCallback((preset: ConfigPreset) => {
-    if (!config) return;
+  const handleSelectPreset = useCallback(
+    (preset: ConfigPreset) => {
+      if (!config) return;
 
-    // Apply the preset to the config
-    updateConfig((currentConfig: RalphConfig) => {
-      return applyPreset(currentConfig, preset);
-    });
+      // Apply the preset to the config
+      updateConfig((currentConfig: RalphConfig) => {
+        return applyPreset(currentConfig, preset);
+      });
 
-    // Mark section as visited
-    setVisitedSections((prev) => new Set([...prev, selectedSection]));
+      // Mark section as visited
+      setVisitedSections((prev) => new Set([...prev, selectedSection]));
 
-    // Show status message
-    setStatusMessage(`Applied "${preset.name}" preset`);
-    setTimeout(() => setStatusMessage(null), 2000);
+      // Show status message
+      setStatusMessage(`Applied "${preset.name}" preset`);
+      setTimeout(() => setStatusMessage(null), 2000);
 
-    // Move to editor
-    setFocusPane("editor");
-  }, [config, updateConfig, selectedSection]);
+      // Move to editor
+      setFocusPane("editor");
+    },
+    [config, updateConfig, selectedSection],
+  );
 
   // Handle skipping preset selection
   const handleSkipPreset = useCallback(() => {
@@ -178,19 +177,22 @@ export function ConfigEditor(): React.ReactElement {
   }, [focusPane]);
 
   // Handle field value confirmation
-  const handleFieldConfirm = useCallback((newValue: unknown) => {
-    if (!selectedField) return;
+  const handleFieldConfirm = useCallback(
+    (newValue: unknown) => {
+      if (!selectedField) return;
 
-    updateConfig((currentConfig: RalphConfig) => {
-      return setValueAtPath(currentConfig, selectedField, newValue);
-    });
+      updateConfig((currentConfig: RalphConfig) => {
+        return setValueAtPath(currentConfig, selectedField, newValue);
+      });
 
-    setSelectedField(undefined);
-    setJsonEditMode(false);
-    setFocusPane("editor");
-    setStatusMessage("Field updated");
-    setTimeout(() => setStatusMessage(null), 2000);
-  }, [selectedField, updateConfig]);
+      setSelectedField(undefined);
+      setJsonEditMode(false);
+      setFocusPane("editor");
+      setStatusMessage("Field updated");
+      setTimeout(() => setStatusMessage(null), 2000);
+    },
+    [selectedField, updateConfig],
+  );
 
   // Handle field edit cancel
   const handleFieldCancel = useCallback(() => {
@@ -279,14 +281,16 @@ export function ConfigEditor(): React.ReactElement {
         }
       }
     },
-    { isActive: focusPane !== "field-editor" && focusPane !== "preset-selector" }
+    { isActive: focusPane !== "field-editor" && focusPane !== "preset-selector" },
   );
 
   // Render loading state
   if (loading) {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color="cyan" bold>ralph config</Text>
+        <Text color="cyan" bold>
+          ralph config
+        </Text>
         <Text dimColor>Loading configuration...</Text>
       </Box>
     );
@@ -296,7 +300,9 @@ export function ConfigEditor(): React.ReactElement {
   if (error || !config) {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color="cyan" bold>ralph config</Text>
+        <Text color="cyan" bold>
+          ralph config
+        </Text>
         <Text color="red">Error: {error || "Failed to load configuration"}</Text>
         <Box marginTop={1}>
           <Text dimColor>Press Q to quit</Text>
@@ -376,15 +382,15 @@ export function ConfigEditor(): React.ReactElement {
         }
 
         // Check if this is a notification provider config field
-        const isNotificationProvider = selectedField &&
+        const isNotificationProvider =
+          selectedField &&
           (selectedField === "notifications.ntfy" ||
-           selectedField === "notifications.pushover" ||
-           selectedField === "notifications.gotify");
+            selectedField === "notifications.pushover" ||
+            selectedField === "notifications.gotify");
 
         // Check if this is a chat provider config field
-        const isChatProvider = selectedField &&
-          (selectedField === "chat.slack" ||
-           selectedField === "chat.telegram");
+        const isChatProvider =
+          selectedField && (selectedField === "chat.slack" || selectedField === "chat.telegram");
 
         if (isNotificationProvider || isChatProvider) {
           // Extract provider name from field path
@@ -462,14 +468,14 @@ export function ConfigEditor(): React.ReactElement {
   return (
     <Box flexDirection="column">
       {/* Help panel overlay */}
-      {helpVisible && (
-        <HelpPanel visible={helpVisible} onClose={toggleHelp} />
-      )}
+      {helpVisible && <HelpPanel visible={helpVisible} onClose={toggleHelp} />}
 
       {/* Header */}
       <Box marginBottom={1} justifyContent="space-between">
         <Box>
-          <Text color="cyan" bold>ralph config</Text>
+          <Text color="cyan" bold>
+            ralph config
+          </Text>
           {hasChanges && <Text color="yellow"> (unsaved changes)</Text>}
         </Box>
         <Box>
@@ -484,7 +490,13 @@ export function ConfigEditor(): React.ReactElement {
       {/* Status message */}
       {statusMessage && (
         <Box marginBottom={1}>
-          <Text color={statusMessage.includes("Failed") || statusMessage.includes("Validation") ? "red" : "green"}>
+          <Text
+            color={
+              statusMessage.includes("Failed") || statusMessage.includes("Validation")
+                ? "red"
+                : "green"
+            }
+          >
             {statusMessage}
           </Text>
         </Box>
@@ -492,9 +504,7 @@ export function ConfigEditor(): React.ReactElement {
 
       {/* Two-panel layout or overlay views */}
       {focusPane === "field-editor" ? (
-        <Box>
-          {renderFieldEditor()}
-        </Box>
+        <Box>{renderFieldEditor()}</Box>
       ) : focusPane === "preset-selector" ? (
         <Box>
           <PresetSelector
@@ -533,19 +543,17 @@ export function ConfigEditor(): React.ReactElement {
           </Box>
 
           {/* Right panel: JSON Preview (toggle with Tab) */}
-          <Preview
-            config={config}
-            selectedSection={selectedSection}
-            visible={previewVisible}
-          />
+          <Preview config={config} selectedSection={selectedSection} visible={previewVisible} />
         </Box>
       )}
 
       {/* Footer with keyboard hints */}
       <Box marginTop={1}>
         <Text dimColor>
-          {focusPane === "nav" && "j/k: navigate | Enter: select | l/→: editor | Tab: toggle preview"}
-          {focusPane === "editor" && "j/k: navigate | Enter: edit | J: JSON | h/←: nav | Tab: preview | p: presets"}
+          {focusPane === "nav" &&
+            "j/k: navigate | Enter: select | l/→: editor | Tab: toggle preview"}
+          {focusPane === "editor" &&
+            "j/k: navigate | Enter: edit | J: JSON | h/←: nav | Tab: preview | p: presets"}
           {focusPane === "field-editor" && "Follow editor hints"}
           {focusPane === "preset-selector" && "j/k: navigate | Enter: select | Esc: back"}
         </Text>

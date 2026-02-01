@@ -108,14 +108,21 @@ function validateJsonStructure(value: unknown, label: string): string[] {
       if (serverConfig.args && !Array.isArray(serverConfig.args)) {
         warnings.push(`Server "${name}": "args" should be an array`);
       }
-      if (serverConfig.env && (typeof serverConfig.env !== "object" || Array.isArray(serverConfig.env))) {
+      if (
+        serverConfig.env &&
+        (typeof serverConfig.env !== "object" || Array.isArray(serverConfig.env))
+      ) {
         warnings.push(`Server "${name}": "env" should be an object`);
       }
     }
   }
 
   // Daemon Actions validation
-  if (label.toLowerCase().includes("action") && typeof value === "object" && !Array.isArray(value)) {
+  if (
+    label.toLowerCase().includes("action") &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  ) {
     const actions = value as Record<string, unknown>;
     for (const [name, config] of Object.entries(actions)) {
       if (typeof config !== "object" || config === null) {
@@ -235,7 +242,7 @@ function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React
         tokens.push(
           <Text key={tokenKey++} color={isKey ? "cyan" : "green"}>
             {str}
-          </Text>
+          </Text>,
         );
         lineLength += str.length;
         remaining = remaining.slice(stringMatch[1].length);
@@ -248,7 +255,7 @@ function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React
         tokens.push(
           <Text key={tokenKey++} color="yellow">
             {numMatch[1]}
-          </Text>
+          </Text>,
         );
         lineLength += numMatch[1].length;
         remaining = remaining.slice(numMatch[1].length);
@@ -261,7 +268,7 @@ function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React
         tokens.push(
           <Text key={tokenKey++} color="magenta">
             {boolNullMatch[1]}
-          </Text>
+          </Text>,
         );
         lineLength += boolNullMatch[1].length;
         remaining = remaining.slice(boolNullMatch[1].length);
@@ -274,7 +281,7 @@ function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React
         tokens.push(
           <Text key={tokenKey++} dimColor>
             {otherMatch[1]}
-          </Text>
+          </Text>,
         );
         lineLength += otherMatch[1].length;
         remaining = remaining.slice(otherMatch[1].length);
@@ -282,9 +289,7 @@ function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React
       }
 
       // Fallback: single character
-      tokens.push(
-        <Text key={tokenKey++}>{remaining[0]}</Text>
-      );
+      tokens.push(<Text key={tokenKey++}>{remaining[0]}</Text>);
       lineLength += 1;
       remaining = remaining.slice(1);
     }
@@ -292,7 +297,9 @@ function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React
     // If line was truncated due to length
     if (remaining.length > 0) {
       tokens.push(
-        <Text key={tokenKey++} dimColor>...</Text>
+        <Text key={tokenKey++} dimColor>
+          ...
+        </Text>,
       );
     }
 
@@ -300,15 +307,15 @@ function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React
       <Box key={i}>
         <Text dimColor>{lineNum} </Text>
         {tokens}
-      </Box>
+      </Box>,
     );
   }
 
   if (hasMore) {
     elements.push(
       <Box key="more">
-        <Text dimColor>    ... ({lines.length - maxLines} more lines)</Text>
-      </Box>
+        <Text dimColor> ... ({lines.length - maxLines} more lines)</Text>
+      </Box>,
     );
   }
 
@@ -451,7 +458,7 @@ export function JsonSnippetEditor({
         handlePageDown();
       }
     },
-    { isActive: isFocused && mode === "view" }
+    { isActive: isFocused && mode === "view" },
   );
 
   // Handle keyboard input for edit mode
@@ -463,7 +470,7 @@ export function JsonSnippetEditor({
         handleCancelEdit();
       }
     },
-    { isActive: isFocused && mode === "edit" }
+    { isActive: isFocused && mode === "edit" },
   );
 
   // Count errors and warnings for status bar
@@ -476,7 +483,9 @@ export function JsonSnippetEditor({
       <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         {/* Header */}
         <Box marginBottom={1}>
-          <Text bold color="cyan">Edit JSON: {label}</Text>
+          <Text bold color="cyan">
+            Edit JSON: {label}
+          </Text>
         </Box>
 
         {/* Input field */}
@@ -493,7 +502,9 @@ export function JsonSnippetEditor({
         {/* Parse error */}
         {parseError && (
           <Box marginTop={1} flexDirection="column">
-            <Text color="red" bold>Syntax Error:</Text>
+            <Text color="red" bold>
+              Syntax Error:
+            </Text>
             <Text color="red">
               {parseError.line && parseError.column
                 ? `Line ${parseError.line}, Column ${parseError.column}: `
@@ -506,9 +517,13 @@ export function JsonSnippetEditor({
         {/* Status bar */}
         <Box marginTop={1}>
           {errorCount > 0 ? (
-            <Text color="red">{errorCount} error{errorCount > 1 ? "s" : ""}</Text>
+            <Text color="red">
+              {errorCount} error{errorCount > 1 ? "s" : ""}
+            </Text>
           ) : warningCount > 0 ? (
-            <Text color="yellow">{warningCount} warning{warningCount > 1 ? "s" : ""}</Text>
+            <Text color="yellow">
+              {warningCount} warning{warningCount > 1 ? "s" : ""}
+            </Text>
           ) : (
             <Text color="green">Valid JSON</Text>
           )}
@@ -534,7 +549,9 @@ export function JsonSnippetEditor({
     <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
       {/* Header */}
       <Box marginBottom={1} justifyContent="space-between">
-        <Text bold color="cyan">Edit as JSON: {label}</Text>
+        <Text bold color="cyan">
+          Edit as JSON: {label}
+        </Text>
         {copied && <Text color="green"> Copied!</Text>}
       </Box>
 
@@ -548,7 +565,8 @@ export function JsonSnippetEditor({
         {parseError ? (
           <Box>
             <Text color="red" bold>
-              Error: {parseError.line && parseError.column
+              Error:{" "}
+              {parseError.line && parseError.column
                 ? `Line ${parseError.line}:${parseError.column} - `
                 : ""}
               {parseError.message}
@@ -556,13 +574,16 @@ export function JsonSnippetEditor({
           </Box>
         ) : warningCount > 0 ? (
           <Box flexDirection="column">
-            <Text color="yellow" bold>{warningCount} warning{warningCount > 1 ? "s" : ""}:</Text>
+            <Text color="yellow" bold>
+              {warningCount} warning{warningCount > 1 ? "s" : ""}:
+            </Text>
             {warnings.slice(0, 3).map((w, i) => (
-              <Text key={i} color="yellow" dimColor> - {w}</Text>
+              <Text key={i} color="yellow" dimColor>
+                {" "}
+                - {w}
+              </Text>
             ))}
-            {warningCount > 3 && (
-              <Text dimColor> ... and {warningCount - 3} more</Text>
-            )}
+            {warningCount > 3 && <Text dimColor> ... and {warningCount - 3} more</Text>}
           </Box>
         ) : (
           <Text color="green">Valid JSON</Text>

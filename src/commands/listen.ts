@@ -92,7 +92,7 @@ function stopRunningProcess(pid: number): { success: boolean; error?: string } {
  */
 async function executeCommand(
   command: string,
-  timeout: number = 60000
+  timeout: number = 60000,
 ): Promise<{ success: boolean; output: string; error?: string }> {
   return new Promise((resolve) => {
     const proc = spawn("sh", ["-c", command], {
@@ -150,7 +150,7 @@ async function executeCommand(
 async function processMessage(
   message: Message,
   messagesPath: string,
-  debug: boolean
+  debug: boolean,
 ): Promise<void> {
   const { action, args } = message;
 
@@ -220,7 +220,9 @@ async function processMessage(
 
       respondToMessage(messagesPath, message.id, {
         success: true,
-        output: message.args?.length ? `Ralph run started (category: ${message.args[0]})` : "Ralph run started",
+        output: message.args?.length
+          ? `Ralph run started (category: ${message.args[0]})`
+          : "Ralph run started",
       });
       break;
     }

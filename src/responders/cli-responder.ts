@@ -117,7 +117,7 @@ export function parseCommand(commandString: string): { command: string; args: st
 export async function executeCLIResponder(
   message: string,
   responderConfig: ResponderConfig,
-  options?: CLIResponderOptions
+  options?: CLIResponderOptions,
 ): Promise<ResponderResult> {
   const timeout = options?.timeout ?? responderConfig.timeout ?? DEFAULT_TIMEOUT;
   const maxLength = options?.maxLength ?? responderConfig.maxLength ?? DEFAULT_MAX_LENGTH;
@@ -215,9 +215,8 @@ export async function executeCLIResponder(
           // Send a progress indicator
           const lines = stdout.split("\n");
           const lastLine = lines[lines.length - 1] || lines[lines.length - 2] || "";
-          const truncatedLine = lastLine.length > 100
-            ? lastLine.substring(0, 100) + "..."
-            : lastLine;
+          const truncatedLine =
+            lastLine.length > 100 ? lastLine.substring(0, 100) + "..." : lastLine;
           onProgress(`⏳ Running... ${truncatedLine}`);
           lastProgressSent = now;
         }
@@ -327,12 +326,9 @@ function formatCLIOutput(stdout: string, stderr: string): string {
  * @returns A function that executes the responder with a message
  */
 export function createCLIResponder(
-  responderConfig: ResponderConfig
+  responderConfig: ResponderConfig,
 ): (message: string, options?: CLIResponderOptions) => Promise<ResponderResult> {
-  return async (
-    message: string,
-    options?: CLIResponderOptions
-  ): Promise<ResponderResult> => {
+  return async (message: string, options?: CLIResponderOptions): Promise<ResponderResult> => {
     return executeCLIResponder(message, responderConfig, options);
   };
 }
@@ -343,9 +339,7 @@ export function createCLIResponder(
  * @param responderConfig The responder configuration to validate
  * @returns An error message if invalid, or null if valid
  */
-export function validateCLIResponder(
-  responderConfig: ResponderConfig
-): string | null {
+export function validateCLIResponder(responderConfig: ResponderConfig): string | null {
   if (responderConfig.type !== "cli") {
     return `Responder type is "${responderConfig.type}", expected "cli"`;
   }

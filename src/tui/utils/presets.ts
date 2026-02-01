@@ -3,7 +3,13 @@
  * Provides quick setup templates for common integrations.
  */
 
-import type { RalphConfig, NotificationProviderConfig, TelegramChatSettings, SlackChatSettings, DiscordChatSettings } from "../../utils/config.js";
+import type {
+  RalphConfig,
+  NotificationProviderConfig,
+  TelegramChatSettings,
+  SlackChatSettings,
+  DiscordChatSettings,
+} from "../../utils/config.js";
 
 /**
  * A preset defines default values for a specific integration.
@@ -47,8 +53,8 @@ export const CHAT_PRESETS: ConfigPreset[] = [
       "chat.provider": "slack",
       "chat.slack": {
         enabled: true,
-        botToken: "",     // xoxb-... from OAuth & Permissions
-        appToken: "",     // xapp-... from Basic Information > App-Level Tokens
+        botToken: "", // xoxb-... from OAuth & Permissions
+        appToken: "", // xapp-... from Basic Information > App-Level Tokens
         signingSecret: "", // From Basic Information > App Credentials
         allowedChannelIds: [],
       } satisfies SlackChatSettings,
@@ -64,8 +70,8 @@ export const CHAT_PRESETS: ConfigPreset[] = [
       "chat.provider": "discord",
       "chat.discord": {
         enabled: true,
-        botToken: "",         // Bot token from Discord Developer Portal > Bot > Token
-        allowedGuildIds: [],  // Server/guild IDs to restrict access (optional)
+        botToken: "", // Bot token from Discord Developer Portal > Bot > Token
+        allowedGuildIds: [], // Server/guild IDs to restrict access (optional)
         allowedChannelIds: [], // Channel IDs to restrict access (optional)
       } satisfies DiscordChatSettings,
     },

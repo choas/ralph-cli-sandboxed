@@ -1,11 +1,7 @@
 import { isRunningInContainer } from "../utils/config.js";
 import { sendNotification, NotificationEvent } from "../utils/notification.js";
 import { loadConfig } from "../utils/config.js";
-import {
-  getMessagesPath,
-  sendMessage,
-  waitForResponse,
-} from "../utils/message-queue.js";
+import { getMessagesPath, sendMessage, waitForResponse } from "../utils/message-queue.js";
 import { existsSync } from "fs";
 
 /**
@@ -66,12 +62,7 @@ export async function notify(args: string[]): Promise<void> {
     }
 
     // Send message via file queue
-    const messageId = sendMessage(
-      messagesPath,
-      "sandbox",
-      action,
-      message ? [message] : undefined
-    );
+    const messageId = sendMessage(messagesPath, "sandbox", action, message ? [message] : undefined);
 
     if (debug) {
       console.log(`[notify] Sent message: ${messageId}`);

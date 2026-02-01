@@ -43,7 +43,7 @@ function restoreFromBackup(prdPath: string, backupPath: string): boolean {
 
     if (!validation.valid) {
       console.error("Error: Backup file contains invalid PRD structure:");
-      validation.errors.slice(0, 3).forEach(err => {
+      validation.errors.slice(0, 3).forEach((err) => {
         console.error(`  - ${err}`);
       });
       return false;
@@ -164,7 +164,7 @@ export async function fixPrd(args: string[] = []): Promise<void> {
 
   // PRD is invalid
   console.log("\x1b[31m✗ PRD structure is invalid:\x1b[0m");
-  validation.errors.slice(0, 5).forEach(err => {
+  validation.errors.slice(0, 5).forEach((err) => {
     console.log(`  - ${err}`);
   });
   if (validation.errors.length > 5) {
