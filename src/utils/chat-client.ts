@@ -85,6 +85,8 @@ export interface SendMessageOptions {
   inlineKeyboard?: InlineButton[][];
   /** Thread timestamp for reply context (Slack-specific) */
   threadTs?: string;
+  /** Message ID to reply to (Telegram-specific) */
+  replyToMessageId?: number;
 }
 
 /**

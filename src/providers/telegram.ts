@@ -15,6 +15,11 @@ import {
   parseCommand,
   escapeHtml,
 } from "../utils/chat-client.js";
+import { ResponderMatcher, ResponderMatch } from "../utils/responder.js";
+import { ResponderConfig, RespondersConfig, loadConfig } from "../utils/config.js";
+import { executeLLMResponder, ResponderResult } from "../responders/llm-responder.js";
+import { executeClaudeCodeResponder } from "../responders/claude-code-responder.js";
+import { executeCLIResponder } from "../responders/cli-responder.js";
 
 interface TelegramUpdate {
   update_id: number;
@@ -34,6 +39,25 @@ interface TelegramUpdate {
     };
     date: number;
     text?: string;
+    reply_to_message?: {
+      message_id: number;
+      from?: {
+        id: number;
+        first_name: string;
+        last_name?: string;
+        username?: string;
+      };
+      text?: string;
+    };
+    entities?: Array<{
+      type: string;
+      offset: number;
+      length: number;
+      user?: {
+        id: number;
+        username?: string;
+      };
+    }>;
   };
   callback_query?: TelegramCallbackQuery;
 }
@@ -84,10 +108,157 @@ export class TelegramChatClient implements ChatClient {
   private lastUpdateId = 0;
   private pollingTimeout: NodeJS.Timeout | null = null;
   private debug: boolean;
+  private responderMatcher: ResponderMatcher | null = null;
+  private respondersConfig: RespondersConfig | null = null;
+  private botUserId: number | null = null;
+  private botUsername: string | null = null;
 
   constructor(settings: TelegramSettings, debug = false) {
     this.settings = settings;
     this.debug = debug;
+
+    // Initialize responders from config if available
+    this.initializeResponders();
+  }
+
+  /**
+   * Initialize responder matching from config.
+   */
+  private initializeResponders(): void {
+    try {
+      const config = loadConfig();
+      if (config.chat?.responders) {
+        this.respondersConfig = config.chat.responders;
+        this.responderMatcher = new ResponderMatcher(config.chat.responders);
+        if (this.debug) {
+          console.log(`[telegram] Initialized ${Object.keys(config.chat.responders).length} responders`);
+        }
+      }
+    } catch {
+      // Config not available or responders not configured
+      if (this.debug) {
+        console.log("[telegram] No responders configured");
+      }
+    }
+  }
+
+  /**
+   * Execute a responder and return the result.
+   */
+  private async executeResponder(
+    match: ResponderMatch,
+    message: string
+  ): Promise<ResponderResult> {
+    const { responder } = match;
+
+    switch (responder.type) {
+      case "llm":
+        return executeLLMResponder(message, responder);
+
+      case "claude-code":
+        return executeClaudeCodeResponder(message, responder);
+
+      case "cli":
+        return executeCLIResponder(message, responder);
+
+      default:
+        return {
+          success: false,
+          response: "",
+          error: `Unknown responder type: ${(responder as ResponderConfig).type}`,
+        };
+    }
+  }
+
+  /**
+   * Handle a message that might match a responder.
+   * Returns true if a responder was matched and executed.
+   */
+  private async handleResponderMessage(
+    message: ChatMessage,
+    messageId: number
+  ): Promise<boolean> {
+    if (!this.responderMatcher) {
+      return false;
+    }
+
+    const match = this.responderMatcher.matchResponder(message.text);
+    if (!match) {
+      return false;
+    }
+
+    if (this.debug) {
+      console.log(`[telegram] Matched responder: ${match.name} (type: ${match.responder.type})`);
+    }
+
+    // Execute the responder
+    const result = await this.executeResponder(match, match.args || message.text);
+
+    // Send the response (reply to the original message for context)
+    if (result.success) {
+      await this.sendMessage(message.chatId, result.response, {
+        replyToMessageId: messageId,
+      });
+    } else {
+      const errorMsg = result.error
+        ? `Error: ${result.error}`
+        : "An error occurred while processing your message.";
+      await this.sendMessage(message.chatId, errorMsg, {
+        replyToMessageId: messageId,
+      });
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if the bot is mentioned in a message.
+   * Handles both @username mentions and direct replies to the bot.
+   */
+  private isBotMentioned(update: TelegramUpdate): boolean {
+    const msg = update.message;
+    if (!msg) return false;
+
+    // Check if this is a reply to the bot's message
+    if (msg.reply_to_message?.from?.id === this.botUserId) {
+      return true;
+    }
+
+    // Check for @mention in message entities
+    if (msg.entities && this.botUsername) {
+      for (const entity of msg.entities) {
+        if (entity.type === "mention" && msg.text) {
+          const mention = msg.text.substring(entity.offset, entity.offset + entity.length);
+          if (mention.toLowerCase() === `@${this.botUsername.toLowerCase()}`) {
+            return true;
+          }
+        }
+        if (entity.type === "text_mention" && entity.user?.id === this.botUserId) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Remove bot mention from message text.
+   */
+  private removeBotMention(text: string): string {
+    if (!this.botUsername) {
+      return text;
+    }
+    // Remove @username and any surrounding whitespace
+    const regex = new RegExp(`@${this.botUsername}\\s*`, "gi");
+    return text.replace(regex, "").trim();
+  }
+
+  /**
+   * Check if a chat is a group chat (group or supergroup).
+   */
+  private isGroupChat(chatType: string): boolean {
+    return chatType === "group" || chatType === "supergroup";
   }
 
   /**
@@ -220,6 +391,8 @@ export class TelegramChatClient implements ChatClient {
 
         if (update.message?.text) {
           const chatId = String(update.message.chat.id);
+          const messageId = update.message.message_id;
+          const chatType = update.message.chat.type;
 
           // Check if chat is allowed
           if (!this.isChatAllowed(chatId)) {
@@ -229,8 +402,18 @@ export class TelegramChatClient implements ChatClient {
             continue;
           }
 
+          // In group chats, only process messages that mention the bot or are replies to the bot
+          const isGroup = this.isGroupChat(chatType);
+          const isMention = this.isBotMentioned(update);
+
+          // Clean the message text (remove bot mention if present)
+          let messageText = update.message.text;
+          if (isMention) {
+            messageText = this.removeBotMention(messageText);
+          }
+
           const message: ChatMessage = {
-            text: update.message.text,
+            text: messageText,
             chatId,
             senderId: update.message.from ? String(update.message.from.id) : undefined,
             senderName: update.message.from
@@ -251,7 +434,7 @@ export class TelegramChatClient implements ChatClient {
             }
           }
 
-          // Try to parse as a command
+          // Try to parse as a command first
           const command = parseCommand(message.text, message);
           if (command) {
             try {
@@ -261,7 +444,48 @@ export class TelegramChatClient implements ChatClient {
                 console.error(`[telegram] Command handler error: ${err}`);
               }
               // Send error message to chat
-              await this.sendMessage(chatId, `Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`);
+              await this.sendMessage(chatId, `Error executing command: ${err instanceof Error ? err.message : "Unknown error"}`, {
+                replyToMessageId: messageId,
+              });
+            }
+            continue; // Command handled, don't process as responder message
+          }
+
+          // For non-command messages, route through responders
+          // In group chats: only respond if bot is mentioned or message is a reply to bot
+          // In private chats: always respond if responders are configured
+          const shouldProcessAsResponder = !isGroup || isMention;
+
+          if (shouldProcessAsResponder && this.responderMatcher) {
+            // Check if there's a matching responder or a default responder
+            const hasDefaultResponder = this.responderMatcher.hasDefaultResponder();
+            const match = this.responderMatcher.matchResponder(message.text);
+
+            if (match) {
+              try {
+                const handled = await this.handleResponderMessage(message, messageId);
+                if (handled) {
+                  continue;
+                }
+              } catch (err) {
+                if (this.debug) {
+                  console.error(`[telegram] Responder error: ${err}`);
+                }
+                await this.sendMessage(
+                  chatId,
+                  `Error processing message: ${err instanceof Error ? err.message : "Unknown error"}`,
+                  { replyToMessageId: messageId }
+                );
+                continue;
+              }
+            } else if (isMention && !hasDefaultResponder) {
+              // Bot was mentioned but no responder matched and no default responder
+              // Send a helpful message
+              await this.sendMessage(
+                chatId,
+                "I received your message, but no responders are configured. Use /help for available commands.",
+                { replyToMessageId: messageId }
+              );
             }
           }
         }
@@ -285,9 +509,11 @@ export class TelegramChatClient implements ChatClient {
       throw new Error("Already connected");
     }
 
-    // Verify bot token by calling getMe
+    // Verify bot token by calling getMe and store bot info
     try {
       const me = await this.apiRequest<{ id: number; first_name: string; username?: string }>("getMe");
+      this.botUserId = me.id;
+      this.botUsername = me.username || null;
       if (this.debug) {
         console.log(`[telegram] Connected as @${me.username || me.first_name} (ID: ${me.id})`);
       }
@@ -316,6 +542,11 @@ export class TelegramChatClient implements ChatClient {
       text: escapedText,
       parse_mode: "HTML",
     };
+
+    // Add reply_to_message_id for context in group chats
+    if (options?.replyToMessageId) {
+      body.reply_to_message_id = options.replyToMessageId;
+    }
 
     // Convert generic InlineButton format to Telegram's InlineKeyboardMarkup
     if (options?.inlineKeyboard && options.inlineKeyboard.length > 0) {
