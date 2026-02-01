@@ -138,12 +138,49 @@ export interface DiscordChatSettings {
   allowedChannelIds?: string[];  // Only respond in these channel IDs (security)
 }
 
+/**
+ * Chat responder types.
+ * - llm: Send message to an LLM provider and return response
+ * - claude-code: Run Claude Code CLI with the message as prompt
+ * - cli: Execute a custom CLI command with the message
+ */
+export type ResponderType = "llm" | "claude-code" | "cli";
+
+/**
+ * Configuration for a single chat responder.
+ * Responders handle incoming chat messages based on trigger patterns.
+ */
+export interface ResponderConfig {
+  type: ResponderType;              // How to process the message
+  trigger?: string;                 // Trigger pattern: '@name' for mentions, 'keyword' for prefix. Omit for default responder.
+  provider?: string;                // LLM provider name (for type: 'llm'). References llmProviders config.
+  systemPrompt?: string;            // System prompt for LLM (supports {{project}} placeholder)
+  command?: string;                 // CLI command (for type: 'cli'). Supports {{message}} placeholder.
+  timeout?: number;                 // Timeout in milliseconds (default: 300000 for claude-code, 60000 for others)
+  maxLength?: number;               // Max response length to send back to chat (default: 2000)
+}
+
+/**
+ * Named responders configuration.
+ * The special name "default" handles messages that don't match any trigger.
+ *
+ * Example:
+ * {
+ *   "default": { "type": "llm", "provider": "anthropic", "systemPrompt": "You are a helpful assistant." },
+ *   "qa": { "type": "llm", "trigger": "@qa", "provider": "anthropic", "systemPrompt": "Answer questions about {{project}}." },
+ *   "code": { "type": "claude-code", "trigger": "@code" },
+ *   "lint": { "type": "cli", "trigger": "!lint", "command": "npm run lint" }
+ * }
+ */
+export type RespondersConfig = Record<string, ResponderConfig>;
+
 export interface ChatConfig {
   enabled?: boolean;          // Enable chat client integration
   provider?: "telegram" | "slack" | "discord";  // Chat provider
   telegram?: TelegramChatSettings;  // Telegram-specific settings
   slack?: SlackChatSettings;        // Slack-specific settings
   discord?: DiscordChatSettings;    // Discord-specific settings
+  responders?: RespondersConfig;    // Chat responders for handling messages
 }
 
 export interface RalphConfig {

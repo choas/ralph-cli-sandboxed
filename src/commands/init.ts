@@ -292,6 +292,17 @@ export async function init(args: string[]): Promise<void> {
         botToken: "",
         allowedChatIds: [],
       },
+      // Chat responders - handle incoming messages based on triggers
+      // Special "default" responder handles messages that don't match any trigger
+      // Trigger patterns: "@name" for mentions, "keyword" for prefix matching
+      // Example responders:
+      // responders: {
+      //   "default": { type: "llm", provider: "anthropic", systemPrompt: "You are a helpful assistant for {{project}}." },
+      //   "qa": { type: "llm", trigger: "@qa", provider: "anthropic", systemPrompt: "Answer questions about the codebase." },
+      //   "code": { type: "claude-code", trigger: "@code" },
+      //   "lint": { type: "cli", trigger: "!lint", command: "npm run lint" }
+      // }
+      responders: {},
     },
 
     // Daemon configuration for sandbox-to-host communication
