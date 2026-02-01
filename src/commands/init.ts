@@ -3,10 +3,11 @@ import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
 import { getLanguages, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, getCliProviders, getSkillsForLanguage, type LanguageConfig, type SkillDefinition } from "../templates/prompts.js";
 import { generateGenXcodeScript, hasSwiftUI, hasFastlane, generateFastfile, generateAppfile, generateFastlaneReadmeSection } from "../templates/macos-scripts.js";
-import { type SkillConfig } from "../utils/config.js";
+import { type SkillConfig, type RespondersConfig } from "../utils/config.js";
 import { promptSelectWithArrows, promptConfirm, promptInput, promptMultiSelectWithArrows } from "../utils/prompt.js";
 import { type CliConfig } from "../utils/config.js";
 import { dockerInit } from "./docker.js";
+import { getBundleDisplayOptions, displayOptionToBundleId, bundleToRespondersConfig, getPresetDisplayOptions, displayOptionToPresetId, presetsToRespondersConfig } from "../utils/responder-presets.js";
 
 // Get package root directory (works for both dev and installed package)
 const __filename = fileURLToPath(import.meta.url);
@@ -49,6 +50,7 @@ export async function init(args: string[]): Promise<void> {
   let selectedKey: string;
   let selectedTechnologies: string[] = [];
   let selectedSkills: SkillConfig[] = [];
+  let selectedResponders: RespondersConfig = {};
   let checkCommand: string;
   let testCommand: string;
 
@@ -165,6 +167,47 @@ export async function init(args: string[]): Promise<void> {
         console.log(`\nSelected skills: ${selectedSkills.map(s => s.name).join(", ")}`);
       } else {
         console.log("\nNo skills selected.");
+      }
+    }
+
+    // Step 5: Select chat responder presets (optional)
+    const setupResponders = await promptConfirm("\nWould you like to set up chat responders?", false);
+    if (setupResponders) {
+      // First, ask if they want a bundle or individual presets
+      const selectionType = await promptSelectWithArrows(
+        "How would you like to configure responders?",
+        ["Use a preset bundle (recommended)", "Select individual presets", "Skip - configure later"]
+      );
+
+      if (selectionType === "Use a preset bundle (recommended)") {
+        const bundleOptions = getBundleDisplayOptions();
+        const selectedBundle = await promptSelectWithArrows(
+          "Select a responder bundle:",
+          bundleOptions
+        );
+        const bundleId = displayOptionToBundleId(selectedBundle);
+        if (bundleId) {
+          selectedResponders = bundleToRespondersConfig(bundleId);
+          console.log(`\nConfigured responders from bundle: ${Object.keys(selectedResponders).join(", ")}`);
+        }
+      } else if (selectionType === "Select individual presets") {
+        const presetOptions = getPresetDisplayOptions();
+        const selectedPresets = await promptMultiSelectWithArrows(
+          "Select responder presets to enable:",
+          presetOptions
+        );
+
+        // Convert display options back to preset IDs
+        const presetIds = selectedPresets
+          .map(displayOptionToPresetId)
+          .filter((id): id is string => id !== undefined);
+
+        if (presetIds.length > 0) {
+          selectedResponders = presetsToRespondersConfig(presetIds);
+          console.log(`\nConfigured responders: ${Object.keys(selectedResponders).join(", ")}`);
+        }
+      } else {
+        console.log("\nSkipping responders - you can configure them later in config.json");
       }
     }
 
@@ -295,14 +338,14 @@ export async function init(args: string[]): Promise<void> {
       // Chat responders - handle incoming messages based on triggers
       // Special "default" responder handles messages that don't match any trigger
       // Trigger patterns: "@name" for mentions, "keyword" for prefix matching
-      // Example responders:
+      // Use "ralph init" to select from preset bundles, or configure manually:
       // responders: {
       //   "default": { type: "llm", provider: "anthropic", systemPrompt: "You are a helpful assistant for {{project}}." },
       //   "qa": { type: "llm", trigger: "@qa", provider: "anthropic", systemPrompt: "Answer questions about the codebase." },
       //   "code": { type: "claude-code", trigger: "@code" },
       //   "lint": { type: "cli", trigger: "!lint", command: "npm run lint" }
       // }
-      responders: {},
+      responders: selectedResponders,
     },
 
     // Daemon configuration for sandbox-to-host communication
