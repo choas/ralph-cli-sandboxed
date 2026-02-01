@@ -233,6 +233,15 @@ export async function init(args: string[]): Promise<void> {
     cli: cliConfig,
     cliProvider: selectedCliProviderKey,
 
+    // LLM providers for chat responders (empty by default, uses defaults from env vars)
+    // Example:
+    // llmProviders: {
+    //   "claude": { type: "anthropic", model: "claude-sonnet-4-20250514" },
+    //   "gpt4": { type: "openai", model: "gpt-4o" },
+    //   "local": { type: "ollama", model: "llama3", baseUrl: "http://localhost:11434" }
+    // }
+    llmProviders: {},
+
     // Optional fields with defaults/empty values for discoverability
     notifyCommand: "",
     technologies: selectedTechnologies.length > 0 ? selectedTechnologies : [],

@@ -11,6 +11,37 @@ export interface CliConfig {
   fileArgs?: string[];  // Args for including files (e.g., ["--read"] for Aider). If not set, uses @file syntax in prompt.
 }
 
+/**
+ * LLM Provider Types
+ * - anthropic: Anthropic Claude API
+ * - openai: OpenAI API (GPT models)
+ * - ollama: Local Ollama server
+ */
+export type LLMProviderType = "anthropic" | "openai" | "ollama";
+
+/**
+ * Configuration for a single LLM provider.
+ */
+export interface LLMProviderConfig {
+  type: LLMProviderType;          // Provider type
+  model: string;                   // Model name (e.g., "claude-sonnet-4-20250514", "gpt-4o", "llama3")
+  apiKey?: string;                 // API key (optional - falls back to env var if not set)
+  baseUrl?: string;                // Base URL for API (optional - uses default if not set)
+}
+
+/**
+ * Named LLM providers configuration.
+ * Providers can be referenced by name in responder configs.
+ *
+ * Example:
+ * {
+ *   "claude": { "type": "anthropic", "model": "claude-sonnet-4-20250514" },
+ *   "gpt4": { "type": "openai", "model": "gpt-4o" },
+ *   "local": { "type": "ollama", "model": "llama3", "baseUrl": "http://localhost:11434" }
+ * }
+ */
+export type LLMProvidersConfig = Record<string, LLMProviderConfig>;
+
 export interface McpServerConfig {
   command: string;
   args?: string[];
@@ -126,6 +157,7 @@ export interface RalphConfig {
   javaVersion?: number;
   cli?: CliConfig;
   cliProvider?: string;
+  llmProviders?: LLMProvidersConfig;  // Named LLM providers for chat responders
   docker?: {
     ports?: string[];
     volumes?: string[];
@@ -309,4 +341,84 @@ export function requireContainer(commandName: string): void {
     console.error("  ralph docker run     # Run ralph inside the container");
     process.exit(1);
   }
+}
+
+/**
+ * Default LLM provider configurations.
+ * These are used when llmProviders is not specified in config.
+ * API keys are resolved from environment variables at runtime.
+ */
+export const DEFAULT_LLM_PROVIDERS: LLMProvidersConfig = {
+  anthropic: {
+    type: "anthropic",
+    model: "claude-sonnet-4-20250514",
+    // apiKey resolved from ANTHROPIC_API_KEY env var at runtime
+  },
+  openai: {
+    type: "openai",
+    model: "gpt-4o",
+    // apiKey resolved from OPENAI_API_KEY env var at runtime
+  },
+  ollama: {
+    type: "ollama",
+    model: "llama3",
+    baseUrl: "http://localhost:11434",
+  },
+};
+
+/**
+ * Get the API key for an LLM provider.
+ * First checks the provider config, then falls back to environment variables.
+ */
+export function getLLMProviderApiKey(provider: LLMProviderConfig): string | undefined {
+  // Use explicit API key if provided
+  if (provider.apiKey) {
+    return provider.apiKey;
+  }
+
+  // Fall back to environment variables based on provider type
+  switch (provider.type) {
+    case "anthropic":
+      return process.env.ANTHROPIC_API_KEY;
+    case "openai":
+      return process.env.OPENAI_API_KEY;
+    case "ollama":
+      // Ollama doesn't require an API key
+      return undefined;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Get the base URL for an LLM provider.
+ * Returns the configured baseUrl or the default for the provider type.
+ */
+export function getLLMProviderBaseUrl(provider: LLMProviderConfig): string {
+  if (provider.baseUrl) {
+    return provider.baseUrl;
+  }
+
+  // Default base URLs for each provider type
+  switch (provider.type) {
+    case "anthropic":
+      return "https://api.anthropic.com";
+    case "openai":
+      return "https://api.openai.com/v1";
+    case "ollama":
+      return "http://localhost:11434";
+    default:
+      return "";
+  }
+}
+
+/**
+ * Get LLM providers from config, merging with defaults.
+ * User-defined providers override defaults with the same name.
+ */
+export function getLLMProviders(config: RalphConfig): LLMProvidersConfig {
+  return {
+    ...DEFAULT_LLM_PROVIDERS,
+    ...(config.llmProviders ?? {}),
+  };
 }
