@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import {
   getLanguages,
   generatePromptTemplate,
-  DEFAULT_PRD,
+  DEFAULT_PRD_YAML,
   DEFAULT_PROGRESS,
   getCliProviders,
   getSkillsForLanguage,
@@ -45,7 +45,7 @@ const PACKAGE_ROOT = join(__dirname, "..", ".."); // dist/commands -> dist -> pa
 const RALPH_DIR = ".ralph";
 const CONFIG_FILE = "config.json";
 const PROMPT_FILE = "prompt.md";
-const PRD_FILE = "prd.json";
+const PRD_FILE = "prd.yaml";
 const PROGRESS_FILE = "progress.txt";
 const PRD_GUIDE_FILE = "HOW-TO-WRITE-PRDs.md";
 
@@ -444,13 +444,14 @@ export async function init(args: string[]): Promise<void> {
     console.log(`${existsSync(promptPath) ? "Updated" : "Created"} ${RALPH_DIR}/${PROMPT_FILE}`);
   }
 
-  // Create PRD if not exists
+  // Create PRD if not exists (check for both yaml and json)
   const prdPath = join(ralphDir, PRD_FILE);
-  if (!existsSync(prdPath)) {
-    writeFileSync(prdPath, DEFAULT_PRD + "\n");
+  const prdJsonPath = join(ralphDir, "prd.json");
+  if (!existsSync(prdPath) && !existsSync(prdJsonPath)) {
+    writeFileSync(prdPath, DEFAULT_PRD_YAML);
     console.log(`Created ${RALPH_DIR}/${PRD_FILE}`);
   } else {
-    console.log(`Skipped ${RALPH_DIR}/${PRD_FILE} (already exists)`);
+    console.log(`Skipped ${RALPH_DIR}/${PRD_FILE} (PRD already exists)`);
   }
 
   // Create progress file if not exists
@@ -565,7 +566,7 @@ docker/.config-hash
 
   console.log("\nRalph initialized successfully!");
   console.log("\nNext steps:");
-  console.log("  1. Edit .ralph/prd.json to add your project requirements");
+  console.log("  1. Edit .ralph/prd.yaml to add your project requirements");
   console.log("  2. Run 'ralph docker run' to start (auto-builds image on first run)");
   console.log("\nSee .ralph/HOW-TO-WRITE-PRDs.md for guidance on writing PRDs");
   console.log("To regenerate Docker files: ralph docker init");

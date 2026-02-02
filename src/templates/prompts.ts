@@ -252,4 +252,12 @@ export const DEFAULT_PRD = `[
   }
 ]`;
 
+export const DEFAULT_PRD_YAML = `- category: setup
+  description: "Example: Project builds successfully"
+  steps:
+    - Run the build command
+    - Verify no errors occur
+  passes: false
+`;
+
 export const DEFAULT_PROGRESS = `# Progress Log\n`;
