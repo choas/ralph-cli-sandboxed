@@ -431,13 +431,17 @@ function attemptArrayRecovery(items: unknown[]): PrdEntry[] | null {
 
 /**
  * Creates a timestamped backup of the PRD file.
+ * Preserves the original file extension (.json or .yaml/.yml).
  * Returns the backup path.
  */
 export function createBackup(prdPath: string): string {
   const content = readFileSync(prdPath, "utf-8");
   const dir = dirname(prdPath);
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupPath = join(dir, `backup.prd.${timestamp}.json`);
+  const ext = extname(prdPath).toLowerCase();
+  // Preserve original extension, default to .json if unknown
+  const backupExt = ext === ".yaml" || ext === ".yml" ? ext : ".json";
+  const backupPath = join(dir, `backup.prd.${timestamp}${backupExt}`);
 
   writeFileSync(backupPath, content);
   return backupPath;
@@ -445,6 +449,7 @@ export function createBackup(prdPath: string): string {
 
 /**
  * Finds the most recent backup file.
+ * Searches for both .json and .yaml/.yml backup files.
  * Returns the path or null if no backups exist.
  */
 export function findLatestBackup(prdPath: string): string | null {
@@ -456,7 +461,11 @@ export function findLatestBackup(prdPath: string): string | null {
 
   const files = readdirSync(dir);
   const backups = files
-    .filter((f) => f.startsWith("backup.prd.") && f.endsWith(".json"))
+    .filter(
+      (f) =>
+        f.startsWith("backup.prd.") &&
+        (f.endsWith(".json") || f.endsWith(".yaml") || f.endsWith(".yml")),
+    )
     .sort()
     .reverse();
 
