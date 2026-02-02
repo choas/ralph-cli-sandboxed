@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync, readdirSync } from "fs";
-import { join, dirname, basename } from "path";
+import { join, dirname, extname } from "path";
+import YAML from "yaml";
 
 export interface PrdEntry {
   category: string;
@@ -503,13 +504,38 @@ export function createTemplatePrd(backupPath?: string): PrdEntry[] {
 }
 
 /**
- * Reads and parses a PRD file, handling potential JSON errors.
+ * Reads and parses a YAML PRD file.
+ * Returns the parsed content or null if it couldn't be parsed.
+ */
+export function readYamlPrdFile(prdPath: string): { content: unknown; raw: string } | null {
+  try {
+    const raw = readFileSync(prdPath, "utf-8");
+    const content = YAML.parse(raw);
+    return { content, raw };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reads and parses a PRD file, handling potential JSON/YAML errors.
+ * Detects file format based on extension (.yaml/.yml uses YAML, .json uses JSON).
  * Returns the parsed content or null if it couldn't be parsed.
  */
 export function readPrdFile(prdPath: string): { content: unknown; raw: string } | null {
   try {
     const raw = readFileSync(prdPath, "utf-8");
-    const content = JSON.parse(raw);
+    const ext = extname(prdPath).toLowerCase();
+
+    // Parse based on file extension
+    let content: unknown;
+    if (ext === ".yaml" || ext === ".yml") {
+      content = YAML.parse(raw);
+    } else {
+      // Default to JSON for .json or any other extension
+      content = JSON.parse(raw);
+    }
+
     return { content, raw };
   } catch {
     return null;
