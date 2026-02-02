@@ -4,9 +4,10 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from "fs";
-import { join, basename } from "path";
+import { join, basename, extname } from "path";
 import { spawn } from "child_process";
-import { loadConfig, getRalphDir, isRunningInContainer, RalphConfig } from "../utils/config.js";
+import YAML from "yaml";
+import { loadConfig, getRalphDir, isRunningInContainer, RalphConfig, getPrdFiles } from "../utils/config.js";
 import { createTelegramClient } from "../providers/telegram.js";
 import { createSlackClient } from "../providers/slack.js";
 import { createDiscordClient } from "../providers/discord.js";
@@ -78,25 +79,53 @@ function getProjectName(): string {
   return basename(process.cwd());
 }
 
+interface PrdItem {
+  category?: string;
+  description?: string;
+  steps?: string[];
+  passes?: boolean;
+}
+
+/**
+ * Parse PRD file content based on file extension.
+ */
+function parsePrdContent(filePath: string, content: string): PrdItem[] | null {
+  const ext = extname(filePath).toLowerCase();
+  try {
+    let parsed: unknown;
+    if (ext === ".yaml" || ext === ".yml") {
+      parsed = YAML.parse(content);
+    } else {
+      parsed = JSON.parse(content);
+    }
+    if (Array.isArray(parsed)) {
+      return parsed as PrdItem[];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Get PRD status (completed/total tasks).
  */
 function getPrdStatus(): { complete: number; total: number; incomplete: number } {
-  const ralphDir = getRalphDir();
-  const prdPath = join(ralphDir, "prd.json");
+  const prdFiles = getPrdFiles();
 
-  if (!existsSync(prdPath)) {
+  if (prdFiles.none) {
     return { complete: 0, total: 0, incomplete: 0 };
   }
 
   try {
+    const prdPath = prdFiles.primary!;
     const content = readFileSync(prdPath, "utf-8");
-    const items = JSON.parse(content);
+    const items = parsePrdContent(prdPath, content);
     if (!Array.isArray(items)) {
       return { complete: 0, total: 0, incomplete: 0 };
     }
 
-    const complete = items.filter((item: { passes?: boolean }) => item.passes === true).length;
+    const complete = items.filter((item) => item.passes === true).length;
     const total = items.length;
     return { complete, total, incomplete: total - complete };
   } catch {
@@ -109,16 +138,16 @@ function getPrdStatus(): { complete: number; total: number; incomplete: number }
  * Returns unique categories that have at least one incomplete task.
  */
 function getOpenCategories(): string[] {
-  const ralphDir = getRalphDir();
-  const prdPath = join(ralphDir, "prd.json");
+  const prdFiles = getPrdFiles();
 
-  if (!existsSync(prdPath)) {
+  if (prdFiles.none) {
     return [];
   }
 
   try {
+    const prdPath = prdFiles.primary!;
     const content = readFileSync(prdPath, "utf-8");
-    const items = JSON.parse(content);
+    const items = parsePrdContent(prdPath, content);
     if (!Array.isArray(items)) {
       return [];
     }
@@ -141,16 +170,16 @@ function getOpenCategories(): string[] {
  * Add a new task to the PRD.
  */
 function addPrdTask(description: string): boolean {
-  const ralphDir = getRalphDir();
-  const prdPath = join(ralphDir, "prd.json");
+  const prdFiles = getPrdFiles();
 
-  if (!existsSync(prdPath)) {
+  if (prdFiles.none) {
     return false;
   }
 
   try {
+    const prdPath = prdFiles.primary!;
     const content = readFileSync(prdPath, "utf-8");
-    const items = JSON.parse(content);
+    const items = parsePrdContent(prdPath, content);
     if (!Array.isArray(items)) {
       return false;
     }
@@ -162,7 +191,13 @@ function addPrdTask(description: string): boolean {
       passes: false,
     });
 
-    writeFileSync(prdPath, JSON.stringify(items, null, 2) + "\n");
+    // Write back in the same format as the source file
+    const ext = extname(prdPath).toLowerCase();
+    if (ext === ".yaml" || ext === ".yml") {
+      writeFileSync(prdPath, YAML.stringify(items));
+    } else {
+      writeFileSync(prdPath, JSON.stringify(items, null, 2) + "\n");
+    }
     return true;
   } catch {
     return false;
