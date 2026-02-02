@@ -15,7 +15,7 @@ USAGE:
 
 DESCRIPTION:
   Prints the complete prompt that gets sent to Claude Code, including
-  the @.ralph/prd.json and @.ralph/progress.txt file references.
+  the @.ralph/prd.yaml and @.ralph/progress.txt file references.
   This is useful for testing the prompt manually in Claude Code.
 
 TEMPLATE VARIABLES:

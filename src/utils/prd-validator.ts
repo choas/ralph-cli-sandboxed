@@ -492,7 +492,7 @@ export function createTemplatePrd(backupPath?: string): PrdEntry[] {
         description: "Fix the PRD entries",
         steps: [
           `Recreate PRD entries based on this corrupted backup content:\n\n@{${absolutePath}}`,
-          "Write valid entries to .ralph/prd.json with format: category (string), description (string), steps (array of strings), passes (boolean)",
+          "Write valid entries to .ralph/prd.yaml with format: category (string), description (string), steps (array of strings), passes (boolean)",
         ],
         passes: false,
       },
@@ -504,7 +504,7 @@ export function createTemplatePrd(backupPath?: string): PrdEntry[] {
       category: "setup",
       description: "Add PRD entries",
       steps: [
-        "Add requirements using 'ralph add' or edit .ralph/prd.json directly",
+        "Add requirements using 'ralph add' or edit .ralph/prd.yaml directly",
         "Verify format: category (string), description (string), steps (array of strings), passes (boolean)",
       ],
       passes: false,
