@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { promptInput, promptSelect } from "../utils/prompt.js";
 import { getRalphDir } from "../utils/config.js";
+import { convert as prdConvert } from "./prd-convert.js";
 
 interface PrdEntry {
   category: string;
@@ -317,8 +318,11 @@ export async function prd(args: string[]): Promise<void> {
     case "clean":
       prdClean();
       break;
+    case "convert":
+      await prdConvert(args.slice(1));
+      break;
     default:
-      console.error("Usage: ralph prd <add|list|status|toggle|clean>");
+      console.error("Usage: ralph prd <add|list|status|toggle|clean|convert>");
       console.error("\nSubcommands:");
       console.error("  add                         Add a new PRD entry");
       console.error("  list [options]              List all PRD entries");
@@ -328,11 +332,15 @@ export async function prd(args: string[]): Promise<void> {
       );
       console.error("  toggle --all                Toggle all PRD entries");
       console.error("  clean                       Remove all passing entries from the PRD");
+      console.error("  convert [options]           Convert prd.json to prd.yaml format");
       console.error("\nList options:");
       console.error("  --category, -c <cat>        Filter by category");
       console.error("  --passes                    Show only completed items");
       console.error("  --no-passes                 Show only incomplete items");
       console.error("  --stats                     Show statistics instead of entries");
+      console.error("\nConvert options:");
+      console.error("  --force, -f                 Overwrite existing files");
+      console.error("  --dry-run, -n               Preview without making changes");
       console.error(`\nValid categories: ${CATEGORIES.join(", ")}`);
       process.exit(1);
   }
