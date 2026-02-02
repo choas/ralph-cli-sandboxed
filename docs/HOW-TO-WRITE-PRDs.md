@@ -4,19 +4,16 @@ This guide explains how to write Product Requirement Documents (PRDs) that Ralph
 
 ## PRD Structure
 
-Each PRD item is a JSON object with four fields:
+Each PRD entry is a YAML object with four fields:
 
-```json
-{
-  "category": "feature",
-  "description": "Short imperative description of what to implement",
-  "steps": [
-    "First concrete action to take",
-    "Second concrete action to take",
-    "Verification step to confirm completion"
-  ],
-  "passes": false
-}
+```yaml
+- category: feature
+  description: Short imperative description of what to implement
+  steps:
+    - First concrete action to take
+    - Second concrete action to take
+    - Verification step to confirm completion
+  passes: false
 ```
 
 ## Categories
@@ -74,90 +71,80 @@ Steps tell the AI agent exactly **how** to verify or implement the requirement.
 ### Step Patterns
 
 **For features:**
-```json
-"steps": [
-  "Implement X in src/path/file.ts",
-  "Add Y functionality that does Z",
-  "Run `command` and confirm expected output"
-]
+```yaml
+steps:
+  - Implement X in src/path/file.ts
+  - Add Y functionality that does Z
+  - Run `command` and confirm expected output
 ```
 
 **For bug fixes:**
-```json
-"steps": [
-  "Identify the cause of X in src/path/file.ts",
-  "Fix by doing Y",
-  "Run `command` and verify the bug is resolved"
-]
+```yaml
+steps:
+  - Identify the cause of X in src/path/file.ts
+  - Fix by doing Y
+  - Run `command` and verify the bug is resolved
 ```
 
 **For documentation:**
-```json
-"steps": [
-  "Add section 'X' to README.md",
-  "Include explanation of Y",
-  "Include example showing Z"
-]
+```yaml
+steps:
+  - Add section 'X' to README.md
+  - Include explanation of Y
+  - Include example showing Z
 ```
 
 **For releases:**
-```json
-"steps": [
-  "Update version in package.json to 'X.Y.Z'",
-  "Run `npm run build` to verify no errors",
-  "Run `command --version` and confirm it shows X.Y.Z"
-]
+```yaml
+steps:
+  - Update version in package.json to 'X.Y.Z'
+  - Run `npm run build` to verify no errors
+  - Run `command --version` and confirm it shows X.Y.Z
 ```
 
 ## Anti-Patterns to Avoid
 
 ### Vague Steps
-```json
-// Bad
-"steps": [
-  "Make it work",
-  "Test it",
-  "Verify it's good"
-]
+```yaml
+# Bad
+steps:
+  - Make it work
+  - Test it
+  - Verify it's good
 
-// Good
-"steps": [
-  "Add error handling for null input in parseConfig()",
-  "Run `npm test` and confirm all tests pass",
-  "Run `ralph init` with missing config and verify helpful error message"
-]
+# Good
+steps:
+  - Add error handling for null input in parseConfig()
+  - Run `npm test` and confirm all tests pass
+  - Run `ralph init` with missing config and verify helpful error message
 ```
 
 ### Steps That Require Human Judgment
-```json
-// Bad
-"steps": [
-  "Understand the codebase",
-  "Decide the best approach",
-  "Implement your solution"
-]
+```yaml
+# Bad
+steps:
+  - Understand the codebase
+  - Decide the best approach
+  - Implement your solution
 
-// Good
-"steps": [
-  "Add retry logic with exponential backoff to fetchData() in src/api.ts",
-  "Set max retries to 3 with initial delay of 1000ms",
-  "Run `npm test` and verify retry tests pass"
-]
+# Good
+steps:
+  - Add retry logic with exponential backoff to fetchData() in src/api.ts
+  - Set max retries to 3 with initial delay of 1000ms
+  - Run `npm test` and verify retry tests pass
 ```
 
 ### Missing Verification
-```json
-// Bad
-"steps": [
-  "Update the version number"
-]
+```yaml
+# Bad
+steps:
+  - Update the version number
 
-// Good
-"steps": [
-  "Update version in package.json to '1.2.3'",
-  "Run `npm run build` to verify no errors",
-  "Run `ralph --version` and confirm output shows '1.2.3'"
-]
+# Good
+steps:
+  - Update version in package.json to '1.2.3'
+  - Run `npm run build` to verify no errors
+  - Run `ralph --version` and confirm output shows '1.2.3'
 ```
 
 ## Priority Through Ordering
@@ -176,39 +163,34 @@ Recommended ordering:
 
 Break large features into smaller, independently completable items. Each item should be achievable in a single Ralph iteration.
 
-```json
-// Too large
-{
-  "description": "Implement user authentication system",
-  "steps": ["Add login, logout, registration, password reset, OAuth..."]
-}
+```yaml
+# Too large
+- description: Implement user authentication system
+  steps:
+    - Add login, logout, registration, password reset, OAuth...
 
-// Better: Split into multiple items
-{
-  "description": "Add user registration endpoint POST /api/register",
-  "steps": [...]
-},
-{
-  "description": "Add user login endpoint POST /api/login",
-  "steps": [...]
-},
-{
-  "description": "Add JWT token generation and validation",
-  "steps": [...]
-}
+# Better: Split into multiple items
+- description: Add user registration endpoint POST /api/register
+  steps:
+    - ...
+
+- description: Add user login endpoint POST /api/login
+  steps:
+    - ...
+
+- description: Add JWT token generation and validation
+  steps:
+    - ...
 ```
 
 ## Quick Reference
 
-```json
-{
-  "category": "setup|feature|bugfix|refactor|docs|test|release|config|ui|integration",
-  "description": "Imperative verb + specific what + where (context)",
-  "steps": [
-    "Concrete action with `commands` and file paths",
-    "Another specific action",
-    "Verification: Run `command` and confirm expected result"
-  ],
-  "passes": false
-}
+```yaml
+- category: setup|feature|bugfix|refactor|docs|test|release|config|ui|integration
+  description: Imperative verb + specific what + where (context)
+  steps:
+    - Concrete action with `commands` and file paths
+    - Another specific action
+    - Verification: Run `command` and confirm expected result
+  passes: false
 ```
