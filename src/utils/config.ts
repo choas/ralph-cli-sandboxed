@@ -275,8 +275,77 @@ export function getCliConfig(config: RalphConfig): CliConfig {
 const RALPH_DIR = ".ralph";
 const CONFIG_FILE = "config.json";
 const PROMPT_FILE = "prompt.md";
-const PRD_FILE = "prd.json";
+const PRD_FILE_JSON = "prd.json";
+const PRD_FILE_YAML = "prd.yaml";
 const PROGRESS_FILE = "progress.txt";
+
+/**
+ * Gets the PRD file path(s) that exist.
+ * Returns an object with:
+ * - primary: The main PRD file path to use (yaml preferred over json)
+ * - secondary: The secondary PRD file path if both exist (for merging)
+ * - jsonOnly: True if only prd.json exists (shows migration notice)
+ * - yamlOnly: True if only prd.yaml exists (happy path)
+ * - both: True if both files exist (merge mode)
+ * - none: True if no PRD file exists
+ */
+export function getPrdFiles(): {
+  primary: string | null;
+  secondary: string | null;
+  jsonOnly: boolean;
+  yamlOnly: boolean;
+  both: boolean;
+  none: boolean;
+} {
+  const ralphDir = getRalphDir();
+  const jsonPath = join(ralphDir, PRD_FILE_JSON);
+  const yamlPath = join(ralphDir, PRD_FILE_YAML);
+
+  const hasJson = existsSync(jsonPath);
+  const hasYaml = existsSync(yamlPath);
+
+  if (hasYaml && hasJson) {
+    // Both exist - merge mode (YAML is primary)
+    return {
+      primary: yamlPath,
+      secondary: jsonPath,
+      jsonOnly: false,
+      yamlOnly: false,
+      both: true,
+      none: false,
+    };
+  } else if (hasYaml) {
+    // Only YAML exists - happy path
+    return {
+      primary: yamlPath,
+      secondary: null,
+      jsonOnly: false,
+      yamlOnly: true,
+      both: false,
+      none: false,
+    };
+  } else if (hasJson) {
+    // Only JSON exists - show migration notice
+    return {
+      primary: jsonPath,
+      secondary: null,
+      jsonOnly: true,
+      yamlOnly: false,
+      both: false,
+      none: false,
+    };
+  } else {
+    // No PRD file exists
+    return {
+      primary: null,
+      secondary: null,
+      jsonOnly: false,
+      yamlOnly: false,
+      both: false,
+      none: true,
+    };
+  }
+}
 
 export function getRalphDir(): string {
   return join(process.cwd(), RALPH_DIR);
@@ -310,22 +379,34 @@ export function checkFilesExist(): void {
     throw new Error(".ralph/ directory not found. Run 'ralph init' first.");
   }
 
-  const requiredFiles = [CONFIG_FILE, PROMPT_FILE, PRD_FILE, PROGRESS_FILE];
-
+  // Check config and prompt files
+  const requiredFiles = [CONFIG_FILE, PROMPT_FILE, PROGRESS_FILE];
   for (const file of requiredFiles) {
     if (!existsSync(join(ralphDir, file))) {
       throw new Error(`.ralph/${file} not found. Run 'ralph init' first.`);
     }
   }
+
+  // Check for PRD file - either prd.yaml or prd.json must exist
+  const prdFiles = getPrdFiles();
+  if (prdFiles.none) {
+    throw new Error(".ralph/prd.json or .ralph/prd.yaml not found. Run 'ralph init' first.");
+  }
 }
 
 export function getPaths() {
   const ralphDir = getRalphDir();
+  const prdFiles = getPrdFiles();
+
+  // Use the primary PRD file path (yaml preferred over json, fallback to json for backwards compat)
+  const prdPath = prdFiles.primary || join(ralphDir, PRD_FILE_JSON);
+
   return {
     dir: ralphDir,
     config: join(ralphDir, CONFIG_FILE),
     prompt: join(ralphDir, PROMPT_FILE),
-    prd: join(ralphDir, PRD_FILE),
+    prd: prdPath,
+    prdSecondary: prdFiles.secondary, // Second PRD file if merging
     progress: join(ralphDir, PROGRESS_FILE),
   };
 }

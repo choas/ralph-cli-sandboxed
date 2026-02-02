@@ -552,10 +552,29 @@ export function readPrdFile(prdPath: string): { content: unknown; raw: string } 
 }
 
 /**
- * Writes a PRD to file.
+ * Writes a PRD to file in JSON format.
  */
 export function writePrd(prdPath: string, entries: PrdEntry[]): void {
   writeFileSync(prdPath, JSON.stringify(entries, null, 2) + "\n");
+}
+
+/**
+ * Writes a PRD to file in YAML format.
+ */
+export function writePrdYaml(prdPath: string, entries: PrdEntry[]): void {
+  writeFileSync(prdPath, YAML.stringify(entries));
+}
+
+/**
+ * Writes a PRD to file, detecting format from file extension.
+ */
+export function writePrdAuto(prdPath: string, entries: PrdEntry[]): void {
+  const ext = extname(prdPath).toLowerCase();
+  if (ext === ".yaml" || ext === ".yml") {
+    writePrdYaml(prdPath, entries);
+  } else {
+    writePrd(prdPath, entries);
+  }
 }
 
 /**

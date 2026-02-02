@@ -1,8 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { extname, join } from "path";
 import { promptInput, promptSelect } from "../utils/prompt.js";
-import { getRalphDir } from "../utils/config.js";
+import { getRalphDir, getPrdFiles } from "../utils/config.js";
 import { convert as prdConvert } from "./prd-convert.js";
+import YAML from "yaml";
 
 interface PrdEntry {
   category: string;
@@ -11,37 +12,99 @@ interface PrdEntry {
   passes: boolean;
 }
 
-const PRD_FILE = "prd.json";
+const PRD_FILE_JSON = "prd.json";
+const PRD_FILE_YAML = "prd.yaml";
 const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
 
+// Track whether we've shown the migration notice in this session
+let migrationNoticeShown = false;
+
 function getPrdPath(): string {
-  return join(getRalphDir(), PRD_FILE);
+  const prdFiles = getPrdFiles();
+  if (prdFiles.primary) {
+    return prdFiles.primary;
+  }
+  // Fallback to json path for backwards compatibility
+  return join(getRalphDir(), PRD_FILE_JSON);
 }
 
-function loadPrd(): PrdEntry[] {
-  const path = getPrdPath();
-  if (!existsSync(path)) {
-    throw new Error(".ralph/prd.json not found. Run 'ralph init' first.");
-  }
+/**
+ * Parses a PRD file based on its extension.
+ * Supports both JSON and YAML formats.
+ */
+function parsePrdFile(path: string): PrdEntry[] {
   const content = readFileSync(path, "utf-8");
+  const ext = extname(path).toLowerCase();
+
   try {
-    return JSON.parse(content);
+    if (ext === ".yaml" || ext === ".yml") {
+      return YAML.parse(content);
+    } else {
+      return JSON.parse(content);
+    }
   } catch (err) {
-    const message = err instanceof SyntaxError ? err.message : "Invalid JSON";
-    console.error(`Error parsing .ralph/prd.json: ${message}`);
+    const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
+    const message = err instanceof Error ? err.message : `Invalid ${format}`;
+    console.error(`Error parsing ${path}: ${message}`);
     console.error("");
     console.error("Common issues:");
-    console.error("  - Trailing comma before ] or }");
-    console.error("  - Missing comma between entries");
-    console.error("  - Unescaped quotes in strings");
+    if (format === "JSON") {
+      console.error("  - Trailing comma before ] or }");
+      console.error("  - Missing comma between entries");
+      console.error("  - Unescaped quotes in strings");
+    } else {
+      console.error("  - Incorrect indentation");
+      console.error("  - Missing colons after keys");
+      console.error("  - Unquoted special characters");
+    }
     console.error("");
     console.error("Run 'ralph fix-prd' to attempt automatic repair.");
     process.exit(1);
   }
 }
 
+/**
+ * Loads PRD entries from prd.yaml and/or prd.json.
+ * - If both exist, merges them (no deduplication)
+ * - If only prd.json exists, shows migration notice
+ * - If only prd.yaml exists, uses it (happy path)
+ */
+function loadPrd(): PrdEntry[] {
+  const prdFiles = getPrdFiles();
+
+  if (prdFiles.none) {
+    throw new Error(".ralph/prd.json or .ralph/prd.yaml not found. Run 'ralph init' first.");
+  }
+
+  // If only JSON exists, show migration notice (once per session)
+  if (prdFiles.jsonOnly && !migrationNoticeShown) {
+    console.log("\x1b[33mNote: Consider migrating to YAML format with 'ralph prd convert'\x1b[0m");
+    console.log("");
+    migrationNoticeShown = true;
+  }
+
+  // Load primary file
+  const primary = parsePrdFile(prdFiles.primary!);
+
+  // If both files exist, merge them
+  if (prdFiles.both && prdFiles.secondary) {
+    const secondary = parsePrdFile(prdFiles.secondary);
+    // Merge without deduplication - primary (YAML) first, then secondary (JSON)
+    return [...primary, ...secondary];
+  }
+
+  return primary;
+}
+
 function savePrd(entries: PrdEntry[]): void {
-  writeFileSync(getPrdPath(), JSON.stringify(entries, null, 2) + "\n");
+  const path = getPrdPath();
+  const ext = extname(path).toLowerCase();
+
+  if (ext === ".yaml" || ext === ".yml") {
+    writeFileSync(path, YAML.stringify(entries));
+  } else {
+    writeFileSync(path, JSON.stringify(entries, null, 2) + "\n");
+  }
 }
 
 export async function prdAdd(): Promise<void> {

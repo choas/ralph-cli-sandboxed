@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
 import { existsSync, readFileSync, writeFileSync, unlinkSync, appendFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import { extname, join } from "path";
 import {
   checkFilesExist,
   loadConfig,
@@ -9,6 +9,7 @@ import {
   getCliConfig,
   CliConfig,
   requireContainer,
+  getPrdFiles,
 } from "../utils/config.js";
 import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
 import {
@@ -16,6 +17,7 @@ import {
   smartMerge,
   readPrdFile,
   writePrd,
+  writePrdAuto,
   expandPrdFileReferences,
   PrdEntry,
 } from "../utils/prd-validator.js";
@@ -53,25 +55,26 @@ function createFilteredPrd(
   baseDir: string,
   category?: string,
 ): { tempPath: string; hasIncomplete: boolean } {
-  const content = readFileSync(prdPath, "utf-8");
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    console.error("\x1b[31mError: prd.json contains invalid JSON.\x1b[0m");
+  // Use readPrdFile to handle both JSON and YAML formats
+  const parsed = readPrdFile(prdPath);
+
+  if (!parsed) {
+    const ext = extname(prdPath).toLowerCase();
+    const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
+    console.error(`\x1b[31mError: PRD file contains invalid ${format}.\x1b[0m`);
     console.error("The file may have been corrupted by an LLM.\n");
     console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
     process.exit(1);
   }
 
-  if (!Array.isArray(parsed)) {
-    console.error("\x1b[31mError: prd.json is corrupted - expected an array of items.\x1b[0m");
+  if (!Array.isArray(parsed.content)) {
+    console.error("\x1b[31mError: PRD is corrupted - expected an array of items.\x1b[0m");
     console.error("The file may have been modified incorrectly by an LLM.\n");
     console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
     process.exit(1);
   }
 
-  const items: PrdItem[] = parsed;
+  const items: PrdItem[] = parsed.content;
   let filteredItems = items.filter((item) => item.passes === false);
 
   // Apply category filter if specified
@@ -101,9 +104,9 @@ interface SyncResult {
 }
 
 /**
- * Syncs passes flags from prd-tasks.json back to prd.json.
+ * Syncs passes flags from prd-tasks.json back to the main PRD file.
  * If the LLM marked any item as passes: true in prd-tasks.json,
- * find the matching item in prd.json and update it.
+ * find the matching item in the PRD and update it.
  * Returns the number of items synced and their names.
  */
 function syncPassesFromTasks(tasksPath: string, prdPath: string): SyncResult {
@@ -121,21 +124,21 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): SyncResult {
     }
     const tasks: PrdItem[] = tasksParsed;
 
-    const prdContent = readFileSync(prdPath, "utf-8");
-    let prdParsed: unknown;
-    try {
-      prdParsed = JSON.parse(prdContent);
-    } catch {
-      console.warn("\x1b[33mWarning: prd.json contains invalid JSON - skipping sync.\x1b[0m");
+    // Use readPrdFile to handle both JSON and YAML formats
+    const prdParsed = readPrdFile(prdPath);
+    if (!prdParsed) {
+      const ext = extname(prdPath).toLowerCase();
+      const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
+      console.warn(`\x1b[33mWarning: PRD contains invalid ${format} - skipping sync.\x1b[0m`);
       console.warn("Run \x1b[36mralph fix-prd\x1b[0m after this session to repair.\n");
       return { count: 0, taskNames: [] };
     }
-    if (!Array.isArray(prdParsed)) {
-      console.warn("\x1b[33mWarning: prd.json is corrupted - skipping sync.\x1b[0m");
+    if (!Array.isArray(prdParsed.content)) {
+      console.warn("\x1b[33mWarning: PRD is corrupted - skipping sync.\x1b[0m");
       console.warn("Run \x1b[36mralph fix-prd\x1b[0m after this session to repair.\n");
       return { count: 0, taskNames: [] };
     }
-    const prd: PrdItem[] = prdParsed;
+    const prd: PrdItem[] = prdParsed.content;
 
     let synced = 0;
     const syncedTaskNames: string[] = [];
@@ -159,11 +162,12 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): SyncResult {
       }
     }
 
-    // Write back if any items were synced
+    // Write back if any items were synced (using format-aware write)
     if (synced > 0) {
-      writeFileSync(prdPath, JSON.stringify(prd, null, 2) + "\n");
+      writePrdAuto(prdPath, prd);
+      const prdFileName = prdPath.split("/").pop() || "PRD";
       console.log(
-        `\x1b[32mSynced ${synced} completed item(s) from prd-tasks.json to prd.json\x1b[0m`,
+        `\x1b[32mSynced ${synced} completed item(s) from prd-tasks.json to ${prdFileName}\x1b[0m`,
       );
     }
 
@@ -368,25 +372,26 @@ function countPrdItems(
   prdPath: string,
   category?: string,
 ): { total: number; incomplete: number; complete: number } {
-  const content = readFileSync(prdPath, "utf-8");
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    console.error("\x1b[31mError: prd.json contains invalid JSON.\x1b[0m");
+  // Use readPrdFile to handle both JSON and YAML formats
+  const parsed = readPrdFile(prdPath);
+
+  if (!parsed) {
+    const ext = extname(prdPath).toLowerCase();
+    const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
+    console.error(`\x1b[31mError: PRD contains invalid ${format}.\x1b[0m`);
     console.error("The file may have been corrupted by an LLM.\n");
     console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
     process.exit(1);
   }
 
-  if (!Array.isArray(parsed)) {
-    console.error("\x1b[31mError: prd.json is corrupted - expected an array of items.\x1b[0m");
+  if (!Array.isArray(parsed.content)) {
+    console.error("\x1b[31mError: PRD is corrupted - expected an array of items.\x1b[0m");
     console.error("The file may have been modified incorrectly by an LLM.\n");
     console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
     process.exit(1);
   }
 
-  const items: PrdItem[] = parsed;
+  const items: PrdItem[] = parsed.content;
   let filteredItems = items;
   if (category) {
     filteredItems = items.filter((item) => item.category === category);
@@ -456,14 +461,18 @@ function validateAndRecoverPrd(
  * Returns the validated PRD entries.
  */
 function loadValidPrd(prdPath: string): PrdEntry[] {
-  const content = readFileSync(prdPath, "utf-8");
-  try {
-    return JSON.parse(content);
-  } catch {
-    console.error("\x1b[31mError: prd.json contains invalid JSON.\x1b[0m");
+  // Use readPrdFile to handle both JSON and YAML formats
+  const parsed = readPrdFile(prdPath);
+
+  if (!parsed || !Array.isArray(parsed.content)) {
+    const ext = extname(prdPath).toLowerCase();
+    const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
+    console.error(`\x1b[31mError: PRD contains invalid ${format}.\x1b[0m`);
     console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
     process.exit(1);
   }
+
+  return parsed.content;
 }
 
 export async function run(args: string[]): Promise<void> {
