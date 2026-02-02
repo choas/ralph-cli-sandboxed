@@ -16,6 +16,9 @@ export interface ResponderLogEntry {
   trigger?: string;
   gitCommand?: string;
   gitDiffLength?: number;
+  filesRead?: string[];
+  filesNotFound?: string[];
+  filesTotalLength?: number;
   threadContextLength?: number;
   messageLength: number;
   message: string;
@@ -67,6 +70,15 @@ function formatLogEntry(entry: ResponderLogEntry): string {
     lines.push(`Git diff length: ${entry.gitDiffLength || 0} chars`);
   }
 
+  if (entry.filesRead && entry.filesRead.length > 0) {
+    lines.push(`Files read: ${entry.filesRead.join(", ")}`);
+    lines.push(`Files total length: ${entry.filesTotalLength || 0} chars`);
+  }
+
+  if (entry.filesNotFound && entry.filesNotFound.length > 0) {
+    lines.push(`Files not found: ${entry.filesNotFound.join(", ")}`);
+  }
+
   if (entry.threadContextLength) {
     lines.push(`Thread context: ${entry.threadContextLength} chars`);
   }
@@ -110,6 +122,13 @@ export function logResponderCallToConsole(entry: ResponderLogEntry): void {
     console.log(`[responder] Git command: ${entry.gitCommand}`);
     console.log(`[responder] Git diff: ${entry.gitDiffLength || 0} chars`);
   }
+  if (entry.filesRead && entry.filesRead.length > 0) {
+    console.log(`[responder] Files read: ${entry.filesRead.join(", ")}`);
+    console.log(`[responder] Files total: ${entry.filesTotalLength || 0} chars`);
+  }
+  if (entry.filesNotFound && entry.filesNotFound.length > 0) {
+    console.log(`[responder] Files not found: ${entry.filesNotFound.join(", ")}`);
+  }
   if (entry.threadContextLength) {
     console.log(`[responder] Thread context: ${entry.threadContextLength} chars`);
   }
@@ -127,6 +146,9 @@ export function createResponderLog(
     trigger?: string;
     gitCommand?: string;
     gitDiffLength?: number;
+    filesRead?: string[];
+    filesNotFound?: string[];
+    filesTotalLength?: number;
     threadContextLength?: number;
     message: string;
     systemPrompt?: string;
@@ -140,6 +162,9 @@ export function createResponderLog(
     trigger: options.trigger,
     gitCommand: options.gitCommand,
     gitDiffLength: options.gitDiffLength,
+    filesRead: options.filesRead,
+    filesNotFound: options.filesNotFound,
+    filesTotalLength: options.filesTotalLength,
     threadContextLength: options.threadContextLength,
     messageLength: options.message.length,
     message: options.message,

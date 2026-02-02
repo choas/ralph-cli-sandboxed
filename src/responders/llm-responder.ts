@@ -12,8 +12,9 @@ import {
 } from "../utils/config.js";
 import { createLLMClient, LLMClient, Message, ChatOptions } from "../utils/llm-client.js";
 import { createResponderLog } from "../utils/responder-logger.js";
-import { basename } from "path";
+import { basename, resolve } from "path";
 import { execSync } from "child_process";
+import { existsSync, readFileSync, statSync } from "fs";
 
 /**
  * Result of executing a responder.
@@ -195,6 +196,259 @@ export function processGitDiffRequest(message: string): GitDiffResult {
 }
 
 /**
+ * Maximum total size for included files (to avoid overwhelming the LLM).
+ */
+const MAX_FILE_CONTENT_LENGTH = 15000;
+
+/**
+ * Maximum size for a single file.
+ */
+const MAX_SINGLE_FILE_LENGTH = 8000;
+
+/**
+ * Supported file extensions for auto-detection.
+ */
+const SUPPORTED_EXTENSIONS = [
+  "ts",
+  "tsx",
+  "js",
+  "jsx",
+  "py",
+  "rb",
+  "go",
+  "rs",
+  "java",
+  "c",
+  "cpp",
+  "h",
+  "hpp",
+  "cs",
+  "swift",
+  "kt",
+  "scala",
+  "php",
+  "sh",
+  "bash",
+  "zsh",
+  "json",
+  "yaml",
+  "yml",
+  "toml",
+  "xml",
+  "html",
+  "css",
+  "scss",
+  "less",
+  "md",
+  "txt",
+  "sql",
+  "graphql",
+  "proto",
+  "dockerfile",
+  "makefile",
+  "env",
+  "gitignore",
+  "config",
+];
+
+/**
+ * Result of detecting and reading files from a message.
+ */
+export interface FileDetectionResult {
+  /** Files that were found and read */
+  filesRead: Array<{
+    path: string;
+    content: string;
+    lineNumber?: number;
+    truncated: boolean;
+  }>;
+  /** Files that were mentioned but not found */
+  filesNotFound: string[];
+  /** Total content length of all files */
+  totalLength: number;
+}
+
+/**
+ * Detects file paths in a message and reads their contents.
+ * Supports formats like:
+ *   - src/utils/config.ts
+ *   - src/utils/config.ts:42 (with line number)
+ *   - ./relative/path.js
+ *   - package.json
+ */
+export function detectAndReadFiles(message: string): FileDetectionResult {
+  const result: FileDetectionResult = {
+    filesRead: [],
+    filesNotFound: [],
+    totalLength: 0,
+  };
+
+  // Pattern to match file paths with optional line numbers
+  // Matches: path/to/file.ext or path/to/file.ext:123
+  const extensionPattern = SUPPORTED_EXTENSIONS.join("|");
+  const filePattern = new RegExp(
+    `(?:^|\\s|["'\`(])([\\w./-]+\\.(?:${extensionPattern}))(?::(\\d+))?(?=[\\s"'\`),]|$)`,
+    "gi",
+  );
+
+  // Also match common config files without extensions
+  const configFilePattern = /(?:^|\s|["'`(])((?:\.?[\w/-]+)?(?:Dockerfile|Makefile|\.gitignore|\.env(?:\.local)?))(?=[\s"'`),]|$)/gi;
+
+  const seenFiles = new Set<string>();
+  const matches: Array<{ path: string; lineNumber?: number }> = [];
+
+  // Find all file pattern matches
+  let match;
+  while ((match = filePattern.exec(message)) !== null) {
+    const filePath = match[1];
+    const lineNumber = match[2] ? parseInt(match[2], 10) : undefined;
+    if (!seenFiles.has(filePath)) {
+      seenFiles.add(filePath);
+      matches.push({ path: filePath, lineNumber });
+    }
+  }
+
+  // Find config file matches
+  while ((match = configFilePattern.exec(message)) !== null) {
+    const filePath = match[1];
+    if (!seenFiles.has(filePath)) {
+      seenFiles.add(filePath);
+      matches.push({ path: filePath });
+    }
+  }
+
+  // Try to read each file
+  for (const { path: filePath, lineNumber } of matches) {
+    // Stop if we've already included too much content
+    if (result.totalLength >= MAX_FILE_CONTENT_LENGTH) {
+      break;
+    }
+
+    try {
+      // Resolve relative paths
+      const resolvedPath = resolve(process.cwd(), filePath);
+
+      // Check if file exists and is a file (not directory)
+      if (!existsSync(resolvedPath)) {
+        result.filesNotFound.push(filePath);
+        continue;
+      }
+
+      const stats = statSync(resolvedPath);
+      if (!stats.isFile()) {
+        continue;
+      }
+
+      // Check file size before reading
+      if (stats.size > 100000) {
+        // Skip files larger than 100KB
+        result.filesNotFound.push(`${filePath} (too large)`);
+        continue;
+      }
+
+      // Read the file
+      let content = readFileSync(resolvedPath, "utf-8");
+      let truncated = false;
+
+      // Truncate if too long
+      if (content.length > MAX_SINGLE_FILE_LENGTH) {
+        content = content.slice(0, MAX_SINGLE_FILE_LENGTH);
+        truncated = true;
+      }
+
+      // Check if adding this would exceed total limit
+      if (result.totalLength + content.length > MAX_FILE_CONTENT_LENGTH) {
+        const remaining = MAX_FILE_CONTENT_LENGTH - result.totalLength;
+        if (remaining > 500) {
+          content = content.slice(0, remaining);
+          truncated = true;
+        } else {
+          break;
+        }
+      }
+
+      result.filesRead.push({
+        path: filePath,
+        content,
+        lineNumber,
+        truncated,
+      });
+      result.totalLength += content.length;
+    } catch {
+      result.filesNotFound.push(filePath);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Formats detected files as context to prepend to the user message.
+ */
+export function formatFileContext(fileResult: FileDetectionResult): string {
+  if (fileResult.filesRead.length === 0) {
+    return "";
+  }
+
+  const parts: string[] = ["Here are the referenced files:\n"];
+
+  for (const file of fileResult.filesRead) {
+    const truncatedNote = file.truncated ? " (truncated)" : "";
+    const lineNote = file.lineNumber ? ` (focus on line ${file.lineNumber})` : "";
+
+    // Detect language for syntax highlighting
+    const ext = file.path.split(".").pop() || "";
+    const langMap: Record<string, string> = {
+      ts: "typescript",
+      tsx: "typescript",
+      js: "javascript",
+      jsx: "javascript",
+      py: "python",
+      rb: "ruby",
+      go: "go",
+      rs: "rust",
+      java: "java",
+      json: "json",
+      yaml: "yaml",
+      yml: "yaml",
+      md: "markdown",
+      sh: "bash",
+      bash: "bash",
+    };
+    const lang = langMap[ext] || ext;
+
+    parts.push(`\n**${file.path}**${lineNote}${truncatedNote}:`);
+    parts.push("```" + lang);
+
+    // If line number specified, add line numbers to help locate
+    if (file.lineNumber) {
+      const lines = file.content.split("\n");
+      const start = Math.max(0, file.lineNumber - 10);
+      const end = Math.min(lines.length, file.lineNumber + 10);
+      const contextLines = lines.slice(start, end);
+      const numberedLines = contextLines.map(
+        (line, i) => `${String(start + i + 1).padStart(4, " ")} | ${line}`,
+      );
+      parts.push(numberedLines.join("\n"));
+      if (start > 0) parts[parts.length - 1] = "...\n" + parts[parts.length - 1];
+      if (end < lines.length) parts[parts.length - 1] += "\n...";
+    } else {
+      parts.push(file.content);
+    }
+
+    parts.push("```");
+  }
+
+  if (fileResult.filesNotFound.length > 0) {
+    parts.push(`\n_Files not found: ${fileResult.filesNotFound.join(", ")}_`);
+  }
+
+  parts.push("\n---\n");
+
+  return parts.join("\n");
+}
+
+/**
  * Truncates a response to the specified max length.
  * Adds a truncation indicator if the response was shortened.
  */
@@ -258,7 +512,14 @@ export async function executeLLMResponder(
   try {
     // Process git diff requests (e.g., "@review diff", "@review last")
     const gitDiffResult = processGitDiffRequest(message);
-    const processedMessage = gitDiffResult.message;
+    let processedMessage = gitDiffResult.message;
+
+    // Detect and read referenced files (e.g., "src/utils/config.ts")
+    const fileResult = detectAndReadFiles(message);
+    const fileContext = formatFileContext(fileResult);
+    if (fileContext) {
+      processedMessage = fileContext + processedMessage;
+    }
 
     // Load config if not provided
     const ralphConfig = config ?? loadConfig();
@@ -322,6 +583,9 @@ export async function executeLLMResponder(
       trigger: options?.trigger,
       gitCommand: gitDiffResult.gitCommand,
       gitDiffLength: gitDiffResult.diffLength,
+      filesRead: fileResult.filesRead.map((f) => f.path),
+      filesNotFound: fileResult.filesNotFound,
+      filesTotalLength: fileResult.totalLength,
       threadContextLength: options?.threadContextLength,
       message: processedMessage,
       systemPrompt,
