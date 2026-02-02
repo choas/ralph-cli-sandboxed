@@ -11,10 +11,11 @@ import { ObjectEditor } from "./components/ObjectEditor.js";
 import { KeyValueEditor } from "./components/KeyValueEditor.js";
 import { JsonSnippetEditor } from "./components/JsonSnippetEditor.js";
 import { LLMProvidersEditor } from "./components/LLMProvidersEditor.js";
+import { RespondersEditor } from "./components/RespondersEditor.js";
 import { Preview } from "./components/Preview.js";
 import { HelpPanel } from "./components/HelpPanel.js";
 import { PresetSelector } from "./components/PresetSelector.js";
-import type { RalphConfig, LLMProvidersConfig } from "../utils/config.js";
+import type { RalphConfig, LLMProvidersConfig, RespondersConfig } from "../utils/config.js";
 import { validateConfig, type ValidationError } from "./utils/validation.js";
 import { sectionHasPresets, applyPreset, type ConfigPreset } from "./utils/presets.js";
 
@@ -390,6 +391,22 @@ export function ConfigEditor(): React.ReactElement {
             <LLMProvidersEditor
               label={currentFieldLabel}
               providers={(currentFieldValue as LLMProvidersConfig) || {}}
+              onConfirm={handleFieldConfirm}
+              onCancel={handleFieldCancel}
+              isFocused={true}
+              maxHeight={editorMaxHeight}
+            />
+          );
+        }
+
+        // Check if this is the chat.responders field
+        const isResponders = selectedField === "chat.responders";
+
+        if (isResponders) {
+          return (
+            <RespondersEditor
+              label={currentFieldLabel}
+              responders={(currentFieldValue as RespondersConfig) || {}}
               onConfirm={handleFieldConfirm}
               onCancel={handleFieldCancel}
               isFocused={true}

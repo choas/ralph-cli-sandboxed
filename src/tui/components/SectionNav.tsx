@@ -55,7 +55,7 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
     id: "chat",
     label: "Chat",
     icon: "💬",
-    fields: ["chat.enabled", "chat.provider", "chat.telegram", "chat.slack", "chat.discord"],
+    fields: ["chat.enabled", "chat.provider", "chat.telegram", "chat.slack", "chat.discord", "chat.responders"],
   },
   {
     id: "notifications",
