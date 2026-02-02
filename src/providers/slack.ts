@@ -857,9 +857,29 @@ export class SlackChatClient implements ChatClient {
       // Verify connection by checking auth
       const authResult = await this.webClient.auth.test();
       this.botUserId = authResult.user_id || authResult.bot_id;
-      if (this.debug) {
-        console.log(`[slack] Connected as @${authResult.user} (user ID: ${this.botUserId})`);
+
+      // Always show connection info
+      console.log(`[slack] Workspace: ${authResult.team || "unknown"} (${authResult.url || ""})`);
+      console.log(`[slack] Bot user: @${authResult.user || "unknown"} (ID: ${this.botUserId})`);
+      if (authResult.app_id) {
+        console.log(`[slack] App ID: ${authResult.app_id}`);
+        console.log(`[slack] Configure at: https://api.slack.com/apps/${authResult.app_id}`);
       }
+
+      // Show responder info
+      if (this.respondersConfig) {
+        const responderNames = Object.keys(this.respondersConfig);
+        console.log(`[slack] Responders: ${responderNames.join(", ") || "(none)"}`);
+      } else {
+        console.log(`[slack] Responders: (none configured)`);
+      }
+
+      // Remind about slash command setup
+      console.log(`[slack] `);
+      console.log(`[slack] For /ralph slash command to work:`);
+      console.log(`[slack]   1. Go to Slack App settings → Slash Commands`);
+      console.log(`[slack]   2. Create command: /ralph`);
+      console.log(`[slack]   3. Enable "Escape channels, users, and links" option`);
 
       this.connected = true;
     } catch (err) {
