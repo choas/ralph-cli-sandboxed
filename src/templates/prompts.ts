@@ -192,7 +192,7 @@ INSTRUCTIONS:
 3. Verify your changes work by running:
    - Type/build check: $checkCommand
    - Tests: $testCommand
-4. Update .ralph/prd.json to set "passes": true for the completed feature
+4. Update .ralph/prd.yaml to set "passes": true for the completed feature
 5. Append a brief note about what you did to .ralph/progress.txt
 6. Create a git commit with a descriptive message for this feature
 7. Only work on ONE feature per execution

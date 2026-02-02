@@ -76,7 +76,7 @@ Set up a Ralph CLI project based on the configuration above.
    - Configure notifications if selected (see Reference below)
    - Configure daemon events if selected (see Reference below)
 3. Regenerate Docker files: `ralph docker init <language>`
-4. Create `.ralph/prd.json` with tasks based on the concept
+4. Create `.ralph/prd.yaml` with tasks based on the concept
 5. Verify with `ralph list` and `ralph status`
 6. Start daemon on host (if using notifications): `ralph daemon start`
 ```

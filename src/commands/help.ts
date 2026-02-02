@@ -133,7 +133,7 @@ CONFIGURATION:
   .ralph/
   ├── config.json      Project configuration (language, commands, cli)
   ├── prompt.md        Prompt template with $variables ($language, $checkCommand, etc.)
-  ├── prd.json         Product requirements document
+  ├── prd.yaml         Product requirements document
   └── progress.txt     Progress tracking file
 
 CLI CONFIGURATION:
