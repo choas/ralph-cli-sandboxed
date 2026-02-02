@@ -1,10 +1,25 @@
 # PRD Generator Guide
 
-This guide explains how to convert any document (specs, user stories, detailed PRDs) into a `prd.json` file that Ralph can execute.
+This guide explains how to convert any document (specs, user stories, detailed PRDs) into a `prd.yaml` file that Ralph can execute.
+
+> **Note:** Ralph now supports YAML format (recommended) and JSON format (legacy). New projects should use `prd.yaml`. Existing projects can migrate using `ralph prd convert`.
 
 ## Overview
 
 Ralph's PRD format is intentionally simple - each item should be completable in a single AI iteration. The challenge is converting complex, multi-level documents into this flat, actionable format.
+
+```yaml
+- category: feature
+  description: Imperative description of what to implement
+  steps:
+    - Concrete action 1
+    - Concrete action 2
+    - Verification step
+  passes: false
+```
+
+<details>
+<summary>JSON format (legacy)</summary>
 
 ```json
 {
@@ -18,6 +33,7 @@ Ralph's PRD format is intentionally simple - each item should be completable in 
   "passes": false
 }
 ```
+</details>
 
 ## Input Document Types
 
@@ -148,30 +164,27 @@ Steps tell the AI **how** to implement and **how** to verify.
 ### Step Patterns by Category
 
 **Feature:**
-```json
-"steps": [
-  "Create [file/component] with [functionality]",
-  "Implement [specific behavior]",
-  "Run [test/build command] and verify success"
-]
+```yaml
+steps:
+  - Create [file/component] with [functionality]
+  - Implement [specific behavior]
+  - Run [test/build command] and verify success
 ```
 
 **Bugfix:**
-```json
-"steps": [
-  "Identify root cause of [bug] in [location]",
-  "Fix by [specific change]",
-  "Add test case for regression, run tests"
-]
+```yaml
+steps:
+  - Identify root cause of [bug] in [location]
+  - Fix by [specific change]
+  - Add test case for regression, run tests
 ```
 
 **Setup:**
-```json
-"steps": [
-  "Run [init/install command]",
-  "Configure [settings] in [file]",
-  "Verify with [check command]"
-]
+```yaml
+steps:
+  - Run [init/install command]
+  - Configure [settings] in [file]
+  - Verify with [check command]
 ```
 
 ## Referencing External Documents
@@ -179,15 +192,12 @@ Steps tell the AI **how** to implement and **how** to verify.
 When your source document has code examples or detailed specs, reference them instead of copying:
 
 ### Good
-```json
-{
-  "description": "Implement WebSocket transport (Task 4.4.1)",
-  "steps": [
-    "Create internal/mcp/transport/websocket.go with WebSocketTransport struct",
-    "Follow implementation pattern in lazymcp-prd.md section 4.4.1",
-    "Run `go build ./...` and verify compilation"
-  ]
-}
+```yaml
+- description: Implement WebSocket transport (Task 4.4.1)
+  steps:
+    - Create internal/mcp/transport/websocket.go with WebSocketTransport struct
+    - Follow implementation pattern in lazymcp-prd.md section 4.4.1
+    - Run `go build ./...` and verify compilation
 ```
 
 ### Why Reference?
@@ -214,17 +224,14 @@ When your source document has code examples or detailed specs, reference them in
 ```
 
 **Converted:**
-```json
-{
-  "category": "feature",
-  "description": "Implement stdio transport process management (Task 4.2.1)",
-  "steps": [
-    "Create internal/mcp/transport/stdio.go with StdioTransport struct",
-    "Manage subprocess with exec.Command, setup stdin/stdout/stderr pipes",
-    "See lazymcp-prd.md section 4.2.1 for implementation details"
-  ],
-  "passes": false
-}
+```yaml
+- category: feature
+  description: Implement stdio transport process management (Task 4.2.1)
+  steps:
+    - Create internal/mcp/transport/stdio.go with StdioTransport struct
+    - Manage subprocess with exec.Command, setup stdin/stdout/stderr pipes
+    - See lazymcp-prd.md section 4.2.1 for implementation details
+  passes: false
 ```
 
 ### Example 2: User Story
@@ -240,37 +247,30 @@ Acceptance criteria:
 ```
 
 **Converted (3 items):**
-```json
-{
-  "category": "feature",
-  "description": "Add password reset request endpoint POST /api/auth/reset-request",
-  "steps": [
-    "Create endpoint that accepts email address",
-    "Generate secure token, store with expiry (1 hour)",
-    "Queue email with reset link containing token"
-  ],
-  "passes": false
-},
-{
-  "category": "feature",
-  "description": "Implement password reset email sending",
-  "steps": [
-    "Create email template with reset link",
-    "Integrate with email service (SendGrid/SES)",
-    "Test email delivery in development"
-  ],
-  "passes": false
-},
-{
-  "category": "feature",
-  "description": "Add password reset completion endpoint POST /api/auth/reset-complete",
-  "steps": [
-    "Validate token exists and not expired",
-    "Update user password with new value",
-    "Invalidate token, return success response"
-  ],
-  "passes": false
-}
+```yaml
+- category: feature
+  description: Add password reset request endpoint POST /api/auth/reset-request
+  steps:
+    - Create endpoint that accepts email address
+    - Generate secure token, store with expiry (1 hour)
+    - Queue email with reset link containing token
+  passes: false
+
+- category: feature
+  description: Implement password reset email sending
+  steps:
+    - Create email template with reset link
+    - Integrate with email service (SendGrid/SES)
+    - Test email delivery in development
+  passes: false
+
+- category: feature
+  description: Add password reset completion endpoint POST /api/auth/reset-complete
+  steps:
+    - Validate token exists and not expired
+    - Update user password with new value
+    - Invalidate token, return success response
+  passes: false
 ```
 
 ### Example 3: Bug Report
@@ -286,22 +286,49 @@ Steps to reproduce:
 ```
 
 **Converted:**
-```json
-{
-  "category": "bugfix",
-  "description": "Fix crash when uploading files larger than 10MB",
-  "steps": [
-    "Add file size validation before upload (max 10MB with clear error)",
-    "Implement streaming upload for large files to avoid memory issues",
-    "Test with 15MB file - should show error or stream successfully"
-  ],
-  "passes": false
-}
+```yaml
+- category: bugfix
+  description: Fix crash when uploading files larger than 10MB
+  steps:
+    - Add file size validation before upload (max 10MB with clear error)
+    - Implement streaming upload for large files to avoid memory issues
+    - Test with 15MB file - should show error or stream successfully
+  passes: false
 ```
 
 ## AI Conversion Prompt
 
-Use this prompt to have an AI convert documents to prd.json:
+Use this prompt to have an AI convert documents to prd.yaml:
+
+```
+Convert the following document into a Ralph prd.yaml file.
+
+Rules:
+1. Each sub-task or atomic feature = one PRD item
+2. Use categories: setup, feature, bugfix, refactor, docs, test, release, config, ui, integration
+3. Descriptions: imperative verb + specific what + context
+4. Steps: 2-4 concrete actions + verification step
+5. Reference source document sections instead of copying code
+6. Order items by logical execution sequence
+7. Set all "passes: false"
+
+Output format (YAML):
+- category: ...
+  description: ...
+  steps:
+    - ...
+    - ...
+    - ...
+  passes: false
+
+Document to convert:
+---
+[paste document here]
+---
+```
+
+<details>
+<summary>AI Prompt for JSON format (legacy)</summary>
 
 ```
 Convert the following document into a Ralph prd.json file.
@@ -330,10 +357,11 @@ Document to convert:
 [paste document here]
 ---
 ```
+</details>
 
 ## Validation Checklist
 
-After generating prd.json, verify:
+After generating prd.yaml, verify:
 
 - [ ] Each item is completable in one AI iteration
 - [ ] Descriptions start with imperative verbs
@@ -355,7 +383,7 @@ After generating prd.json, verify:
 
 | Mistake | Problem | Fix |
 |---------|---------|-----|
-| Copy-pasting code into steps | JSON too large, hard to read | Reference source document |
+| Copy-pasting code into steps | PRD file too large, hard to read | Reference source document |
 | Vague descriptions | AI doesn't know what to do | Be specific about what and where |
 | Missing verification | No way to confirm completion | Add test/build/check step |
 | Too many steps | Overwhelming, hard to track | Max 4-5 steps per item |
@@ -374,21 +402,19 @@ When running in Docker/Podman sandboxes, certain operations can cause the iterat
 - Telemetry/update checks may timeout on restricted networks
 
 **Bad:**
-```json
-"steps": [
-  "Create the component",
-  "Run `npm run dev` and verify server starts on port 3000",
-  "Open browser and check the page renders"
-]
+```yaml
+steps:
+  - Create the component
+  - Run `npm run dev` and verify server starts on port 3000
+  - Open browser and check the page renders
 ```
 
 **Good:**
-```json
-"steps": [
-  "Create the component",
-  "Run `npm run build` and verify compilation succeeds",
-  "Run `npm run lint` to check for errors"
-]
+```yaml
+steps:
+  - Create the component
+  - Run `npm run build` and verify compilation succeeds
+  - Run `npm run lint` to check for errors
 ```
 
 ### Verification Alternatives
@@ -420,3 +446,47 @@ Be aware that sandboxed environments may have restricted network access:
   }
 }
 ```
+
+## Migrating from JSON to YAML
+
+If you have an existing `prd.json` file, you can migrate to YAML format using the convert command:
+
+```bash
+ralph prd convert
+```
+
+This will:
+1. Read your `.ralph/prd.json` file
+2. Convert it to YAML format
+3. Write the result to `.ralph/prd.yaml`
+4. Rename the original to `prd.json.pre-yaml` as a backup
+
+### Migration Options
+
+```bash
+# Preview conversion without making changes
+ralph prd convert --dry-run
+
+# Overwrite existing prd.yaml if it exists
+ralph prd convert --force
+```
+
+### Reverting to JSON
+
+If you need to revert to JSON format:
+
+```bash
+# Remove YAML file and restore JSON backup
+rm .ralph/prd.yaml
+mv .ralph/prd.json.pre-yaml .ralph/prd.json
+```
+
+### Why YAML?
+
+YAML is now the recommended format for PRD files because:
+- **More readable** - No quotes around strings, cleaner syntax
+- **Easier to edit** - Simpler structure for manual edits
+- **Better diffs** - Changes are easier to review in version control
+- **Comments allowed** - You can add notes to your PRD items
+
+Both formats work identically with Ralph. If both `prd.yaml` and `prd.json` exist, YAML takes precedence.
