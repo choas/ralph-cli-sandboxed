@@ -146,6 +146,31 @@ docker run -v $(pwd):/workspace -v /workspace/node_modules your-image
 - Use async/await for asynchronous operations
 - Keep functions focused and small
 
+### Linting with Oxlint
+
+Ralph uses [Oxlint](https://oxc.rs/docs/guide/usage/linter.html) for fast TypeScript-aware linting:
+
+```bash
+npm run lint          # Run linter
+```
+
+Configuration is in `oxlintrc.json`. Oxlint is significantly faster than ESLint while providing TypeScript-aware rules.
+
+### Formatting with Oxfmt
+
+Ralph uses [Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) for code formatting:
+
+```bash
+npm run format        # Format all files
+npm run format:check  # Check formatting without changes
+```
+
+Configuration is in `.oxfmtrc.json`:
+- 2 spaces indentation
+- Double quotes
+- Semicolons
+- 100 character line width
+
 ## Submitting Changes
 
 1. Fork the repository

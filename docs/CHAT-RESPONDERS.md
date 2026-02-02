@@ -221,6 +221,77 @@ Send messages to an LLM and return the response.
 **System Prompt Placeholder:**
 - `{{project}}` - Replaced with the project directory name
 
+#### Automatic File Detection
+
+LLM responders automatically detect file paths mentioned in messages and include their contents in the context. This allows you to ask questions about specific files without manually copying code.
+
+**Supported formats:**
+- `src/utils/config.ts` - Full file path
+- `src/utils/config.ts:42` - File with line number (shows context around that line)
+- `./relative/path.js` - Relative paths
+- `package.json` - Root-level files
+- `Dockerfile`, `Makefile`, `.gitignore`, `.env` - Config files without extensions
+
+**Example:**
+```
+@qa What does the loadConfig function do in src/utils/config.ts:50?
+```
+
+The responder will automatically read the file, extract ~20 lines around line 50, and include it in the LLM context.
+
+**Limits:**
+- Max 50KB total file content per message
+- Max 30KB per individual file
+- Files larger than 100KB are skipped
+- 50+ file extensions supported (ts, js, py, go, rs, java, etc.)
+
+#### Git Diff Keywords
+
+LLM responders recognize git-related keywords and automatically include relevant diffs:
+
+| Keyword | Git Command | Description |
+|---------|-------------|-------------|
+| `diff` / `changes` | `git diff` | Unstaged changes |
+| `staged` | `git diff --cached` | Staged changes |
+| `last` / `last commit` | `git show HEAD` | Last commit |
+| `all` | `git diff HEAD` | All uncommitted changes |
+| `HEAD~N` | `git show HEAD~N` | Specific commit (e.g., `HEAD~2`) |
+
+**Examples:**
+```
+@review diff           # Review unstaged changes
+@review last           # Review the last commit
+@review staged         # Review staged changes
+@qa what changed in HEAD~3?  # Ask about a specific commit
+```
+
+#### Multi-Turn Thread Conversations
+
+When using Slack or Discord, responders support multi-turn conversations within threads:
+
+1. Start a conversation with a trigger (e.g., `@review diff`)
+2. The response appears in a thread
+3. Reply in the thread to continue the conversation
+4. The responder maintains context from previous messages (up to 20 messages)
+
+**How it works:**
+- Thread replies don't need the trigger prefix
+- The same responder handles all messages in a thread
+- Conversation history is included in each LLM call
+- History is stored in memory (cleared on restart)
+
+**Example thread:**
+```
+User: @review diff
+Bot: [Reviews the diff, identifies potential issues]
+
+User: Can you explain the change to the config loader?
+Bot: [Explains with full context from previous messages]
+
+User: How would you refactor this?
+Bot: [Suggests refactoring based on the entire conversation]
+```
+
 ### Claude Code Responder
 
 Run Claude Code CLI to make file modifications or perform complex coding tasks.
@@ -660,6 +731,42 @@ Increase the timeout for complex tasks:
 
 ---
 
+## Auto-Send Run Results
+
+When a chat provider (Slack, Telegram, or Discord) is configured and enabled, Ralph automatically sends notifications about `ralph run` progress to your chat:
+
+| Event | Message |
+|-------|---------|
+| Task Complete | "Task completed: [description]" |
+| Iteration Complete | "Iteration complete" |
+| PRD Complete | "All PRD tasks complete!" |
+| Run Stopped | "Run stopped: [reason]" |
+| Error | "Error: [message]" |
+
+**Requirements:**
+- Chat provider must be configured in `.ralph/config.json`
+- `chat.enabled` must be `true`
+- Bot must have permission to send messages to the configured channel/chat
+
+**Example config:**
+```json
+{
+  "chat": {
+    "enabled": true,
+    "provider": "slack",
+    "slack": {
+      "botToken": "xoxb-...",
+      "appToken": "xapp-...",
+      "allowedChannelIds": ["C0123456789"]
+    }
+  }
+}
+```
+
+With this configuration, running `ralph run` or `ralph docker run` will automatically post updates to your Slack channel.
+
+---
+
 ## Security Considerations
 
 1. **Restrict chat access** - Always use `allowedChatIds`/`allowedChannelIds`
@@ -673,5 +780,6 @@ Increase the timeout for complex tasks:
 ## Related Documentation
 
 - [Chat Clients Setup](./CHAT-CLIENTS.md) - Setting up Telegram, Slack, Discord
+- [Chat Architecture](./chat-architecture.md) - Technical architecture diagrams and message flow
 - [Docker Sandbox](./DOCKER.md) - Running Ralph in containers
 - [Daemon Actions](./USEFUL_ACTIONS.md) - Host daemon configuration

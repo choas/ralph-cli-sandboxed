@@ -505,6 +505,36 @@ Features:
 
 See [docs/DOCKER.md](docs/DOCKER.md) for detailed Docker configuration, customization, and troubleshooting.
 
+## Chat Integration
+
+Ralph can be controlled via chat platforms (Slack, Telegram, Discord) and includes intelligent chat responders powered by LLMs.
+
+### Chat Commands
+
+Control Ralph remotely via chat:
+- `/ralph run` - Start ralph automation
+- `/ralph status` - Check PRD status
+- `/ralph stop` - Stop running automation
+
+### Chat Responders
+
+Responders handle messages and can answer questions about your codebase:
+
+| Trigger | Type | Description |
+|---------|------|-------------|
+| `@qa` | LLM | Answer questions about the codebase |
+| `@review` | LLM | Review code changes (supports `@review diff`, `@review last`) |
+| `@code` | Claude Code | Make file modifications |
+| `!lint` | CLI | Run custom commands |
+
+**Features:**
+- **Automatic file detection**: Mention file paths (e.g., `src/config.ts:42`) and they're automatically included in context
+- **Git diff keywords**: Use `diff`, `staged`, `last`, `HEAD~N` to include git changes
+- **Multi-turn conversations**: Continue discussions in Slack/Discord threads
+- **Auto-notifications**: Results from `ralph run` are automatically sent to connected chat
+
+See [docs/CHAT-CLIENTS.md](docs/CHAT-CLIENTS.md) for chat platform setup and [docs/CHAT-RESPONDERS.md](docs/CHAT-RESPONDERS.md) for responder configuration.
+
 ## How It Works
 
 1. **Read PRD**: Claude reads your requirements from `prd.json`
