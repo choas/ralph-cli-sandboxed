@@ -187,9 +187,10 @@ async function runIteration(
   debug: boolean,
   model?: string,
   streamJson?: StreamJsonOptions,
-): Promise<{ exitCode: number; output: string }> {
+): Promise<{ exitCode: number; output: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     let output = "";
+    let stderrOutput = "";
     let jsonLogPath: string | undefined;
     let lineBuffer = ""; // Buffer for incomplete JSON lines
 
@@ -254,7 +255,14 @@ async function runIteration(
     }
 
     const proc = spawn(cliConfig.command, cliArgs, {
-      stdio: ["inherit", "pipe", "inherit"],
+      stdio: ["inherit", "pipe", "pipe"],
+    });
+
+    // Capture stderr for error detection (also pass through to console)
+    proc.stderr?.on("data", (data: Buffer) => {
+      const chunk = data.toString();
+      stderrOutput += chunk;
+      process.stderr.write(chunk);
     });
 
     proc.stdout.on("data", (data: Buffer) => {
@@ -330,13 +338,35 @@ async function runIteration(
         process.stdout.write("\n");
       }
 
-      resolve({ exitCode: code ?? 0, output });
+      resolve({ exitCode: code ?? 0, output, stderr: stderrOutput });
     });
 
     proc.on("error", (err) => {
       reject(new Error(`Failed to start ${cliConfig.command}: ${err.message}`));
     });
   });
+}
+
+/**
+ * Parses stderr for model not found errors and extracts suggestions.
+ * Supports OpenCode's ProviderModelNotFoundError format.
+ * Returns the first suggested model, or null if no suggestion found.
+ */
+function parseModelNotFoundError(stderr: string): { modelID: string; suggestion: string } | null {
+  // Match OpenCode's error format:
+  // modelID: "glm-free",
+  // suggestions: [ "glm-4.7-free" ],
+  const modelMatch = stderr.match(/modelID:\s*["']([^"']+)["']/);
+  const suggestionsMatch = stderr.match(/suggestions:\s*\[\s*["']([^"']+)["']/);
+
+  if (modelMatch && suggestionsMatch) {
+    return {
+      modelID: modelMatch[1],
+      suggestion: suggestionsMatch[1],
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -767,7 +797,7 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      const { exitCode, output } = await runIteration(
+      let { exitCode, output, stderr } = await runIteration(
         prompt,
         paths,
         sandboxed,
@@ -777,6 +807,34 @@ export async function run(args: string[]): Promise<void> {
         model,
         streamJson,
       );
+
+      // Check for model not found error and retry with suggestion
+      if (exitCode !== 0 && stderr) {
+        const modelError = parseModelNotFoundError(stderr);
+        if (modelError) {
+          console.log(
+            `\n\x1b[33mModel "${modelError.modelID}" not found. Retrying with suggested model "${modelError.suggestion}"...\x1b[0m`,
+          );
+          console.log(
+            `\x1b[90mTip: Add "modelArgs": ["--model"], and use "ralph run --model ${modelError.suggestion}" or configure in config.json\x1b[0m\n`,
+          );
+
+          // Retry with the suggested model
+          const retryResult = await runIteration(
+            prompt,
+            paths,
+            sandboxed,
+            filteredPrdPath,
+            cliConfig,
+            debug,
+            modelError.suggestion,
+            streamJson,
+          );
+          exitCode = retryResult.exitCode;
+          output = retryResult.output;
+          stderr = retryResult.stderr;
+        }
+      }
 
       // Sync any completed items from prd-tasks.json back to prd.json
       // This catches cases where the LLM updated prd-tasks.json instead of prd.json

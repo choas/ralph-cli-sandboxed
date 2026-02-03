@@ -94,7 +94,7 @@
       "envVars": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
       "credentialMount": null,
       "modelConfig": {
-        "note": "Or use: ralph run --model <model>"
+        "note": "Use: ralph run --model <model> (e.g., glm-4.7-free, claude-sonnet-4-20250514). If model is wrong, ralph will suggest the correct one."
       },
       "modelArgs": ["--model"]
     },
