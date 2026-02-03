@@ -13,6 +13,7 @@ COMMANDS:
   status [--head]   Show PRD completion status
   toggle <n>        Toggle passes status for entry n
   clean             Remove all passing entries from the PRD
+  reset             Reset all entries to incomplete (passes=false)
   fix-prd [opts]    Validate and recover corrupted PRD file
   fix-config [opts] Validate and recover corrupted config.json
   prompt [opts]     Display resolved prompt (for testing in Claude Code)
@@ -114,6 +115,7 @@ EXAMPLES:
   ralph toggle 1 2 3         # Toggle multiple entries
   ralph toggle --all         # Toggle all entries
   ralph clean                # Remove passing entries
+  ralph reset                # Reset all entries to incomplete
   ralph fix-prd              # Validate/recover corrupted PRD file
   ralph fix-prd --verify     # Check PRD format without fixing
   ralph fix-prd backup.prd.2024-01-15.json  # Restore from specific backup

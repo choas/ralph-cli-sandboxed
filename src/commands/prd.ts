@@ -339,6 +339,30 @@ export function prdClean(): void {
   console.log(`${filtered.length} ${filtered.length === 1 ? "entry" : "entries"} remaining.`);
 }
 
+export function prdReset(): void {
+  const prd = loadPrd();
+
+  if (prd.length === 0) {
+    console.log("No PRD entries to reset.");
+    return;
+  }
+
+  const alreadyPassing = prd.filter((e) => e.passes).length;
+
+  if (alreadyPassing === 0) {
+    console.log("All PRD entries are already incomplete (passes=false).");
+    return;
+  }
+
+  prd.forEach((entry) => {
+    entry.passes = false;
+  });
+  savePrd(prd);
+
+  console.log(`Reset ${alreadyPassing} ${alreadyPassing === 1 ? "entry" : "entries"} to incomplete.`);
+  console.log(`All ${prd.length} PRD ${prd.length === 1 ? "entry is" : "entries are"} now passes=false.`);
+}
+
 export function parseListArgs(args: string[]): { category?: string; passesFilter?: boolean } {
   let category: string | undefined;
   let passesFilter: boolean | undefined;
@@ -398,11 +422,14 @@ export async function prd(args: string[]): Promise<void> {
     case "clean":
       prdClean();
       break;
+    case "reset":
+      prdReset();
+      break;
     case "convert":
       await prdConvert(args.slice(1));
       break;
     default:
-      console.error("Usage: ralph prd <add|list|status|toggle|clean|convert>");
+      console.error("Usage: ralph prd <add|list|status|toggle|clean|reset|convert>");
       console.error("\nSubcommands:");
       console.error("  add                         Add a new PRD entry");
       console.error("  list [options]              List all PRD entries");
@@ -412,6 +439,7 @@ export async function prd(args: string[]): Promise<void> {
       );
       console.error("  toggle --all                Toggle all PRD entries");
       console.error("  clean                       Remove all passing entries from the PRD");
+      console.error("  reset                       Reset all entries to incomplete (passes=false)");
       console.error("  convert [options]           Convert prd.json to prd.yaml format");
       console.error("\nList options:");
       console.error("  --category, -c <cat>        Filter by category");

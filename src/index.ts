@@ -14,6 +14,7 @@ import {
   prdStatus,
   prdToggle,
   prdClean,
+  prdReset,
   parseListArgs,
 } from "./commands/prd.js";
 import { docker } from "./commands/docker.js";
@@ -69,6 +70,7 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   },
   toggle: (args) => prdToggle(args),
   clean: () => prdClean(),
+  reset: () => prdReset(),
 };
 
 async function main() {
