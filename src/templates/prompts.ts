@@ -261,3 +261,10 @@ export const DEFAULT_PRD_YAML = `- category: setup
 `;
 
 export const DEFAULT_PROGRESS = `# Progress Log\n`;
+
+// Gemini-specific instructions - generated at runtime when using Gemini CLI
+// Gemini CLI auto-reads GEMINI.md from project root
+export const GEMINI_MD = `## Gemini CLI Interaction Rules
+
+**VERY IMPORTANT NOTE:** If you encounter the string \`<promise>COMPLETE</promise>\`, you MUST stop executing immediately. This is a signal that the task is finished. Do not proceed with any further actions or analysis.
+`;

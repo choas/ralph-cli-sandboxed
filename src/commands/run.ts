@@ -11,7 +11,7 @@ import {
   requireContainer,
   getPrdFiles,
 } from "../utils/config.js";
-import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
+import { resolvePromptVariables, getCliProviders, GEMINI_MD } from "../templates/prompts.js";
 import {
   validatePrd,
   smartMerge,
@@ -532,6 +532,17 @@ export async function run(args: string[]): Promise<void> {
   checkFilesExist();
 
   const config = loadConfig();
+
+  // Generate GEMINI.md in project root when using Gemini CLI
+  // Gemini CLI auto-reads this file for provider-specific instructions
+  if (config.cliProvider === "gemini") {
+    const geminiMdPath = join(process.cwd(), "GEMINI.md");
+    if (!existsSync(geminiMdPath)) {
+      writeFileSync(geminiMdPath, GEMINI_MD);
+      console.log("Created GEMINI.md (Gemini CLI instructions)");
+    }
+  }
+
   const template = loadPrompt();
   const prompt = resolvePromptVariables(template, {
     language: config.language,

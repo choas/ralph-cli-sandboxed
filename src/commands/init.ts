@@ -346,7 +346,7 @@ export async function init(args: string[]): Promise<void> {
 
     // Optional fields with defaults/empty values for discoverability
     notifyCommand: "",
-    technologies: selectedTechnologies.length > 0 ? selectedTechnologies : [],
+    technologies: [selectedKey, ...selectedTechnologies],
     javaVersion: selectedKey === "java" ? 21 : null,
 
     // Docker configuration options

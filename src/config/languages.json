@@ -6,7 +6,7 @@
       "checkCommand": "bun check",
       "testCommand": "bun test",
       "docker": {
-        "install": "# Install Bun\nRUN curl -fsSL https://bun.sh/install | bash\nENV PATH=\"/home/node/.bun/bin:$PATH\""
+        "install": "# Install Bun (as node user so it installs to /home/node/.bun)\nRUN su - node -c 'curl -fsSL https://bun.sh/install | bash'\nENV PATH=\"/home/node/.bun/bin:$PATH\""
       },
       "technologies": [
         { "name": "Elysia", "description": "Fast web framework for Bun" },
