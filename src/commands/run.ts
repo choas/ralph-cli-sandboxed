@@ -440,19 +440,59 @@ function countPrdItems(
 /**
  * Validates the PRD after an iteration and recovers if corrupted.
  * Uses the validPrd as the source of truth and merges passes flags from the current file.
+ * Also preserves any new items added during the iteration.
  * Returns true if the PRD was corrupted and recovered.
  */
 function validateAndRecoverPrd(
   prdPath: string,
   validPrd: PrdEntry[],
-): { recovered: boolean; itemsUpdated: number } {
+): { recovered: boolean; itemsUpdated: number; newItemsPreserved: number } {
   const parsed = readPrdFile(prdPath);
 
-  // If we can't even parse the JSON, restore from valid copy
+  // Helper to find items in current that don't exist in validPrd
+  const findNewItems = (currentItems: unknown[]): PrdEntry[] => {
+    const validDescriptions = new Set(validPrd.map((item) => item.description));
+    const newItems: PrdEntry[] = [];
+
+    for (const item of currentItems) {
+      if (
+        item &&
+        typeof item === "object" &&
+        "description" in item &&
+        typeof (item as { description: unknown }).description === "string" &&
+        !validDescriptions.has((item as { description: string }).description)
+      ) {
+        // This is a new item - preserve it with safe defaults
+        const typedItem = item as Record<string, unknown>;
+        newItems.push({
+          category:
+            typeof typedItem.category === "string"
+              ? (typedItem.category as "feature" | "bug" | "chore")
+              : "feature",
+          description: typedItem.description as string,
+          steps: Array.isArray(typedItem.steps) ? (typedItem.steps as string[]) : [],
+          passes: typedItem.passes === true,
+        });
+      }
+    }
+    return newItems;
+  };
+
+  // Try to extract new items even from corrupted PRD
+  let newItems: PrdEntry[] = [];
+  if (parsed && Array.isArray(parsed.content)) {
+    newItems = findNewItems(parsed.content);
+  }
+
+  // If we can't even parse the JSON, restore from valid copy (with new items if we found any)
   if (!parsed) {
     console.log("\n\x1b[33mWarning: PRD corrupted (invalid JSON) - restored from memory.\x1b[0m");
-    writePrd(prdPath, validPrd);
-    return { recovered: true, itemsUpdated: 0 };
+    const mergedPrd = [...validPrd, ...newItems];
+    writePrd(prdPath, mergedPrd);
+    if (newItems.length > 0) {
+      console.log(`\x1b[32mPreserved ${newItems.length} newly-added item(s).\x1b[0m`);
+    }
+    return { recovered: true, itemsUpdated: 0, newItemsPreserved: newItems.length };
   }
 
   // Validate the structure
@@ -460,7 +500,7 @@ function validateAndRecoverPrd(
 
   if (validation.valid) {
     // PRD is valid, no recovery needed
-    return { recovered: false, itemsUpdated: 0 };
+    return { recovered: false, itemsUpdated: 0, newItemsPreserved: 0 };
   }
 
   // PRD is corrupted - use smart merge to extract passes flags
@@ -468,8 +508,11 @@ function validateAndRecoverPrd(
 
   const mergeResult = smartMerge(validPrd, parsed.content);
 
-  // Write the valid structure back
-  writePrd(prdPath, mergeResult.merged);
+  // Add any newly-added items
+  const mergedPrd = [...mergeResult.merged, ...newItems];
+
+  // Write the valid structure back (with new items)
+  writePrd(prdPath, mergedPrd);
 
   if (mergeResult.itemsUpdated > 0) {
     console.log(
@@ -479,11 +522,15 @@ function validateAndRecoverPrd(
     console.log("\x1b[32mRecovered: restored valid PRD structure.\x1b[0m");
   }
 
+  if (newItems.length > 0) {
+    console.log(`\x1b[32mPreserved ${newItems.length} newly-added item(s).\x1b[0m`);
+  }
+
   if (mergeResult.warnings.length > 0) {
     mergeResult.warnings.forEach((w) => console.log(`  \x1b[33m${w}\x1b[0m`));
   }
 
-  return { recovered: true, itemsUpdated: mergeResult.itemsUpdated };
+  return { recovered: true, itemsUpdated: mergeResult.itemsUpdated, newItemsPreserved: newItems.length };
 }
 
 /**
