@@ -51,6 +51,7 @@ STATUS OPTIONS:
 
 TOGGLE OPTIONS:
   <n> [n2] [n3]...           Toggle one or more entries by number
+  <start>-<end>              Toggle a range of entries (e.g., 1-18)
   --all, -a                  Toggle all PRD entries
 
 FIX-PRD OPTIONS:
@@ -113,6 +114,7 @@ EXAMPLES:
   ralph status --head        # Show completion summary without task headlines
   ralph toggle 1             # Toggle entry #1
   ralph toggle 1 2 3         # Toggle multiple entries
+  ralph toggle 1-5           # Toggle entries 1 through 5
   ralph toggle --all         # Toggle all entries
   ralph clean                # Remove passing entries
   ralph reset                # Reset all entries to incomplete

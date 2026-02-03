@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
-import { getCliProviders } from "../templates/prompts.js";
+import { getCliProviders, DEFAULT_PRD_YAML, DEFAULT_PROGRESS } from "../templates/prompts.js";
 
 export interface CliConfig {
   command: string;
@@ -379,18 +379,27 @@ export function checkFilesExist(): void {
     throw new Error(".ralph/ directory not found. Run 'ralph init' first.");
   }
 
-  // Check config and prompt files
-  const requiredFiles = [CONFIG_FILE, PROMPT_FILE, PROGRESS_FILE];
+  // Check config and prompt files (these are critical and must exist)
+  const requiredFiles = [CONFIG_FILE, PROMPT_FILE];
   for (const file of requiredFiles) {
     if (!existsSync(join(ralphDir, file))) {
       throw new Error(`.ralph/${file} not found. Run 'ralph init' first.`);
     }
   }
 
-  // Check for PRD file - either prd.yaml or prd.json must exist
+  // Create progress.txt if it doesn't exist (user may have cleaned up)
+  const progressPath = join(ralphDir, PROGRESS_FILE);
+  if (!existsSync(progressPath)) {
+    writeFileSync(progressPath, DEFAULT_PROGRESS);
+    console.log(`Created ${progressPath}`);
+  }
+
+  // Create prd.yaml if no PRD file exists (user may have cleaned up)
   const prdFiles = getPrdFiles();
   if (prdFiles.none) {
-    throw new Error(".ralph/prd.json or .ralph/prd.yaml not found. Run 'ralph init' first.");
+    const prdPath = join(ralphDir, PRD_FILE_YAML);
+    writeFileSync(prdPath, DEFAULT_PRD_YAML);
+    console.log(`Created ${prdPath}`);
   }
 }
 

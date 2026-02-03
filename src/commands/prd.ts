@@ -261,6 +261,81 @@ export function prdStatus(headOnly: boolean = false): void {
   }
 }
 
+/**
+ * Parses a range string like "1-18" into an array of numbers [1, 2, ..., 18].
+ * Returns null if the string is not a valid range.
+ */
+function parseRange(str: string): number[] | null {
+  const match = str.match(/^(\d+)-(\d+)$/);
+  if (!match) return null;
+
+  const start = parseInt(match[1]);
+  const end = parseInt(match[2]);
+
+  if (isNaN(start) || isNaN(end) || start < 1 || end < 1) return null;
+  if (start > end) return null;
+
+  const result: number[] = [];
+  for (let i = start; i <= end; i++) {
+    result.push(i);
+  }
+  return result;
+}
+
+/**
+ * Expands arguments to handle range syntax.
+ * Supports:
+ * - "1-18" (single arg with dash) → [1, 2, ..., 18]
+ * - "1", "-", "18" (three args with dash separator) → [1, 2, ..., 18]
+ * - "1", "18" (separate numbers) → [1, 18]
+ */
+function expandRangeArgs(args: string[]): number[] | null {
+  const indices: number[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    // Check if this arg is a range like "1-18"
+    const range = parseRange(arg);
+    if (range) {
+      indices.push(...range);
+      continue;
+    }
+
+    // Check if this is part of a "start - end" pattern (with spaces)
+    if (arg === "-" && i > 0 && i + 1 < args.length) {
+      // Look back to see if previous was a number and forward to see if next is a number
+      const prevNum = parseInt(args[i - 1]);
+      const nextNum = parseInt(args[i + 1]);
+
+      if (!isNaN(prevNum) && !isNaN(nextNum) && prevNum >= 1 && nextNum >= 1) {
+        // Remove the previous number we already added (it's the start of a range)
+        indices.pop();
+
+        if (prevNum > nextNum) {
+          return null; // Invalid range
+        }
+
+        // Add the full range
+        for (let j = prevNum; j <= nextNum; j++) {
+          indices.push(j);
+        }
+        i++; // Skip the next number since we already processed it
+        continue;
+      }
+    }
+
+    // Otherwise, parse as a single number
+    const num = parseInt(arg);
+    if (isNaN(num) || num < 1) {
+      return null; // Invalid argument
+    }
+    indices.push(num);
+  }
+
+  return indices.length > 0 ? indices : null;
+}
+
 export function prdToggle(args: string[]): void {
   const arg = args[0];
 
@@ -282,20 +357,11 @@ export function prdToggle(args: string[]): void {
     return;
   }
 
-  // Parse all numeric arguments
-  const indices: number[] = [];
-  for (const a of args) {
-    const index = parseInt(a);
-    if (!index || isNaN(index)) {
-      console.error("Usage: ralph prd toggle <number> [number2] [number3] ...");
-      console.error("       ralph prd toggle --all");
-      process.exit(1);
-    }
-    indices.push(index);
-  }
-
-  if (indices.length === 0) {
+  // Parse arguments with range support
+  const indices = expandRangeArgs(args);
+  if (!indices) {
     console.error("Usage: ralph prd toggle <number> [number2] [number3] ...");
+    console.error("       ralph prd toggle <start>-<end>");
     console.error("       ralph prd toggle --all");
     process.exit(1);
   }
@@ -310,8 +376,11 @@ export function prdToggle(args: string[]): void {
     }
   }
 
+  // Remove duplicates and sort
+  const uniqueIndices = [...new Set(indices)].sort((a, b) => a - b);
+
   // Toggle each entry
-  for (const index of indices) {
+  for (const index of uniqueIndices) {
     const entry = prd[index - 1];
     entry.passes = !entry.passes;
     const statusText = entry.passes ? "PASSING" : "NOT PASSING";
@@ -447,6 +516,7 @@ export async function prd(args: string[]): Promise<void> {
       console.error(
         "  toggle <n> ...              Toggle passes status for entry n (accepts multiple)",
       );
+      console.error("  toggle <start>-<end>        Toggle a range of entries (e.g., 1-18)");
       console.error("  toggle --all                Toggle all PRD entries");
       console.error("  clean                       Remove all passing entries from the PRD");
       console.error("  reset                       Reset all entries to incomplete (passes=false)");
