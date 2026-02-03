@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { extname, join } from "path";
-import { promptInput, promptSelect } from "../utils/prompt.js";
+import { promptInput, promptSelect, promptConfirm } from "../utils/prompt.js";
 import { getRalphDir, getPrdFiles } from "../utils/config.js";
 import { convert as prdConvert } from "./prd-convert.js";
 import { DEFAULT_PRD_YAML } from "../templates/prompts.js";
@@ -339,7 +339,7 @@ export function prdClean(): void {
   console.log(`${filtered.length} ${filtered.length === 1 ? "entry" : "entries"} remaining.`);
 }
 
-export function prdReset(): void {
+export async function prdReset(): Promise<void> {
   const prd = loadPrd();
 
   if (prd.length === 0) {
@@ -351,6 +351,16 @@ export function prdReset(): void {
 
   if (alreadyPassing === 0) {
     console.log("All PRD entries are already incomplete (passes=false).");
+    return;
+  }
+
+  const confirmed = await promptConfirm(
+    `Are you sure you want to reset ${alreadyPassing} ${alreadyPassing === 1 ? "entry" : "entries"} to incomplete?`,
+    false,
+  );
+
+  if (!confirmed) {
+    console.log("Reset cancelled.");
     return;
   }
 
@@ -423,7 +433,7 @@ export async function prd(args: string[]): Promise<void> {
       prdClean();
       break;
     case "reset":
-      prdReset();
+      await prdReset();
       break;
     case "convert":
       await prdConvert(args.slice(1));
