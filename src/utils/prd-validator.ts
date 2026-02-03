@@ -583,6 +583,11 @@ export function writePrdAuto(prdPath: string, entries: PrdEntry[]): void {
  * Paths are resolved relative to the .ralph directory.
  */
 export function expandFileReferences(text: string, baseDir: string): string {
+  // Handle null/undefined text
+  if (typeof text !== "string") {
+    return text ?? "";
+  }
+
   // Match @{filepath} patterns
   const pattern = /@\{([^}]+)\}/g;
 
