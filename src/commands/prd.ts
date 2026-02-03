@@ -1,8 +1,9 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { extname, join } from "path";
 import { promptInput, promptSelect } from "../utils/prompt.js";
 import { getRalphDir, getPrdFiles } from "../utils/config.js";
 import { convert as prdConvert } from "./prd-convert.js";
+import { DEFAULT_PRD_YAML } from "../templates/prompts.js";
 import YAML from "yaml";
 
 interface PrdEntry {
@@ -31,17 +32,21 @@ function getPrdPath(): string {
 /**
  * Parses a PRD file based on its extension.
  * Supports both JSON and YAML formats.
+ * Returns empty array if file is empty or parses to null.
  */
 function parsePrdFile(path: string): PrdEntry[] {
   const content = readFileSync(path, "utf-8");
   const ext = extname(path).toLowerCase();
 
   try {
+    let result: PrdEntry[] | null;
     if (ext === ".yaml" || ext === ".yml") {
-      return YAML.parse(content);
+      result = YAML.parse(content);
     } else {
-      return JSON.parse(content);
+      result = JSON.parse(content);
     }
+    // Handle empty files or null content
+    return result ?? [];
   } catch (err) {
     const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
     const message = err instanceof Error ? err.message : `Invalid ${format}`;
@@ -65,6 +70,7 @@ function parsePrdFile(path: string): PrdEntry[] {
 
 /**
  * Loads PRD entries from prd.yaml and/or prd.json.
+ * - If neither exists, creates prd.yaml with default content
  * - If both exist, merges them (no deduplication)
  * - If only prd.json exists, shows migration notice
  * - If only prd.yaml exists, uses it (happy path)
@@ -73,7 +79,16 @@ function loadPrd(): PrdEntry[] {
   const prdFiles = getPrdFiles();
 
   if (prdFiles.none) {
-    throw new Error(".ralph/prd.json or .ralph/prd.yaml not found. Run 'ralph init' first.");
+    // Create .ralph directory if it doesn't exist
+    const ralphDir = getRalphDir();
+    if (!existsSync(ralphDir)) {
+      mkdirSync(ralphDir, { recursive: true });
+    }
+    // Create default prd.yaml
+    const prdPath = join(ralphDir, PRD_FILE_YAML);
+    writeFileSync(prdPath, DEFAULT_PRD_YAML);
+    console.log(`Created ${prdPath}`);
+    return parsePrdFile(prdPath);
   }
 
   // If only JSON exists, show migration notice (once per session)
@@ -199,7 +214,7 @@ export function prdList(category?: string, passesFilter?: boolean): void {
   });
 }
 
-export function prdStatus(): void {
+export function prdStatus(headOnly: boolean = false): void {
   const prd = loadPrd();
 
   if (prd.length === 0) {
@@ -237,7 +252,7 @@ export function prdStatus(): void {
 
   if (passing === total) {
     console.log("\n  \x1b[32m\u2713 All requirements complete!\x1b[0m");
-  } else {
+  } else if (!headOnly) {
     const remaining = prd.filter((e) => !e.passes);
     console.log(`\n  Remaining (${remaining.length}):`);
     remaining.forEach((entry) => {
@@ -372,9 +387,11 @@ export async function prd(args: string[]): Promise<void> {
       prdList(category, passesFilter);
       break;
     }
-    case "status":
-      prdStatus();
+    case "status": {
+      const headOnly = args.slice(1).includes("--head");
+      prdStatus(headOnly);
       break;
+    }
     case "toggle":
       prdToggle(args.slice(1));
       break;
@@ -389,7 +406,7 @@ export async function prd(args: string[]): Promise<void> {
       console.error("\nSubcommands:");
       console.error("  add                         Add a new PRD entry");
       console.error("  list [options]              List all PRD entries");
-      console.error("  status                      Show completion status");
+      console.error("  status [--head]             Show completion status");
       console.error(
         "  toggle <n> ...              Toggle passes status for entry n (accepts multiple)",
       );

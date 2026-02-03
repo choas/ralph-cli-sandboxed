@@ -63,7 +63,10 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
     const { category, passesFilter } = parseListArgs(args);
     prdList(category, passesFilter);
   },
-  status: () => prdStatus(),
+  status: (args) => {
+    const headOnly = args.includes("--head");
+    prdStatus(headOnly);
+  },
   toggle: (args) => prdToggle(args),
   clean: () => prdClean(),
 };

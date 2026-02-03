@@ -10,7 +10,7 @@ COMMANDS:
   run [n] [opts]    Run automation iterations (default: all tasks)
   add               Add a new PRD entry (interactive)
   list [opts]       List all PRD entries
-  status            Show PRD completion status
+  status [--head]   Show PRD completion status
   toggle <n>        Toggle passes status for entry n
   clean             Remove all passing entries from the PRD
   fix-prd [opts]    Validate and recover corrupted PRD file
@@ -44,6 +44,9 @@ LIST OPTIONS:
                              Valid: ui, feature, bugfix, setup, development, testing, docs
   --passes                   Show only completed items (passes=true)
   --no-passes                Show only incomplete items (passes=false)
+
+STATUS OPTIONS:
+  --head                     Show only status summary without task headlines
 
 TOGGLE OPTIONS:
   <n> [n2] [n3]...           Toggle one or more entries by number
@@ -105,7 +108,8 @@ EXAMPLES:
   ralph list -c feature      # Show only feature entries
   ralph list --passes        # Show only completed entries
   ralph list --no-passes     # Show only incomplete entries
-  ralph status               # Show completion summary
+  ralph status               # Show completion summary with task headlines
+  ralph status --head        # Show completion summary without task headlines
   ralph toggle 1             # Toggle entry #1
   ralph toggle 1 2 3         # Toggle multiple entries
   ralph toggle --all         # Toggle all entries
