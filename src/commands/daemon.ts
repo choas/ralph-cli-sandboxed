@@ -305,6 +305,17 @@ async function processMessage(
     console.log(`[daemon] Processing: ${message.action} (${message.id})`);
   }
 
+  // Skip chat notification actions - these are handled by the chat client
+  // (which has the connected Socket Mode client)
+  const chatNotifyActions = ["slack_notify", "telegram_notify", "discord_notify"];
+  if (chatNotifyActions.includes(message.action)) {
+    if (debug) {
+      console.log(`[daemon] Skipping ${message.action} - handled by chat client`);
+    }
+    // Don't respond - let the chat client handle it
+    return;
+  }
+
   const action = actions[message.action];
 
   if (!action) {

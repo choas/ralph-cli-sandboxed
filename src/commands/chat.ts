@@ -3,7 +3,7 @@
  * Allows ralph to receive commands and send notifications via chat services.
  */
 
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, watch, type FSWatcher } from "fs";
 import { join, basename, extname } from "path";
 import { spawn } from "child_process";
 import YAML from "yaml";
@@ -20,7 +20,15 @@ import {
   formatStatusMessage,
   formatStatusForChat,
 } from "../utils/chat-client.js";
-import { getMessagesPath, sendMessage, waitForResponse } from "../utils/message-queue.js";
+import {
+  getMessagesPath,
+  sendMessage,
+  waitForResponse,
+  getPendingMessages,
+  respondToMessage,
+  cleanupOldMessages,
+  Message,
+} from "../utils/message-queue.js";
 
 const CHAT_STATE_FILE = "chat-state.json";
 
@@ -700,6 +708,83 @@ function createChatClient(
 }
 
 /**
+ * Process a message from the sandbox (container).
+ * Handles notification actions like slack_notify, telegram_notify, discord_notify.
+ */
+async function processSandboxMessage(
+  message: Message,
+  client: ChatClient,
+  allowedChatIds: string[] | undefined,
+  messagesPath: string,
+  debug: boolean,
+): Promise<void> {
+  const { action, args } = message;
+
+  if (debug) {
+    console.log(`[chat] Processing sandbox message: ${action} ${args?.join(" ") || ""}`);
+  }
+
+  // Handle notification actions
+  if (action === "slack_notify" || action === "telegram_notify" || action === "discord_notify") {
+    const notifyMessage = args?.join(" ") || "Ralph notification";
+
+    // Check if this notification is for our provider
+    const expectedProvider =
+      action === "slack_notify" ? "slack" : action === "telegram_notify" ? "telegram" : "discord";
+
+    if (client.provider !== expectedProvider) {
+      if (debug) {
+        console.log(
+          `[chat] Ignoring ${action} - current provider is ${client.provider}`,
+        );
+      }
+      respondToMessage(messagesPath, message.id, {
+        success: false,
+        error: `Chat provider is ${client.provider}, not ${expectedProvider}`,
+      });
+      return;
+    }
+
+    // Send to all allowed chat IDs
+    if (!allowedChatIds || allowedChatIds.length === 0) {
+      respondToMessage(messagesPath, message.id, {
+        success: false,
+        error: "No chat IDs configured",
+      });
+      return;
+    }
+
+    try {
+      for (const chatId of allowedChatIds) {
+        await client.sendMessage(chatId, notifyMessage);
+      }
+      if (debug) {
+        console.log(`[chat] Sent notification to ${allowedChatIds.length} chat(s)`);
+      }
+      respondToMessage(messagesPath, message.id, {
+        success: true,
+        output: `Sent to ${client.provider}`,
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      if (debug) {
+        console.error(`[chat] Failed to send notification: ${errorMsg}`);
+      }
+      respondToMessage(messagesPath, message.id, {
+        success: false,
+        error: errorMsg,
+      });
+    }
+    return;
+  }
+
+  // Unknown action - don't respond (let daemon handle it if running)
+  if (debug) {
+    console.log(`[chat] Ignoring unknown action: ${action}`);
+  }
+}
+
+/**
  * Start the chat daemon (listens for messages and handles commands).
  */
 async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
@@ -783,9 +868,71 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     process.exit(1);
   }
 
+  // Watch for sandbox messages (notifications from container)
+  const messagesPath = getMessagesPath(false); // host path
+  const ralphDir = getRalphDir();
+  let sandboxWatcher: FSWatcher | null = null;
+  let sandboxPollInterval: ReturnType<typeof setInterval> | null = null;
+  let processingMessages = false;
+
+  const checkSandboxMessages = async () => {
+    if (processingMessages) return;
+    processingMessages = true;
+
+    try {
+      const pending = getPendingMessages(messagesPath, "sandbox");
+      for (const msg of pending) {
+        // Only handle notification actions - let daemon handle others
+        if (
+          msg.action === "slack_notify" ||
+          msg.action === "telegram_notify" ||
+          msg.action === "discord_notify"
+        ) {
+          await processSandboxMessage(msg, client, allowedChatIds, messagesPath, debug);
+        }
+      }
+
+      // Cleanup old messages periodically
+      cleanupOldMessages(messagesPath, 60000);
+    } catch (err) {
+      if (debug) {
+        console.error(`[chat] Error processing sandbox messages: ${err}`);
+      }
+    }
+
+    processingMessages = false;
+  };
+
+  // Process any pending sandbox messages on startup
+  await checkSandboxMessages();
+
+  // Watch the .ralph directory for changes
+  if (existsSync(ralphDir)) {
+    sandboxWatcher = watch(ralphDir, { persistent: true }, (eventType, filename) => {
+      if (filename === "messages.json") {
+        checkSandboxMessages();
+      }
+    });
+  }
+
+  // Also poll periodically as backup
+  sandboxPollInterval = setInterval(checkSandboxMessages, 1000);
+
+  if (debug) {
+    console.log(`[chat] Watching for sandbox notifications at: ${messagesPath}`);
+  }
+
   // Handle shutdown
   const shutdown = async () => {
     console.log("\nShutting down chat daemon...");
+
+    // Stop sandbox message watching
+    if (sandboxWatcher) {
+      sandboxWatcher.close();
+    }
+    if (sandboxPollInterval) {
+      clearInterval(sandboxPollInterval);
+    }
 
     // Send disconnected message to all allowed chats
     if (allowedChatIds && allowedChatIds.length > 0) {
