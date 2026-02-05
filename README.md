@@ -44,6 +44,7 @@ ralph docker run
 | `ralph clean` | Remove all passing entries from PRD |
 | `ralph fix-prd [opts]` | Validate and recover corrupted PRD file |
 | `ralph prompt [opts]` | Display resolved prompt |
+| `ralph branch <sub>` | Manage PRD branches (list, merge, pr, delete) |
 | `ralph docker <sub>` | Manage Docker sandbox environment |
 | `ralph daemon <sub>` | Manage host daemon for sandbox notifications |
 | `ralph notify [msg]` | Send notification (from sandbox to host) |
@@ -426,6 +427,20 @@ The PRD (`prd.json`) is an array of requirements:
 ```
 
 Categories: `setup`, `feature`, `bugfix`, `refactor`, `docs`, `test`, `release`, `config`, `ui`
+
+### Branching
+
+PRD items can be tagged with a `branch` field to group work onto separate git branches. Ralph uses git worktrees to isolate branch work from the main checkout, so the host's working directory stays untouched.
+
+```yaml
+- category: feature
+  description: Add login page
+  branch: feat/auth
+  steps: [...]
+  passes: false
+```
+
+See [docs/BRANCHING.md](docs/BRANCHING.md) for the full architecture, configuration, and branch management commands.
 
 ### Advanced: File References
 
