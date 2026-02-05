@@ -89,6 +89,7 @@ SLACK SUBCOMMANDS:
   slack help        Show slack help message
 
 BRANCH SUBCOMMANDS:
+  branch list           List all branches and their status
   branch merge <name>   Merge a branch worktree into the base branch
 
 PROGRESS SUBCOMMANDS:
@@ -143,6 +144,7 @@ EXAMPLES:
   ralph slack setup          # Create new Slack app for this project
   ralph action --list        # List available host actions
   ralph action build         # Execute 'build' action on host
+  ralph branch list              # List all branches and their PRD status
   ralph branch merge feat/login  # Merge feat/login branch into base branch
   ralph progress summarize   # Add PRD entry to summarize progress.txt
 

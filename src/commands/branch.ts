@@ -1,7 +1,7 @@
 import { execSync } from "child_process";
 import { existsSync } from "fs";
 import { join } from "path";
-import { getRalphDir, getPrdFiles, loadConfig } from "../utils/config.js";
+import { getRalphDir, getPrdFiles, loadConfig, loadBranchState } from "../utils/config.js";
 import { readPrdFile, writePrdAuto, PrdEntry } from "../utils/prd-validator.js";
 import { promptConfirm } from "../utils/prompt.js";
 
@@ -58,6 +58,79 @@ function branchExists(branch: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * List all branches referenced in the PRD and their status.
+ * Shows item counts, pass/fail status, worktree existence, and active branch indicator.
+ */
+function branchList(): void {
+  const result = loadPrdEntries();
+  if (!result) return;
+
+  const { entries } = result;
+  const worktreesBase = getWorktreesBase();
+  const activeBranch = loadBranchState();
+
+  // Group items by branch
+  const branchGroups = new Map<string, PrdEntry[]>();
+  const noBranchItems: PrdEntry[] = [];
+
+  for (const entry of entries) {
+    if (entry.branch) {
+      const group = branchGroups.get(entry.branch) || [];
+      group.push(entry);
+      branchGroups.set(entry.branch, group);
+    } else {
+      noBranchItems.push(entry);
+    }
+  }
+
+  if (branchGroups.size === 0 && noBranchItems.length === 0) {
+    console.log("No PRD items found.");
+    return;
+  }
+
+  console.log("\x1b[1mBranches:\x1b[0m\n");
+
+  // Sort branches alphabetically
+  const sortedBranches = [...branchGroups.keys()].sort();
+
+  for (const branchName of sortedBranches) {
+    const items = branchGroups.get(branchName)!;
+    const passing = items.filter((e) => e.passes).length;
+    const total = items.length;
+    const allPassing = passing === total;
+
+    // Check if worktree exists on disk
+    const dirName = branchToWorktreeName(branchName);
+    const worktreePath = join(worktreesBase, dirName);
+    const hasWorktree = existsSync(worktreePath);
+
+    // Check if this is the active branch
+    const isActive = activeBranch?.currentBranch === branchName;
+
+    // Build the line
+    const statusIcon = allPassing ? "\x1b[32m✅\x1b[0m" : "\x1b[33m○\x1b[0m";
+    const activeIndicator = isActive ? " \x1b[36m◀ active\x1b[0m" : "";
+    const worktreeStatus = hasWorktree ? " \x1b[32m[worktree]\x1b[0m" : "";
+    const countStr = `${passing}/${total}`;
+
+    console.log(`  ${statusIcon} \x1b[1m${branchName}\x1b[0m  ${countStr}${worktreeStatus}${activeIndicator}`);
+  }
+
+  // Show no-branch group
+  if (noBranchItems.length > 0) {
+    const passing = noBranchItems.filter((e) => e.passes).length;
+    const total = noBranchItems.length;
+    const allPassing = passing === total;
+    const statusIcon = allPassing ? "\x1b[32m✅\x1b[0m" : "\x1b[33m○\x1b[0m";
+    const countStr = `${passing}/${total}`;
+
+    console.log(`  ${statusIcon} \x1b[2m(no branch)\x1b[0m  ${countStr}`);
+  }
+
+  console.log();
 }
 
 /**
@@ -180,12 +253,16 @@ export async function branch(args: string[]): Promise<void> {
   const subcommand = args[0];
 
   switch (subcommand) {
+    case "list":
+      branchList();
+      break;
     case "merge":
       await branchMerge(args.slice(1));
       break;
     default:
       console.error("Usage: ralph branch <subcommand>");
       console.error("\nSubcommands:");
+      console.error("  list             List all branches and their status");
       console.error("  merge <name>     Merge a branch worktree into the base branch");
       process.exit(1);
   }
