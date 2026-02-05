@@ -8,6 +8,7 @@ interface PrdEntry {
   description: string;
   steps: string[];
   passes: boolean;
+  branch?: string;
 }
 
 const PRD_JSON_FILE = "prd.json";

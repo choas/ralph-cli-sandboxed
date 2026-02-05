@@ -40,6 +40,7 @@ interface PrdItem {
   description: string;
   steps: string[];
   passes: boolean;
+  branch?: string;
 }
 
 const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
@@ -464,7 +465,7 @@ function validateAndRecoverPrd(
       ) {
         // This is a new item - preserve it with safe defaults
         const typedItem = item as Record<string, unknown>;
-        newItems.push({
+        const newEntry: PrdEntry = {
           category:
             typeof typedItem.category === "string"
               ? (typedItem.category as "feature" | "bug" | "chore")
@@ -472,7 +473,11 @@ function validateAndRecoverPrd(
           description: typedItem.description as string,
           steps: Array.isArray(typedItem.steps) ? (typedItem.steps as string[]) : [],
           passes: typedItem.passes === true,
-        });
+        };
+        if (typeof typedItem.branch === "string") {
+          newEntry.branch = typedItem.branch;
+        }
+        newItems.push(newEntry);
       }
     }
     return newItems;

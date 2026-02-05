@@ -7,6 +7,7 @@ export interface PrdEntry {
   description: string;
   steps: string[];
   passes: boolean;
+  branch?: string;
 }
 
 export interface ValidationResult {
@@ -79,14 +80,23 @@ export function validatePrd(content: unknown): ValidationResult {
       errors.push(`${prefix} missing or invalid 'passes' field (must be boolean)`);
     }
 
+    // Validate optional branch field if present
+    if (entry.branch !== undefined && typeof entry.branch !== "string") {
+      errors.push(`${prefix} 'branch' field must be a string if provided`);
+    }
+
     // If no errors for this item, add to valid data
     if (errors.filter((e) => e.startsWith(prefix)).length === 0) {
-      data.push({
+      const validEntry: PrdEntry = {
         category: entry.category as string,
         description: entry.description as string,
         steps: entry.steps as string[],
         passes: entry.passes as boolean,
-      });
+      };
+      if (typeof entry.branch === "string") {
+        validEntry.branch = entry.branch;
+      }
+      data.push(validEntry);
     }
   }
 
@@ -407,6 +417,15 @@ function attemptArrayRecovery(items: unknown[]): PrdEntry[] | null {
           entry.passes = false;
           break;
         }
+      }
+    }
+
+    // Branch mapping (optional field)
+    const branchFields = ["branch", "git_branch", "gitBranch"];
+    for (const field of branchFields) {
+      if (typeof obj[field] === "string" && obj[field]) {
+        entry.branch = obj[field] as string;
+        break;
       }
     }
 

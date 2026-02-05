@@ -9,6 +9,7 @@ interface PrdEntry {
   description: string;
   steps: string[];
   passes: boolean;
+  branch?: string;
 }
 
 const PRD_FILE_YAML = "prd.yaml";
