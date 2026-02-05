@@ -23,6 +23,7 @@ COMMANDS:
   action [name]     Execute host actions from config.json
   chat <sub>        Chat client integration (Telegram, etc.)
   slack <sub>       Slack app setup and management
+  progress <sub>    Manage progress.txt file
   help              Show this help message
 
   prd <subcommand>  (Alias) Manage PRD entries - same as add/list/status/toggle/clean
@@ -86,6 +87,9 @@ SLACK SUBCOMMANDS:
   slack status      Show current Slack configuration
   slack help        Show slack help message
 
+PROGRESS SUBCOMMANDS:
+  progress summarize    Add a PRD entry to summarize and compact progress.txt
+
 NOTIFY OPTIONS:
   [message]              Message to send as notification
   --action, -a <name>    Execute specific daemon action (default: notify)
@@ -135,6 +139,7 @@ EXAMPLES:
   ralph slack setup          # Create new Slack app for this project
   ralph action --list        # List available host actions
   ralph action build         # Execute 'build' action on host
+  ralph progress summarize   # Add PRD entry to summarize progress.txt
 
 CONFIGURATION:
   After running 'ralph init', you'll have:

@@ -29,6 +29,7 @@ import { config } from "./commands/config.js";
 import { action } from "./commands/action.js";
 import { logo } from "./commands/logo.js";
 import { slack } from "./commands/slack.js";
+import { progress } from "./commands/progress.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -54,6 +55,7 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   config,
   action,
   slack,
+  progress,
   "fix-prd": (args) => fixPrd(args),
   "fix-config": (args) => fixConfig(args),
   // Hidden easter egg
