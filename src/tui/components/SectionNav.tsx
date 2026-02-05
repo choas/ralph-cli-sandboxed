@@ -37,6 +37,7 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
       "docker.firewall",
       "docker.autoStart",
       "docker.restartCount",
+      "docker.worktreesPath",
     ],
   },
   {
