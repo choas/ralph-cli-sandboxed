@@ -1,9 +1,10 @@
 import { execSync } from "child_process";
-import { existsSync } from "fs";
-import { join } from "path";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { extname, join } from "path";
 import { getRalphDir, getPrdFiles, loadConfig, loadBranchState } from "../utils/config.js";
 import { readPrdFile, writePrdAuto, PrdEntry } from "../utils/prd-validator.js";
 import { promptConfirm } from "../utils/prompt.js";
+import YAML from "yaml";
 
 /**
  * Converts a branch name to a worktree directory name.
@@ -247,6 +248,94 @@ async function branchMerge(args: string[]): Promise<void> {
 }
 
 /**
+ * Gets the PRD file path, preferring the primary if it exists.
+ */
+function getPrdPath(): string {
+  const prdFiles = getPrdFiles();
+  if (prdFiles.primary) {
+    return prdFiles.primary;
+  }
+  return join(getRalphDir(), "prd.json");
+}
+
+/**
+ * Parses a PRD file (YAML or JSON) and returns the entries.
+ */
+function parsePrdFile(path: string): PrdEntry[] {
+  const content = readFileSync(path, "utf-8");
+  const ext = extname(path).toLowerCase();
+
+  try {
+    let result: PrdEntry[] | null;
+    if (ext === ".yaml" || ext === ".yml") {
+      result = YAML.parse(content);
+    } else {
+      result = JSON.parse(content);
+    }
+    return result ?? [];
+  } catch {
+    console.error(`Error parsing ${path}. Run 'ralph fix-prd' to attempt automatic repair.`);
+    process.exit(1);
+  }
+}
+
+/**
+ * Saves PRD entries to the PRD file (YAML or JSON based on extension).
+ */
+function savePrd(entries: PrdEntry[]): void {
+  const path = getPrdPath();
+  const ext = extname(path).toLowerCase();
+
+  if (ext === ".yaml" || ext === ".yml") {
+    writeFileSync(path, YAML.stringify(entries));
+  } else {
+    writeFileSync(path, JSON.stringify(entries, null, 2) + "\n");
+  }
+}
+
+/**
+ * Create a PRD item to open a pull request for a branch.
+ */
+function branchPr(args: string[]): void {
+  const branchName = args[0];
+  if (!branchName) {
+    console.error("Usage: ralph branch pr <branch-name>");
+    console.error("\nExample: ralph branch pr feat/login");
+    process.exit(1);
+  }
+
+  // Verify the branch exists
+  if (!branchExists(branchName)) {
+    console.error(`\x1b[31mError: Branch "${branchName}" does not exist.\x1b[0m`);
+    process.exit(1);
+  }
+
+  const baseBranch = getBaseBranch();
+
+  const entry: PrdEntry = {
+    category: "feature",
+    description: `Create a pull request from \`${branchName}\` into \`${baseBranch}\``,
+    steps: [
+      `Ensure all changes on \`${branchName}\` are committed`,
+      `Push \`${branchName}\` to the remote if not already pushed`,
+      `Create a pull request from \`${branchName}\` into \`${baseBranch}\` using the appropriate tool (e.g. gh pr create)`,
+      "Include a descriptive title and summary of the changes in the PR",
+    ],
+    passes: false,
+    branch: branchName,
+  };
+
+  const prdPath = getPrdPath();
+  const prd = parsePrdFile(prdPath);
+  prd.push(entry);
+  savePrd(prd);
+
+  console.log(`Added PRD entry #${prd.length}: Create PR for ${branchName} → ${baseBranch}`);
+  console.log(`Branch field set to: ${branchName}`);
+  console.log("Run 'ralph run' or 'ralph once' to execute.");
+}
+
+/**
  * Main branch command dispatcher.
  */
 export async function branch(args: string[]): Promise<void> {
@@ -259,11 +348,15 @@ export async function branch(args: string[]): Promise<void> {
     case "merge":
       await branchMerge(args.slice(1));
       break;
+    case "pr":
+      branchPr(args.slice(1));
+      break;
     default:
       console.error("Usage: ralph branch <subcommand>");
       console.error("\nSubcommands:");
       console.error("  list             List all branches and their status");
       console.error("  merge <name>     Merge a branch worktree into the base branch");
+      console.error("  pr <name>        Create a PRD item to open a PR for a branch");
       process.exit(1);
   }
 }
