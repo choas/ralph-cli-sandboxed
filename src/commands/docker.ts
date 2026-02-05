@@ -143,6 +143,15 @@ RUN ${gitCommands.join(" \\\n    && ")}
 `;
   }
 
+  // Build worktrees directory section if configured
+  let worktreesDir = "";
+  if (dockerConfig?.worktreesPath) {
+    worktreesDir = `
+# Create worktrees directory for git worktree storage
+RUN mkdir -p /worktrees && chown node:node /worktrees
+`;
+  }
+
   // Build asciinema installation section if enabled
   let asciinemaInstall = "";
   let asciinemaDir = "";
@@ -247,7 +256,7 @@ RUN echo "node ALL=(ALL) NOPASSWD: /usr/local/bin/init-firewall.sh" >> /etc/sudo
 RUN mkdir -p /workspace && chown node:node /workspace
 RUN mkdir -p /home/node/.claude && chown node:node /home/node/.claude
 RUN mkdir -p /commandhistory && chown node:node /commandhistory
-${asciinemaDir}
+${worktreesDir}${asciinemaDir}
 # Copy firewall script
 COPY init-firewall.sh /usr/local/bin/init-firewall.sh
 RUN chmod +x /usr/local/bin/init-firewall.sh
@@ -389,6 +398,12 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig["do
     "      - ${HOME}/.claude:/home/node/.claude",
     `      - ${imageName}-history:/commandhistory`,
   ];
+
+  // Mount worktrees path if configured
+  if (dockerConfig?.worktreesPath) {
+    baseVolumes.push("      # Mount host worktrees directory for git worktree storage");
+    baseVolumes.push(`      - ${dockerConfig.worktreesPath}:/worktrees`);
+  }
 
   if (dockerConfig?.volumes && dockerConfig.volumes.length > 0) {
     const customVolumeLines = dockerConfig.volumes.map((vol) => `      - ${vol}`);

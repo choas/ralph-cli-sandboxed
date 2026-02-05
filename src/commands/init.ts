@@ -378,6 +378,7 @@ export async function init(args: string[]): Promise<void> {
       },
       autoStart: false,
       restartCount: 0,
+      worktreesPath: "",
     },
 
     // Claude-specific configuration (MCP servers and skills)
