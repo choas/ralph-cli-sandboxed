@@ -183,6 +183,11 @@ export interface ChatConfig {
   responders?: RespondersConfig; // Chat responders for handling messages
 }
 
+export interface BranchState {
+  baseBranch: string; // The base branch (e.g., "main") that /workspace is on
+  currentBranch: string; // The branch being actively worked on (e.g., "feat/resume-test")
+}
+
 export interface RalphConfig {
   language: string;
   checkCommand: string;
@@ -195,6 +200,7 @@ export interface RalphConfig {
   cli?: CliConfig;
   cliProvider?: string;
   llmProviders?: LLMProvidersConfig; // Named LLM providers for chat responders
+  branch?: BranchState; // Active branch state for resume after interruption
   docker?: {
     ports?: string[];
     volumes?: string[];
@@ -556,4 +562,59 @@ export function getLLMProviders(config: RalphConfig): LLMProvidersConfig {
     ...DEFAULT_LLM_PROVIDERS,
     ...(config.llmProviders ?? {}),
   };
+}
+
+/**
+ * Saves the active branch state to .ralph/config.json.
+ * Used during `ralph run` to persist which branch is being worked on,
+ * so that work can resume after interruption.
+ */
+export function saveBranchState(baseBranch: string, currentBranch: string): void {
+  const configPath = join(getRalphDir(), CONFIG_FILE);
+  if (!existsSync(configPath)) return;
+
+  const content = readFileSync(configPath, "utf-8");
+  const config: RalphConfig = JSON.parse(content);
+  config.branch = { baseBranch, currentBranch };
+  writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+}
+
+/**
+ * Loads the active branch state from .ralph/config.json.
+ * Returns null if no branch state is stored.
+ */
+export function loadBranchState(): BranchState | null {
+  const configPath = join(getRalphDir(), CONFIG_FILE);
+  if (!existsSync(configPath)) return null;
+
+  try {
+    const content = readFileSync(configPath, "utf-8");
+    const config: RalphConfig = JSON.parse(content);
+    if (config.branch && config.branch.baseBranch && config.branch.currentBranch) {
+      return config.branch;
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
+}
+
+/**
+ * Clears the active branch state from .ralph/config.json.
+ * Called when a branch group completes or all branch work is done.
+ */
+export function clearBranchState(): void {
+  const configPath = join(getRalphDir(), CONFIG_FILE);
+  if (!existsSync(configPath)) return;
+
+  try {
+    const content = readFileSync(configPath, "utf-8");
+    const config: RalphConfig = JSON.parse(content);
+    if (config.branch) {
+      delete config.branch;
+      writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+    }
+  } catch {
+    // Ignore errors
+  }
 }

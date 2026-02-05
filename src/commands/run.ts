@@ -10,6 +10,9 @@ import {
   CliConfig,
   requireContainer,
   getPrdFiles,
+  saveBranchState,
+  loadBranchState,
+  clearBranchState,
 } from "../utils/config.js";
 import { resolvePromptVariables, getCliProviders, GEMINI_MD } from "../templates/prompts.js";
 import {
@@ -872,6 +875,21 @@ export async function run(args: string[]): Promise<void> {
   const worktreesAvailable = existsSync(worktreesBase);
   const workspaceCwd = process.cwd();
 
+  // Check for existing branch state from a previous interrupted run
+  const resumedBranchState = loadBranchState();
+  if (resumedBranchState) {
+    const resumeDir = join(worktreesBase, branchToWorktreeName(resumedBranchState.currentBranch));
+    if (existsSync(resumeDir)) {
+      console.log(
+        `\x1b[36mResuming work on branch "${resumedBranchState.currentBranch}" (worktree: ${resumeDir})\x1b[0m`,
+      );
+    } else {
+      console.log(
+        `\x1b[36mResuming work on branch "${resumedBranchState.currentBranch}"\x1b[0m`,
+      );
+    }
+  }
+
   /**
    * Runs a single iteration in the given working directory.
    * Handles: cwd switch, running CLI, syncing results, cwd restore.
@@ -1055,12 +1073,33 @@ export async function run(args: string[]): Promise<void> {
 
       // Separate branch groups from no-branch items
       const noBranchItems = branchGroups.get("") || [];
-      const branchEntries = [...branchGroups.entries()].filter(([key]) => key !== "");
+      let branchEntries = [...branchGroups.entries()].filter(([key]) => key !== "");
+
+      // If resuming from a previous interruption, prioritize the resumed branch
+      if (resumedBranchState) {
+        const resumeBranch = resumedBranchState.currentBranch;
+        const resumeIdx = branchEntries.findIndex(([key]) => key === resumeBranch);
+        if (resumeIdx > 0) {
+          // Move the resumed branch to the front
+          const [entry] = branchEntries.splice(resumeIdx, 1);
+          branchEntries.unshift(entry);
+        }
+      }
 
       let iterExitCode = 0;
       let iterOutput = "";
       let iterSterr = "";
       let iterSyncTotal = 0;
+
+      // Get the base branch for branch state tracking
+      let baseBranch = "main";
+      try {
+        baseBranch = execSync("git -C /workspace rev-parse --abbrev-ref HEAD", {
+          encoding: "utf-8",
+        }).trim();
+      } catch {
+        // Default to "main"
+      }
 
       // Process each branch group in its worktree
       for (const [branch, branchItems] of branchEntries) {
@@ -1076,6 +1115,9 @@ export async function run(args: string[]): Promise<void> {
         }
 
         console.log(`\n\x1b[36m--- Branch group: ${branch} (${branchItems.length} item(s)) ---\x1b[0m`);
+
+        // Save active branch state to config for resume after interruption
+        saveBranchState(baseBranch, branch);
 
         // Create or reuse the worktree
         let worktreePath: string;
@@ -1103,6 +1145,9 @@ export async function run(args: string[]): Promise<void> {
           worktreePath,
           branch,
         );
+
+        // Clear branch state after this branch group completes
+        clearBranchState();
 
         iterExitCode = result.exitCode;
         iterOutput = result.output;
