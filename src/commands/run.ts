@@ -1,5 +1,5 @@
-import { spawn } from "child_process";
-import { existsSync, readFileSync, writeFileSync, unlinkSync, appendFileSync, mkdirSync } from "fs";
+import { spawn, execSync } from "child_process";
+import { existsSync, readFileSync, writeFileSync, unlinkSync, appendFileSync, mkdirSync, copyFileSync } from "fs";
 import { extname, join } from "path";
 import {
   checkFilesExist,
@@ -44,6 +44,117 @@ interface PrdItem {
 }
 
 const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
+
+/**
+ * Converts a branch name to a worktree directory name.
+ * e.g., "feat/login" -> "feat-login"
+ */
+function branchToWorktreeName(branch: string): string {
+  return branch.replace(/\//g, "-");
+}
+
+/**
+ * Groups PRD items by branch field.
+ * Returns a Map where:
+ * - key is the branch name (or "" for items without a branch)
+ * - value is an array of PrdItem for that branch
+ * Only includes items that are incomplete (passes: false).
+ */
+function groupItemsByBranch(items: PrdItem[]): Map<string, PrdItem[]> {
+  const groups = new Map<string, PrdItem[]>();
+
+  for (const item of items) {
+    if (item.passes) continue; // Skip completed items
+
+    const key = item.branch || "";
+    const group = groups.get(key) || [];
+    group.push(item);
+    groups.set(key, group);
+  }
+
+  return groups;
+}
+
+/**
+ * Creates or reuses a git worktree for the given branch.
+ * The worktree is created at /worktrees/<branch-dir-name>.
+ * If the branch doesn't exist, it's created from the current HEAD.
+ * Returns the absolute path to the worktree directory.
+ */
+function ensureWorktree(branch: string, worktreesBase: string): string {
+  const dirName = branchToWorktreeName(branch);
+  const worktreePath = join(worktreesBase, dirName);
+
+  if (existsSync(worktreePath)) {
+    console.log(`\x1b[36mReusing existing worktree for branch "${branch}" at ${worktreePath}\x1b[0m`);
+    return worktreePath;
+  }
+
+  console.log(`\x1b[36mCreating worktree for branch "${branch}" at ${worktreePath}\x1b[0m`);
+
+  // Check if the branch already exists
+  let branchExists = false;
+  try {
+    execSync(`git rev-parse --verify "${branch}"`, { stdio: "pipe" });
+    branchExists = true;
+  } catch {
+    // Branch doesn't exist yet
+  }
+
+  try {
+    if (branchExists) {
+      execSync(`git worktree add "${worktreePath}" "${branch}"`, { stdio: "pipe" });
+    } else {
+      // Create new branch from current HEAD
+      execSync(`git worktree add -b "${branch}" "${worktreePath}"`, { stdio: "pipe" });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to create worktree for branch "${branch}": ${message}`);
+  }
+
+  return worktreePath;
+}
+
+/**
+ * Sets up the .ralph/ directory in a worktree with branch-specific files.
+ * - Creates .ralph/ directory
+ * - Writes a filtered prd-tasks.json containing only items for this branch
+ * - Creates or reuses progress.txt
+ * - Copies prompt.md from the workspace
+ */
+function setupWorktreeRalphDir(
+  worktreePath: string,
+  branchItems: PrdItem[],
+  workspacePaths: ReturnType<typeof getPaths>,
+): { ralphDir: string; prdTasksPath: string; progressPath: string } {
+  const ralphDir = join(worktreePath, ".ralph");
+  const prdTasksPath = join(ralphDir, "prd-tasks.json");
+  const progressPath = join(ralphDir, "progress.txt");
+  const promptPath = join(ralphDir, "prompt.md");
+
+  // Create .ralph/ directory if it doesn't exist
+  if (!existsSync(ralphDir)) {
+    mkdirSync(ralphDir, { recursive: true });
+  }
+
+  // Write filtered prd-tasks.json for this branch
+  // Expand @{filepath} references relative to the workspace .ralph/ dir
+  const expandedItems = expandPrdFileReferences(branchItems, workspacePaths.dir);
+  writeFileSync(prdTasksPath, JSON.stringify(expandedItems, null, 2));
+
+  // Create progress.txt if it doesn't exist (preserve existing one for resume)
+  if (!existsSync(progressPath)) {
+    writeFileSync(progressPath, "# Progress Log\n\n");
+  }
+
+  // Copy prompt.md from workspace
+  if (existsSync(workspacePaths.prompt)) {
+    copyFileSync(workspacePaths.prompt, promptPath);
+  }
+
+  return { ralphDir, prdTasksPath, progressPath };
+}
 
 /**
  * Creates a filtered PRD file containing only incomplete items (passes: false).
@@ -756,6 +867,105 @@ export async function run(args: string[]): Promise<void> {
     process.exit(143);
   });
 
+  // Detect if worktrees are available (/worktrees exists and is mounted)
+  const worktreesBase = "/worktrees";
+  const worktreesAvailable = existsSync(worktreesBase);
+  const workspaceCwd = process.cwd();
+
+  /**
+   * Runs a single iteration in the given working directory.
+   * Handles: cwd switch, running CLI, syncing results, cwd restore.
+   * Returns the iteration result for flow control.
+   */
+  async function runIterationInDir(
+    iterPaths: ReturnType<typeof getPaths>,
+    iterFilteredPrdPath: string,
+    iterValidPrd: PrdEntry[],
+    targetDir: string,
+    branchLabel?: string,
+  ): Promise<{ exitCode: number; output: string; stderr: string; syncResult: SyncResult }> {
+    // Change to target directory
+    if (targetDir !== workspaceCwd) {
+      process.chdir(targetDir);
+      if (branchLabel) {
+        console.log(`\x1b[36mWorking in worktree: ${targetDir} (branch: ${branchLabel})\x1b[0m`);
+      }
+    }
+
+    try {
+      let { exitCode, output, stderr } = await runIteration(
+        prompt,
+        iterPaths,
+        sandboxed,
+        iterFilteredPrdPath,
+        cliConfig,
+        debug,
+        model,
+        streamJson,
+      );
+
+      // Check for model not found error and retry with suggestion
+      if (exitCode !== 0 && stderr) {
+        const modelError = parseModelNotFoundError(stderr);
+        if (modelError) {
+          console.log(
+            `\n\x1b[33mModel "${modelError.modelID}" not found. Retrying with suggested model "${modelError.suggestion}"...\x1b[0m`,
+          );
+          console.log(
+            `\x1b[90mTip: Add "modelArgs": ["--model"], and use "ralph run --model ${modelError.suggestion}" or configure in config.json\x1b[0m\n`,
+          );
+
+          const retryResult = await runIteration(
+            prompt,
+            iterPaths,
+            sandboxed,
+            iterFilteredPrdPath,
+            cliConfig,
+            debug,
+            modelError.suggestion,
+            streamJson,
+          );
+          exitCode = retryResult.exitCode;
+          output = retryResult.output;
+          stderr = retryResult.stderr;
+        }
+      }
+
+      // Sync completed items from worktree's prd-tasks.json back to master PRD
+      const syncResult = syncPassesFromTasks(iterFilteredPrdPath, paths.prd);
+
+      // Send task_complete notification for each completed task
+      for (const taskName of syncResult.taskNames) {
+        await sendNotificationWithDaemonEvents(
+          "task_complete",
+          `Ralph: Task complete - ${taskName}`,
+          {
+            command: config.notifyCommand,
+            debug,
+            daemonConfig: config.daemon,
+            chatConfig: config.chat,
+            taskName,
+          },
+        );
+      }
+
+      // Clean up temp file after iteration
+      try {
+        unlinkSync(iterFilteredPrdPath);
+      } catch {
+        // Ignore cleanup errors
+      }
+
+      return { exitCode, output, stderr, syncResult };
+    } finally {
+      // Always restore working directory
+      if (targetDir !== workspaceCwd) {
+        process.chdir(workspaceCwd);
+        console.log(`\x1b[36mSwitched back to ${workspaceCwd}\x1b[0m`);
+      }
+    }
+  }
+
   try {
     while (true) {
       iterationCount++;
@@ -784,21 +994,18 @@ export async function run(args: string[]): Promise<void> {
       // Load a valid copy of the PRD before handing to the LLM
       const validPrd = loadValidPrd(paths.prd);
 
-      // Create a fresh filtered PRD for each iteration (in case items were completed)
-      const { tempPath, hasIncomplete } = createFilteredPrd(paths.prd, paths.dir, category);
-      filteredPrdPath = tempPath;
+      // Read all items and group by branch
+      const prdContent = readPrdFile(paths.prd)?.content;
+      const allItems: PrdItem[] = Array.isArray(prdContent) ? prdContent : [];
+      let itemsForIteration = allItems.filter((item) => !item.passes);
+      if (category) {
+        itemsForIteration = itemsForIteration.filter((item) => item.category === category);
+      }
+      const branchGroups = groupItemsByBranch(itemsForIteration);
 
-      if (!hasIncomplete) {
-        // Clean up temp file since we're not using it
-        try {
-          unlinkSync(filteredPrdPath);
-        } catch {
-          // Ignore cleanup errors
-        }
-        filteredPrdPath = null;
-
+      // Check if there are any incomplete items
+      if (branchGroups.size === 0) {
         if (loopMode) {
-          // In loop mode, wait for new items instead of exiting
           console.log("\n" + "=".repeat(50));
           if (category) {
             console.log(`All "${category}" items complete. Waiting for new items...`);
@@ -808,7 +1015,6 @@ export async function run(args: string[]): Promise<void> {
           console.log(`(Checking every ${POLL_INTERVAL_MS / 1000} seconds. Press Ctrl+C to stop)`);
           console.log("=".repeat(50));
 
-          // Poll for new items
           while (true) {
             await sleep(POLL_INTERVAL_MS);
             const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, paths.dir, category);
@@ -817,7 +1023,6 @@ export async function run(args: string[]): Promise<void> {
               break;
             }
           }
-          // Decrement so we don't count waiting as an iteration
           iterationCount--;
           continue;
         } else {
@@ -837,7 +1042,6 @@ export async function run(args: string[]): Promise<void> {
           }
           console.log("=".repeat(50));
 
-          // Send notification for PRD completion
           await sendNotificationWithDaemonEvents("prd_complete", undefined, {
             command: config.notifyCommand,
             debug,
@@ -849,84 +1053,103 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      let { exitCode, output, stderr } = await runIteration(
-        prompt,
-        paths,
-        sandboxed,
-        filteredPrdPath,
-        cliConfig,
-        debug,
-        model,
-        streamJson,
-      );
+      // Separate branch groups from no-branch items
+      const noBranchItems = branchGroups.get("") || [];
+      const branchEntries = [...branchGroups.entries()].filter(([key]) => key !== "");
 
-      // Check for model not found error and retry with suggestion
-      if (exitCode !== 0 && stderr) {
-        const modelError = parseModelNotFoundError(stderr);
-        if (modelError) {
-          console.log(
-            `\n\x1b[33mModel "${modelError.modelID}" not found. Retrying with suggested model "${modelError.suggestion}"...\x1b[0m`,
-          );
-          console.log(
-            `\x1b[90mTip: Add "modelArgs": ["--model"], and use "ralph run --model ${modelError.suggestion}" or configure in config.json\x1b[0m\n`,
-          );
+      let iterExitCode = 0;
+      let iterOutput = "";
+      let iterSterr = "";
+      let iterSyncTotal = 0;
 
-          // Retry with the suggested model
-          const retryResult = await runIteration(
-            prompt,
-            paths,
-            sandboxed,
-            filteredPrdPath,
-            cliConfig,
-            debug,
-            modelError.suggestion,
-            streamJson,
+      // Process each branch group in its worktree
+      for (const [branch, branchItems] of branchEntries) {
+        if (!worktreesAvailable) {
+          console.warn(
+            `\x1b[33mWarning: PRD items tagged with branch "${branch}" found, but /worktrees is not mounted.\x1b[0m`,
           );
-          exitCode = retryResult.exitCode;
-          output = retryResult.output;
-          stderr = retryResult.stderr;
+          console.warn(
+            `\x1b[33mConfigure docker.worktreesPath in .ralph/config.json and rebuild the container.\x1b[0m`,
+          );
+          console.warn(`\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`);
+          continue;
         }
-      }
 
-      // Sync any completed items from prd-tasks.json back to prd.json
-      // This catches cases where the LLM updated prd-tasks.json instead of prd.json
-      const syncResult = syncPassesFromTasks(filteredPrdPath, paths.prd);
+        console.log(`\n\x1b[36m--- Branch group: ${branch} (${branchItems.length} item(s)) ---\x1b[0m`);
 
-      // Send task_complete notification for each completed task
-      for (const taskName of syncResult.taskNames) {
-        await sendNotificationWithDaemonEvents(
-          "task_complete",
-          `Ralph: Task complete - ${taskName}`,
-          {
-            command: config.notifyCommand,
-            debug,
-            daemonConfig: config.daemon,
-            chatConfig: config.chat,
-            taskName,
-          },
+        // Create or reuse the worktree
+        let worktreePath: string;
+        try {
+          worktreePath = ensureWorktree(branch, worktreesBase);
+        } catch (err) {
+          console.error(`\x1b[31mError creating worktree for "${branch}": ${err instanceof Error ? err.message : err}\x1b[0m`);
+          continue;
+        }
+
+        // Set up .ralph/ in the worktree with branch-specific files
+        const worktreeSetup = setupWorktreeRalphDir(worktreePath, branchItems, paths);
+
+        // Create paths object for the worktree
+        const worktreePaths = {
+          ...paths,
+          dir: worktreeSetup.ralphDir,
+          progress: worktreeSetup.progressPath,
+        };
+
+        const result = await runIterationInDir(
+          worktreePaths,
+          worktreeSetup.prdTasksPath,
+          validPrd,
+          worktreePath,
+          branch,
         );
+
+        iterExitCode = result.exitCode;
+        iterOutput = result.output;
+        iterSterr = result.stderr;
+        iterSyncTotal += result.syncResult.count;
       }
 
-      // Clean up temp file after each iteration
-      try {
-        unlinkSync(filteredPrdPath);
-      } catch {
-        // Ignore cleanup errors
+      // Process no-branch items in /workspace (standard behavior)
+      if (noBranchItems.length > 0) {
+        if (branchEntries.length > 0) {
+          console.log(`\n\x1b[36m--- No-branch items (${noBranchItems.length} item(s)) ---\x1b[0m`);
+        }
+
+        // Create filtered PRD for no-branch items only (or all items if no branches exist)
+        const { tempPath } = createFilteredPrd(paths.prd, paths.dir, category);
+        filteredPrdPath = tempPath;
+
+        // If there were branch groups, rewrite prd-tasks.json to only include no-branch items
+        if (branchEntries.length > 0) {
+          const expandedNoBranch = expandPrdFileReferences(noBranchItems, paths.dir);
+          writeFileSync(filteredPrdPath, JSON.stringify(expandedNoBranch, null, 2));
+        }
+
+        const result = await runIterationInDir(
+          paths,
+          filteredPrdPath,
+          validPrd,
+          workspaceCwd,
+        );
+        filteredPrdPath = null;
+
+        iterExitCode = result.exitCode;
+        iterOutput = result.output;
+        iterSterr = result.stderr;
+        iterSyncTotal += result.syncResult.count;
       }
-      filteredPrdPath = null;
 
       // Validate and recover PRD if the LLM corrupted it
       validateAndRecoverPrd(paths.prd, validPrd);
 
       // Track progress for --all mode: stop if no progress after N iterations
-      // Progress = tasks completed OR new tasks added (allows ralph to expand the PRD)
       if (allMode) {
         const progressCounts = countPrdItems(paths.prd, category);
         const tasksCompleted = progressCounts.complete > lastCompletedCount;
         const tasksAdded = progressCounts.total > lastTotalCount;
 
         if (tasksCompleted || tasksAdded) {
-          // Progress made - reset counter
           iterationsWithoutProgress = 0;
           lastCompletedCount = progressCounts.complete;
           lastTotalCount = progressCounts.total;
@@ -944,7 +1167,6 @@ export async function run(args: string[]): Promise<void> {
           );
           console.log("Check the PRD and task definitions for issues.");
 
-          // Send notification about stopped run
           const stoppedMessage = `No progress after ${MAX_ITERATIONS_WITHOUT_PROGRESS} iterations. ${progressCounts.incomplete} tasks remaining.`;
           await sendNotificationWithDaemonEvents(
             "run_stopped",
@@ -962,26 +1184,24 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      if (exitCode !== 0) {
-        console.error(`\n${cliConfig.command} exited with code ${exitCode}`);
+      if (iterExitCode !== 0) {
+        console.error(`\n${cliConfig.command} exited with code ${iterExitCode}`);
 
-        // Track consecutive failures to detect persistent errors (e.g., missing API key)
-        if (exitCode === lastExitCode) {
+        if (iterExitCode === lastExitCode) {
           consecutiveFailures++;
         } else {
           consecutiveFailures = 1;
-          lastExitCode = exitCode;
+          lastExitCode = iterExitCode;
         }
 
         if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
           console.error(
-            `\nStopping: ${cliConfig.command} failed ${consecutiveFailures} times in a row with exit code ${exitCode}.`,
+            `\nStopping: ${cliConfig.command} failed ${consecutiveFailures} times in a row with exit code ${iterExitCode}.`,
           );
           console.error("This usually indicates a configuration error (e.g., missing API key).");
           console.error("Please check your CLI configuration and try again.");
 
-          // Send notification about error
-          const errorMessage = `CLI failed ${consecutiveFailures} times with exit code ${exitCode}. Check configuration.`;
+          const errorMessage = `CLI failed ${consecutiveFailures} times with exit code ${iterExitCode}. Check configuration.`;
           await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, {
             command: config.notifyCommand,
             debug,
@@ -995,21 +1215,18 @@ export async function run(args: string[]): Promise<void> {
 
         console.log("Continuing to next iteration...");
       } else {
-        // Reset failure tracking on success
         consecutiveFailures = 0;
         lastExitCode = 0;
       }
 
       // Check for completion signal
-      if (output.includes("<promise>COMPLETE</promise>")) {
+      if (iterOutput.includes("<promise>COMPLETE</promise>")) {
         if (loopMode) {
-          // In loop mode, wait for new items instead of exiting
           console.log("\n" + "=".repeat(50));
           console.log("PRD iteration complete. Waiting for new items...");
           console.log(`(Checking every ${POLL_INTERVAL_MS / 1000} seconds. Press Ctrl+C to stop)`);
           console.log("=".repeat(50));
 
-          // Poll for new items
           while (true) {
             await sleep(POLL_INTERVAL_MS);
             const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, paths.dir, category);
@@ -1030,7 +1247,6 @@ export async function run(args: string[]): Promise<void> {
           }
           console.log("=".repeat(50));
 
-          // Send notification if configured
           await sendNotificationWithDaemonEvents("prd_complete", undefined, {
             command: config.notifyCommand,
             debug,
