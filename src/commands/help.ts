@@ -23,6 +23,7 @@ COMMANDS:
   action [name]     Execute host actions from config.json
   chat <sub>        Chat client integration (Telegram, etc.)
   slack <sub>       Slack app setup and management
+  branch <sub>      Manage git branch worktrees
   progress <sub>    Manage progress.txt file
   help              Show this help message
 
@@ -87,6 +88,9 @@ SLACK SUBCOMMANDS:
   slack status      Show current Slack configuration
   slack help        Show slack help message
 
+BRANCH SUBCOMMANDS:
+  branch merge <name>   Merge a branch worktree into the base branch
+
 PROGRESS SUBCOMMANDS:
   progress summarize    Add a PRD entry to summarize and compact progress.txt
 
@@ -139,6 +143,7 @@ EXAMPLES:
   ralph slack setup          # Create new Slack app for this project
   ralph action --list        # List available host actions
   ralph action build         # Execute 'build' action on host
+  ralph branch merge feat/login  # Merge feat/login branch into base branch
   ralph progress summarize   # Add PRD entry to summarize progress.txt
 
 CONFIGURATION:
