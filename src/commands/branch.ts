@@ -336,6 +336,95 @@ function branchPr(args: string[]): void {
 }
 
 /**
+ * Delete a branch: remove worktree, delete git branch, and untag PRD items.
+ * Asks for confirmation before proceeding.
+ */
+async function branchDelete(args: string[]): Promise<void> {
+  const branchName = args[0];
+  if (!branchName) {
+    console.error("Usage: ralph branch delete <branch-name>");
+    console.error("\nExample: ralph branch delete feat/old-branch");
+    process.exit(1);
+  }
+
+  // Verify the branch exists
+  if (!branchExists(branchName)) {
+    console.error(`\x1b[31mError: Branch "${branchName}" does not exist.\x1b[0m`);
+    process.exit(1);
+  }
+
+  const worktreesBase = getWorktreesBase();
+  const dirName = branchToWorktreeName(branchName);
+  const worktreePath = join(worktreesBase, dirName);
+  const hasWorktree = existsSync(worktreePath);
+
+  // Load PRD to check for tagged items
+  const result = loadPrdEntries();
+  const taggedCount = result
+    ? result.entries.filter((e) => e.branch === branchName).length
+    : 0;
+
+  console.log(`Branch: ${branchName}`);
+  if (hasWorktree) {
+    console.log(`Worktree: ${worktreePath}`);
+  }
+  if (taggedCount > 0) {
+    console.log(`PRD items tagged: ${taggedCount}`);
+  }
+  console.log();
+
+  // Ask for confirmation
+  const confirmed = await promptConfirm(
+    `Delete branch "${branchName}"${hasWorktree ? " and its worktree" : ""}?`,
+    false,
+  );
+
+  if (!confirmed) {
+    console.log("Delete cancelled.");
+    return;
+  }
+
+  // Step 1: Remove worktree if it exists
+  if (hasWorktree) {
+    console.log(`\nRemoving worktree at ${worktreePath}...`);
+    try {
+      execSync(`git -C /workspace worktree remove "${worktreePath}" --force`, { stdio: "pipe" });
+      console.log(`\x1b[32mWorktree removed.\x1b[0m`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`\x1b[33mWarning: Could not remove worktree: ${message}\x1b[0m`);
+      console.warn("You can remove it manually with: git worktree remove " + worktreePath);
+    }
+  }
+
+  // Step 2: Delete the git branch
+  console.log(`Deleting branch "${branchName}"...`);
+  try {
+    execSync(`git -C /workspace branch -D "${branchName}"`, { stdio: "pipe" });
+    console.log(`\x1b[32mBranch deleted.\x1b[0m`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`\x1b[31mError deleting branch: ${message}\x1b[0m`);
+  }
+
+  // Step 3: Remove branch tag from PRD items
+  if (result && taggedCount > 0) {
+    console.log(`Removing branch tag from ${taggedCount} PRD item(s)...`);
+    const updatedEntries = result.entries.map((entry) => {
+      if (entry.branch === branchName) {
+        const { branch: _, ...rest } = entry;
+        return rest as PrdEntry;
+      }
+      return entry;
+    });
+    writePrdAuto(result.prdPath, updatedEntries);
+    console.log(`\x1b[32mPRD items updated.\x1b[0m`);
+  }
+
+  console.log(`\n\x1b[32mDone!\x1b[0m Branch "${branchName}" has been deleted.`);
+}
+
+/**
  * Main branch command dispatcher.
  */
 export async function branch(args: string[]): Promise<void> {
@@ -348,6 +437,9 @@ export async function branch(args: string[]): Promise<void> {
     case "merge":
       await branchMerge(args.slice(1));
       break;
+    case "delete":
+      await branchDelete(args.slice(1));
+      break;
     case "pr":
       branchPr(args.slice(1));
       break;
@@ -356,6 +448,7 @@ export async function branch(args: string[]): Promise<void> {
       console.error("\nSubcommands:");
       console.error("  list             List all branches and their status");
       console.error("  merge <name>     Merge a branch worktree into the base branch");
+      console.error("  delete <name>    Delete a branch and its worktree");
       console.error("  pr <name>        Create a PRD item to open a PR for a branch");
       process.exit(1);
   }
