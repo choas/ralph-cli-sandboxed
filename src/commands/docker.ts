@@ -127,21 +127,18 @@ ${commands}
 `;
   }
 
-  // Build git config section if configured
-  let gitConfigSection = "";
-  if (dockerConfig?.git && (dockerConfig.git.name || dockerConfig.git.email)) {
-    const gitCommands: string[] = [];
-    if (dockerConfig.git.name) {
-      gitCommands.push(`git config --global user.name "${dockerConfig.git.name}"`);
-    }
-    if (dockerConfig.git.email) {
-      gitCommands.push(`git config --global user.email "${dockerConfig.git.email}"`);
-    }
-    gitConfigSection = `
-# Configure git identity
+  // Build git config section — always set init.defaultBranch, plus identity if configured
+  const gitCommands: string[] = [`git config --global init.defaultBranch main`];
+  if (dockerConfig?.git?.name) {
+    gitCommands.push(`git config --global user.name "${dockerConfig.git.name}"`);
+  }
+  if (dockerConfig?.git?.email) {
+    gitCommands.push(`git config --global user.email "${dockerConfig.git.email}"`);
+  }
+  const gitConfigSection = `
+# Configure git defaults
 RUN ${gitCommands.join(" \\\n    && ")}
 `;
-  }
 
   // Build worktrees directory section if configured
   let worktreesDir = "";
