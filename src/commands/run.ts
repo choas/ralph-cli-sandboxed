@@ -102,11 +102,11 @@ function ensureWorktree(branch: string, worktreesBase: string): string {
   const worktreePath = join(worktreesBase, dirName);
 
   if (existsSync(worktreePath)) {
-    console.log(`\x1b[36mReusing existing worktree for branch "${branch}" at ${worktreePath}\x1b[0m`);
+    console.log(`\x1b[90m[ralph] Reusing worktree for branch "${branch}" at ${worktreePath}\x1b[0m`);
     return worktreePath;
   }
 
-  console.log(`\x1b[36mCreating worktree for branch "${branch}" at ${worktreePath}\x1b[0m`);
+  console.log(`\x1b[90m[ralph] Creating worktree for branch "${branch}" at ${worktreePath}\x1b[0m`);
 
   // Check if the branch already exists
   let branchExists = false;
@@ -894,11 +894,11 @@ export async function run(args: string[]): Promise<void> {
     const resumeDir = join(worktreesBase, branchToWorktreeName(resumedBranchState.currentBranch));
     if (existsSync(resumeDir)) {
       console.log(
-        `\x1b[36mResuming work on branch "${resumedBranchState.currentBranch}" (worktree: ${resumeDir})\x1b[0m`,
+        `\x1b[90m[ralph] Resuming work on branch "${resumedBranchState.currentBranch}" (worktree: ${resumeDir})\x1b[0m`,
       );
     } else {
       console.log(
-        `\x1b[36mResuming work on branch "${resumedBranchState.currentBranch}"\x1b[0m`,
+        `\x1b[90m[ralph] Resuming work on branch "${resumedBranchState.currentBranch}"\x1b[0m`,
       );
     }
   }
@@ -919,7 +919,7 @@ export async function run(args: string[]): Promise<void> {
     if (targetDir !== workspaceCwd) {
       process.chdir(targetDir);
       if (branchLabel) {
-        console.log(`\x1b[36mWorking in worktree: ${targetDir} (branch: ${branchLabel})\x1b[0m`);
+        console.log(`\x1b[90m[ralph] Working in worktree: ${targetDir} (branch: ${branchLabel})\x1b[0m`);
       }
     }
 
@@ -992,7 +992,7 @@ export async function run(args: string[]): Promise<void> {
       // Always restore working directory
       if (targetDir !== workspaceCwd) {
         process.chdir(workspaceCwd);
-        console.log(`\x1b[36mSwitched back to ${workspaceCwd}\x1b[0m`);
+        console.log(`\x1b[90m[ralph] Switched back to ${workspaceCwd}\x1b[0m`);
       }
     }
   }
@@ -1084,21 +1084,6 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      // Separate branch groups from no-branch items
-      const noBranchItems = branchGroups.get("") || [];
-      let branchEntries = [...branchGroups.entries()].filter(([key]) => key !== "");
-
-      // If resuming from a previous interruption, prioritize the resumed branch
-      if (resumedBranchState) {
-        const resumeBranch = resumedBranchState.currentBranch;
-        const resumeIdx = branchEntries.findIndex(([key]) => key === resumeBranch);
-        if (resumeIdx > 0) {
-          // Move the resumed branch to the front
-          const [entry] = branchEntries.splice(resumeIdx, 1);
-          branchEntries.unshift(entry);
-        }
-      }
-
       let iterExitCode = 0;
       let iterOutput = "";
       let iterSterr = "";
@@ -1117,99 +1102,119 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      // Process each branch group in its worktree
-      for (const [branch, branchItems] of branchEntries) {
-        if (!worktreesAvailable) {
-          console.warn(
-            `\x1b[33mWarning: PRD items tagged with branch "${branch}" found, but /worktrees is not mounted.\x1b[0m`,
-          );
-          console.warn(
-            `\x1b[33mConfigure docker.worktreesPath in .ralph/config.json and rebuild the container.\x1b[0m`,
-          );
-          console.warn(`\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`);
-          continue;
-        }
-
-        if (!hasCommits) {
-          console.warn(
-            `\x1b[33mWarning: PRD items tagged with branch "${branch}" found, but the repository has no commits.\x1b[0m`,
-          );
-          console.warn(
-            `\x1b[33mCreate an initial commit before using branch-based PRD items.\x1b[0m`,
-          );
-          console.warn(`\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`);
-          continue;
-        }
-
-        console.log(`\n\x1b[36m--- Branch group: ${branch} (${branchItems.length} item(s)) ---\x1b[0m`);
-
-        // Save active branch state to config for resume after interruption
-        saveBranchState(baseBranch, branch);
-
-        // Create or reuse the worktree
-        let worktreePath: string;
-        try {
-          worktreePath = ensureWorktree(branch, worktreesBase);
-        } catch (err) {
-          console.error(`\x1b[31mError creating worktree for "${branch}": ${err instanceof Error ? err.message : err}\x1b[0m`);
-          continue;
-        }
-
-        // Set up .ralph/ in the worktree with branch-specific files
-        const worktreeSetup = setupWorktreeRalphDir(worktreePath, branchItems, paths);
-
-        // Create paths object for the worktree
-        const worktreePaths = {
-          ...paths,
-          dir: worktreeSetup.ralphDir,
-          progress: worktreeSetup.progressPath,
-        };
-
-        const result = await runIterationInDir(
-          worktreePaths,
-          worktreeSetup.prdTasksPath,
-          validPrd,
-          worktreePath,
-          branch,
-        );
-
-        // Clear branch state after this branch group completes
-        clearBranchState();
-
-        iterExitCode = result.exitCode;
-        iterOutput = result.output;
-        iterSterr = result.stderr;
-        iterSyncTotal += result.syncResult.count;
+      // Find the first incomplete item to determine which group to process.
+      // If resuming from a previous interruption, prioritize the resumed branch.
+      let targetBranch: string;
+      if (resumedBranchState) {
+        targetBranch = resumedBranchState.currentBranch;
+      } else {
+        const firstIncomplete = itemsForIteration.find((item) => !item.passes);
+        targetBranch = firstIncomplete?.branch || "";
       }
 
-      // Process no-branch items in /workspace (standard behavior)
-      if (noBranchItems.length > 0) {
-        if (branchEntries.length > 0) {
-          console.log(`\n\x1b[36m--- No-branch items (${noBranchItems.length} item(s)) ---\x1b[0m`);
+      if (targetBranch !== "" && worktreesAvailable && hasCommits) {
+        // Process this one branch group in its worktree
+        const branchItems = branchGroups.get(targetBranch) || [];
+
+        if (branchItems.length === 0) {
+          // Resumed branch has no remaining items — clear state and fall through
+          clearBranchState();
+        } else {
+          console.log(`\n\x1b[36m--- Branch group: ${targetBranch} (${branchItems.length} item(s)) ---\x1b[0m`);
+
+          // Save active branch state to config for resume after interruption
+          saveBranchState(baseBranch, targetBranch);
+
+          // Create or reuse the worktree
+          let worktreePath: string;
+          try {
+            worktreePath = ensureWorktree(targetBranch, worktreesBase);
+          } catch (err) {
+            console.error(`\x1b[31mError creating worktree for "${targetBranch}": ${err instanceof Error ? err.message : err}\x1b[0m`);
+            clearBranchState();
+            continue;
+          }
+
+          // Set up .ralph/ in the worktree with branch-specific files
+          const worktreeSetup = setupWorktreeRalphDir(worktreePath, branchItems, paths);
+
+          // Create paths object for the worktree
+          const worktreePaths = {
+            ...paths,
+            dir: worktreeSetup.ralphDir,
+            progress: worktreeSetup.progressPath,
+          };
+
+          const result = await runIterationInDir(
+            worktreePaths,
+            worktreeSetup.prdTasksPath,
+            validPrd,
+            worktreePath,
+            targetBranch,
+          );
+
+          // Clear branch state after this branch group completes
+          clearBranchState();
+
+          iterExitCode = result.exitCode;
+          iterOutput = result.output;
+          iterSterr = result.stderr;
+          iterSyncTotal += result.syncResult.count;
         }
-
-        // Create filtered PRD for no-branch items only (or all items if no branches exist)
-        const { tempPath } = createFilteredPrd(paths.prd, paths.dir, category);
-        filteredPrdPath = tempPath;
-
-        // If there were branch groups, rewrite prd-tasks.json to only include no-branch items
-        if (branchEntries.length > 0) {
-          const expandedNoBranch = expandPrdFileReferences(noBranchItems, paths.dir);
-          writeFileSync(filteredPrdPath, JSON.stringify(expandedNoBranch, null, 2));
-        }
-
-        const result = await runIterationInDir(
-          paths,
-          filteredPrdPath,
-          validPrd,
-          workspaceCwd,
+      } else if (targetBranch !== "" && !worktreesAvailable) {
+        // Branch items found but worktrees not available — warn and process no-branch items instead
+        console.warn(
+          `\x1b[33mWarning: PRD items tagged with branch "${targetBranch}" found, but /worktrees is not mounted.\x1b[0m`,
         );
-        filteredPrdPath = null;
+        console.warn(
+          `\x1b[33mConfigure docker.worktreesPath in .ralph/config.json and rebuild the container.\x1b[0m`,
+        );
+        const branchItems = branchGroups.get(targetBranch) || [];
+        console.warn(`\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`);
+      } else if (targetBranch !== "" && !hasCommits) {
+        // Branch items found but no commits — warn and process no-branch items instead
+        console.warn(
+          `\x1b[33mWarning: PRD items tagged with branch "${targetBranch}" found, but the repository has no commits.\x1b[0m`,
+        );
+        console.warn(
+          `\x1b[33mCreate an initial commit before using branch-based PRD items.\x1b[0m`,
+        );
+        const branchItems = branchGroups.get(targetBranch) || [];
+        console.warn(`\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`);
+      }
 
-        iterExitCode = result.exitCode;
-        iterOutput = result.output;
-        iterSterr = result.stderr;
-        iterSyncTotal += result.syncResult.count;
+      // Process no-branch items in /workspace (when target is no-branch, or branch was skipped)
+      if (targetBranch === "" || (!worktreesAvailable && targetBranch !== "") || (!hasCommits && targetBranch !== "")) {
+        const noBranchItems = branchGroups.get("") || [];
+        if (noBranchItems.length > 0) {
+          const hasBranches = [...branchGroups.keys()].some((key) => key !== "");
+          if (hasBranches) {
+            console.log(`\n\x1b[36m--- No-branch items (${noBranchItems.length} item(s)) ---\x1b[0m`);
+          }
+
+          // Create filtered PRD for no-branch items only (or all items if no branches exist)
+          const { tempPath } = createFilteredPrd(paths.prd, paths.dir, category);
+          filteredPrdPath = tempPath;
+
+          // If there are branch groups, rewrite prd-tasks.json to only include no-branch items
+          if (hasBranches) {
+            const expandedNoBranch = expandPrdFileReferences(noBranchItems, paths.dir);
+            writeFileSync(filteredPrdPath, JSON.stringify(expandedNoBranch, null, 2));
+          }
+
+          const result = await runIterationInDir(
+            paths,
+            filteredPrdPath,
+            validPrd,
+            workspaceCwd,
+          );
+          filteredPrdPath = null;
+
+          iterExitCode = result.exitCode;
+          iterOutput = result.output;
+          iterSterr = result.stderr;
+          iterSyncTotal += result.syncResult.count;
+        }
       }
 
       // Validate and recover PRD if the LLM corrupted it
