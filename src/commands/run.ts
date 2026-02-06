@@ -13,6 +13,7 @@ import {
   saveBranchState,
   loadBranchState,
   clearBranchState,
+  getProjectName,
 } from "../utils/config.js";
 import { resolvePromptVariables, getCliProviders, GEMINI_MD } from "../templates/prompts.js";
 import {
@@ -49,11 +50,13 @@ interface PrdItem {
 const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
 
 /**
- * Converts a branch name to a worktree directory name.
- * e.g., "feat/login" -> "feat-login"
+ * Converts a branch name to a worktree directory name, prefixed with the project name.
+ * e.g., "feat/login" -> "myproject_feat-login"
+ * The project prefix avoids conflicts when multiple projects share the same worktrees directory.
  */
 function branchToWorktreeName(branch: string): string {
-  return branch.replace(/\//g, "-");
+  const projectName = getProjectName();
+  return `${projectName}_${branch.replace(/\//g, "-")}`;
 }
 
 /**
@@ -93,7 +96,7 @@ function groupItemsByBranch(items: PrdItem[]): Map<string, PrdItem[]> {
 
 /**
  * Creates or reuses a git worktree for the given branch.
- * The worktree is created at /worktrees/<branch-dir-name>.
+ * The worktree is created at /worktrees/<project>_<branch-dir-name>.
  * If the branch doesn't exist, it's created from the current HEAD.
  * Returns the absolute path to the worktree directory.
  */

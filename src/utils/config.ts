@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import { join, basename } from "path";
 import { getCliProviders, DEFAULT_PRD_YAML, DEFAULT_PROGRESS } from "../templates/prompts.js";
 
 export interface CliConfig {
@@ -367,6 +367,26 @@ export function loadConfig(): RalphConfig {
 
   const content = readFileSync(configPath, "utf-8");
   return JSON.parse(content);
+}
+
+/**
+ * Gets the project name for use in worktree directory naming.
+ * Derives from config.imageName (stripping "ralph-" prefix if present),
+ * or falls back to the current directory basename.
+ */
+export function getProjectName(): string {
+  try {
+    const config = loadConfig();
+    if (config.imageName) {
+      const name = config.imageName.startsWith("ralph-")
+        ? config.imageName.slice(6)
+        : config.imageName;
+      return name.replace(/[^a-z0-9-]/g, "-");
+    }
+  } catch {
+    // Config not available, fall back to directory name
+  }
+  return basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-");
 }
 
 export function loadPrompt(): string {

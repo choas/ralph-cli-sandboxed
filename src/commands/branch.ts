@@ -1,17 +1,19 @@
 import { execSync } from "child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { extname, join } from "path";
-import { getRalphDir, getPrdFiles, loadConfig, loadBranchState } from "../utils/config.js";
+import { getRalphDir, getPrdFiles, loadConfig, loadBranchState, getProjectName } from "../utils/config.js";
 import { readPrdFile, writePrdAuto, PrdEntry } from "../utils/prd-validator.js";
 import { promptConfirm } from "../utils/prompt.js";
 import YAML from "yaml";
 
 /**
- * Converts a branch name to a worktree directory name.
- * e.g., "feat/login" -> "feat-login"
+ * Converts a branch name to a worktree directory name, prefixed with the project name.
+ * e.g., "feat/login" -> "myproject_feat-login"
+ * The project prefix avoids conflicts when multiple projects share the same worktrees directory.
  */
 function branchToWorktreeName(branch: string): string {
-  return branch.replace(/\//g, "-");
+  const projectName = getProjectName();
+  return `${projectName}_${branch.replace(/\//g, "-")}`;
 }
 
 /**

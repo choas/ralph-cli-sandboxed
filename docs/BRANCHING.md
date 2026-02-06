@@ -37,10 +37,10 @@ Host                                        Container
   (stays on main, untouched)                  (base branch)
 
 ~/ralph-worktrees/cool-prj        →         /worktrees
-  feat-auth/                                  feat-auth/
+  cool-prj_feat-auth/                         cool-prj_feat-auth/
     src/                                        src/
     package.json                                package.json
-  feat-ui/                                    feat-ui/
+  cool-prj_feat-ui/                           cool-prj_feat-ui/
     src/                                        src/
     package.json                                package.json
 ```
@@ -55,7 +55,7 @@ Both share the same `.git` database. Commits made in any worktree are visible ev
 Each worktree gets its own `.ralph/` directory with branch-specific files:
 
 ```
-/worktrees/feat-auth/
+/worktrees/cool-prj_feat-auth/
 ├── .ralph/
 │   ├── prd-tasks.json      ← filtered: only feat/auth items
 │   ├── progress.txt         ← branch-specific progress log
@@ -136,16 +136,16 @@ ralph run
 ├─ Read prd.yaml → group items by branch
 │
 ├─ Group: feat/auth (2 items)
-│  ├─ git worktree add /worktrees/feat-auth feat/auth
-│  ├─ Set up /worktrees/feat-auth/.ralph/ (prd-tasks.json, progress.txt, prompt.md)
-│  ├─ Run iteration 1 in /worktrees/feat-auth/
+│  ├─ git worktree add /worktrees/cool-prj_feat-auth feat/auth
+│  ├─ Set up /worktrees/cool-prj_feat-auth/.ralph/ (prd-tasks.json, progress.txt, prompt.md)
+│  ├─ Run iteration 1 in /worktrees/cool-prj_feat-auth/
 │  │   └─ Sync passes back to /workspace/.ralph/prd.yaml
-│  ├─ Run iteration 2 in /worktrees/feat-auth/
+│  ├─ Run iteration 2 in /worktrees/cool-prj_feat-auth/
 │  │   └─ Sync passes back to /workspace/.ralph/prd.yaml
 │  └─ Switch back to /workspace
 │
 ├─ Group: feat/ui (1 item)
-│  ├─ git worktree add /worktrees/feat-ui feat/ui
+│  ├─ git worktree add /worktrees/cool-prj_feat-ui feat/ui
 │  ├─ ...
 │  └─ Switch back to /workspace
 │
@@ -182,7 +182,7 @@ Shows all branches referenced in `prd.yaml` with status:
 ```
 Branches:
 
-  * feat/auth     2/3 complete  [worktree: /worktrees/feat-auth]
+  * feat/auth     2/3 complete  [worktree: /worktrees/cool-prj_feat-auth]
     feat/ui       0/1 complete  [no worktree]
     (no branch)   1/2 complete
 
