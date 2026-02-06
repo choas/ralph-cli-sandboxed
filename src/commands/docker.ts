@@ -1291,7 +1291,7 @@ Docker files generated in .ralph/docker/
 
 Next steps:
   1. Build the image: ralph docker build
-  2. Run container:    ralph docker run
+  2. Run container:   ralph docker run
 
 Or use docker compose directly:
   cd .ralph/docker && docker compose run --rm ralph
@@ -1434,7 +1434,7 @@ Docker files generated in .ralph/docker/
 
 Next steps:
   1. Build the image: ralph docker build
-  2. Run container:    ralph docker run
+  2. Run container:   ralph docker run
 
 Or use docker compose directly:
   cd .ralph/docker && docker compose run --rm ralph
