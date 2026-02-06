@@ -532,13 +532,126 @@ export function createTemplatePrd(backupPath?: string): PrdEntry[] {
 }
 
 /**
+ * Fixes common YAML issues caused by LLMs writing multi-line strings incorrectly.
+ * The main issue is list items that span multiple lines without proper quoting:
+ *
+ *   - Implement each stage as its own class in
+ *     separate files
+ *
+ * This gets interpreted as an implicit key error. We fix it by joining
+ * continuation lines back into the list item.
+ */
+function fixYamlMultilineStrings(yaml: string): string {
+  const lines = yaml.split("\n");
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Check if this is a list item (starts with optional whitespace + "- ")
+    const listItemMatch = line.match(/^(\s*)-\s+(.*)$/);
+
+    if (listItemMatch) {
+      const indent = listItemMatch[1];
+      let content = listItemMatch[2];
+      const listItemIndentLevel = indent.length;
+
+      // Look ahead for continuation lines
+      // Continuation lines are:
+      // - More indented than the list item marker
+      // - Don't start with "- " (not a new list item)
+      // - Don't contain ": " (not a key-value pair)
+      // - Not empty
+      let j = i + 1;
+      while (j < lines.length) {
+        const nextLine = lines[j];
+        const trimmed = nextLine.trim();
+
+        // Empty line breaks continuation
+        if (trimmed === "") break;
+
+        // Get the indentation of this line
+        const nextIndentMatch = nextLine.match(/^(\s*)/);
+        const nextIndent = nextIndentMatch ? nextIndentMatch[1].length : 0;
+
+        // Must be more indented than the list marker
+        if (nextIndent <= listItemIndentLevel) break;
+
+        // New list item breaks continuation
+        if (trimmed.startsWith("- ")) break;
+
+        // Key-value pair breaks continuation (but not if it looks like a sentence with colon)
+        // A key-value pair typically has no space before the colon
+        if (/^[a-zA-Z_][a-zA-Z0-9_]*:/.test(trimmed)) break;
+
+        // This is a continuation line - append it
+        content += " " + trimmed;
+        j++;
+      }
+
+      // If we collected continuation lines, quote the content if needed
+      if (j > i + 1 && !content.startsWith('"') && !content.startsWith("'")) {
+        // Escape any existing quotes and wrap in quotes
+        content = '"' + content.replace(/"/g, '\\"') + '"';
+      }
+
+      result.push(`${indent}- ${content}`);
+      i = j;
+    } else {
+      result.push(line);
+      i++;
+    }
+  }
+
+  return result.join("\n");
+}
+
+/**
+ * Common wrapper keys that LLMs use to wrap PRD arrays.
+ * If parsed content is an object with one of these keys containing an array,
+ * we unwrap it automatically.
+ */
+const PRD_WRAPPER_KEYS = ["features", "items", "entries", "prd", "tasks", "requirements", "todo", "checklist"];
+
+/**
+ * Unwraps PRD content if it's wrapped in a common object structure.
+ * LLMs often generate structures like:
+ *   { project: "name", tasks: [...] }
+ * when we just want the array.
+ */
+function unwrapPrdContent(content: unknown): unknown {
+  if (typeof content === "object" && content !== null && !Array.isArray(content)) {
+    const obj = content as Record<string, unknown>;
+    for (const key of PRD_WRAPPER_KEYS) {
+      if (Array.isArray(obj[key])) {
+        return obj[key];
+      }
+    }
+  }
+  return content;
+}
+
+/**
  * Reads and parses a YAML PRD file.
+ * Attempts to fix common LLM-caused YAML issues before parsing.
+ * Automatically unwraps if the content is wrapped in a common object structure.
  * Returns the parsed content or null if it couldn't be parsed.
  */
 export function readYamlPrdFile(prdPath: string): { content: unknown; raw: string } | null {
   try {
     const raw = readFileSync(prdPath, "utf-8");
-    const content = YAML.parse(raw);
+    // Try parsing as-is first
+    let content: unknown;
+    try {
+      content = YAML.parse(raw);
+    } catch {
+      // Try fixing common issues and parse again
+      const fixed = fixYamlMultilineStrings(raw);
+      content = YAML.parse(fixed);
+    }
+    // Unwrap if wrapped in common object structure
+    content = unwrapPrdContent(content);
     return { content, raw };
   } catch {
     return null;
@@ -548,6 +661,8 @@ export function readYamlPrdFile(prdPath: string): { content: unknown; raw: strin
 /**
  * Reads and parses a PRD file, handling potential JSON/YAML errors.
  * Detects file format based on extension (.yaml/.yml uses YAML, .json uses JSON).
+ * For YAML files, attempts to fix common LLM-caused issues before parsing.
+ * Automatically unwraps if the content is wrapped in a common object structure.
  * Returns the parsed content or null if it couldn't be parsed.
  */
 export function readPrdFile(prdPath: string): { content: unknown; raw: string } | null {
@@ -558,12 +673,24 @@ export function readPrdFile(prdPath: string): { content: unknown; raw: string } 
     // Parse based on file extension
     let content: unknown;
     if (ext === ".yaml" || ext === ".yml") {
-      content = YAML.parse(raw);
+      // Try parsing as-is first
+      try {
+        content = YAML.parse(raw);
+      } catch {
+        // Try fixing common issues and parse again
+        const fixed = fixYamlMultilineStrings(raw);
+        content = YAML.parse(fixed);
+        // Unwrap if wrapped in common object structure
+        content = unwrapPrdContent(content);
+        return { content, raw: fixed };
+      }
     } else {
       // Default to JSON for .json or any other extension
       content = JSON.parse(raw);
     }
 
+    // Unwrap if wrapped in common object structure
+    content = unwrapPrdContent(content);
     return { content, raw };
   } catch {
     return null;

@@ -46,8 +46,17 @@ function parsePrdFile(path: string): PrdEntry[] {
     } else {
       result = JSON.parse(content);
     }
-    // Handle empty files or null content
-    return result ?? [];
+    // Handle empty files, null content, or non-array values
+    if (result == null) return [];
+    if (!Array.isArray(result)) {
+      console.error(`Error: ${path} does not contain an array.`);
+      console.error("PRD files must be a YAML/JSON array of entries.");
+      console.error("Example:");
+      console.error("  - category: feature");
+      console.error("    description: Add login page");
+      process.exit(1);
+    }
+    return result;
   } catch (err) {
     const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
     const message = err instanceof Error ? err.message : `Invalid ${format}`;

@@ -57,6 +57,19 @@ function branchToWorktreeName(branch: string): string {
 }
 
 /**
+ * Checks if the git repository has at least one commit (valid HEAD).
+ * Returns false for empty repos or repos without any commits.
+ */
+function repoHasCommits(): boolean {
+  try {
+    execSync("git rev-parse HEAD", { stdio: "pipe" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Groups PRD items by branch field.
  * Returns a Map where:
  * - key is the branch name (or "" for items without a branch)
@@ -1093,12 +1106,15 @@ export async function run(args: string[]): Promise<void> {
 
       // Get the base branch for branch state tracking
       let baseBranch = "main";
-      try {
-        baseBranch = execSync("git -C /workspace rev-parse --abbrev-ref HEAD", {
-          encoding: "utf-8",
-        }).trim();
-      } catch {
-        // Default to "main"
+      const hasCommits = repoHasCommits();
+      if (hasCommits) {
+        try {
+          baseBranch = execSync("git -C /workspace rev-parse --abbrev-ref HEAD", {
+            encoding: "utf-8",
+          }).trim();
+        } catch {
+          // Default to "main"
+        }
       }
 
       // Process each branch group in its worktree
@@ -1109,6 +1125,17 @@ export async function run(args: string[]): Promise<void> {
           );
           console.warn(
             `\x1b[33mConfigure docker.worktreesPath in .ralph/config.json and rebuild the container.\x1b[0m`,
+          );
+          console.warn(`\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`);
+          continue;
+        }
+
+        if (!hasCommits) {
+          console.warn(
+            `\x1b[33mWarning: PRD items tagged with branch "${branch}" found, but the repository has no commits.\x1b[0m`,
+          );
+          console.warn(
+            `\x1b[33mCreate an initial commit before using branch-based PRD items.\x1b[0m`,
           );
           console.warn(`\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`);
           continue;

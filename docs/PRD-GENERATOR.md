@@ -8,6 +8,11 @@ This guide explains how to convert any document (specs, user stories, detailed P
 
 Ralph's PRD format is intentionally simple - each item should be completable in a single AI iteration. The challenge is converting complex, multi-level documents into this flat, actionable format.
 
+### Required Format: Top-Level Array
+
+**IMPORTANT:** The PRD file must be a **top-level array** of items, not wrapped in an object.
+
+**Correct format:**
 ```yaml
 - category: feature
   description: Imperative description of what to implement
@@ -16,22 +21,61 @@ Ralph's PRD format is intentionally simple - each item should be completable in 
     - Concrete action 2
     - Verification step
   passes: false
+
+- category: setup
+  description: Another task
+  steps:
+    - Do something
+  passes: false
 ```
+
+**Wrong format (do NOT use):**
+```yaml
+# WRONG - Don't wrap in an object!
+project: MyProject
+description: Some description
+tasks:    # <-- This wrapper causes issues
+  - category: feature
+    description: ...
+```
+
+> **Note:** Ralph will attempt to auto-unwrap common wrapper structures like `{tasks: [...]}`, `{items: [...]}`, or `{features: [...]}`, but it's best to use the correct format from the start.
+
+### Required Fields
+
+Each PRD item must have these fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `category` | string | One of: setup, feature, bugfix, refactor, docs, test, release, config, ui, integration |
+| `description` | string | What to implement (imperative verb + specific action) |
+| `steps` | string[] | Concrete actions to complete the task |
+| `passes` | boolean | **Must be `false` for new items** - Ralph sets to `true` when completed |
+
+**IMPORTANT:** Always set `passes: false` for new PRD items. This field indicates whether the task is complete:
+- `passes: false` = incomplete, will be executed by Ralph
+- `passes: true` = complete, will be skipped
+
+Ralph automatically sets `passes: true` when an item is successfully completed. Never set `passes: true` manually when creating new items.
 
 <details>
 <summary>JSON format (legacy)</summary>
 
+The JSON file must also be a top-level array:
+
 ```json
-{
-  "category": "feature",
-  "description": "Imperative description of what to implement",
-  "steps": [
-    "Concrete action 1",
-    "Concrete action 2",
-    "Verification step"
-  ],
-  "passes": false
-}
+[
+  {
+    "category": "feature",
+    "description": "Imperative description of what to implement",
+    "steps": [
+      "Concrete action 1",
+      "Concrete action 2",
+      "Verification step"
+    ],
+    "passes": false
+  }
+]
 ```
 </details>
 
@@ -110,6 +154,63 @@ If a task takes 2 minutes without thinking, combine with related work.
 | `config` | Configuration files, settings |
 | `ui` | User interface changes, frontend components |
 | `integration` | Connecting components, wiring, orchestration |
+
+## Branch Field (Optional)
+
+PRD items can include an optional `branch` field to group related work into git branches. This allows parallel development of independent features.
+
+```yaml
+- category: feature
+  description: Implement user authentication
+  steps:
+    - Create login endpoint
+    - Add JWT token generation
+  passes: false
+  branch: feat/auth    # Items with same branch are grouped together
+```
+
+### How Branches Work
+
+1. **Grouping**: Items with the same `branch` value are executed together in a dedicated git worktree
+2. **Isolation**: Each branch group gets its own working directory, so changes don't conflict
+3. **Parallel Work**: Different branches can be worked on independently
+4. **No Branch = Main**: Items without a `branch` field are executed in the main workspace
+
+### Requirements for Using Branches
+
+1. **Configure worktrees path**: Set `docker.worktreesPath` in `.ralph/config.json` to a host directory:
+   ```json
+   {
+     "docker": {
+       "worktreesPath": "/path/to/worktrees"
+     }
+   }
+   ```
+
+2. **Rebuild container**: Run `ralph docker build` to mount the worktrees directory
+
+3. **Initial commit required**: The repository must have at least one commit before using branches
+
+### Branch Management Commands
+
+```bash
+ralph branch list              # Show all branches and their status
+ralph branch merge <name>      # Merge a completed branch into main
+ralph branch delete <name>     # Delete a branch and its worktree
+ralph branch pr <name>         # Create a PRD item to open a PR
+```
+
+### When to Use Branches
+
+- **Parallel features**: Multiple independent features that can be developed simultaneously
+- **Risky changes**: Isolate experimental work from the main codebase
+- **Team collaboration**: Different PRD items can be assigned to different branches for review
+
+### When NOT to Use Branches
+
+- **Sequential dependencies**: Items that must be done in order (use main workspace)
+- **Small projects**: Overhead not worth it for simple PRDs
+- **Quick fixes**: Single bugfixes don't need branch isolation
 
 ## Writing Descriptions
 
@@ -310,14 +411,21 @@ Rules:
 4. Steps: 2-4 concrete actions + verification step
 5. Reference source document sections instead of copying code
 6. Order items by logical execution sequence
-7. Set all "passes: false"
+7. ALWAYS set "passes: false" for all items (this marks them as incomplete/to-do)
+8. CRITICAL: Output ONLY a top-level YAML array - do NOT wrap in an object like {project: ..., tasks: [...]}
 
-Output format (YAML):
+Output format (YAML array - no wrapper object):
 - category: ...
   description: ...
   steps:
     - ...
     - ...
+    - ...
+  passes: false
+
+- category: ...
+  description: ...
+  steps:
     - ...
   passes: false
 
@@ -340,14 +448,21 @@ Rules:
 4. Steps: 2-4 concrete actions + verification step
 5. Reference source document sections instead of copying code
 6. Order items by logical execution sequence
-7. Set all "passes": false
+7. ALWAYS set "passes": false for all items (this marks them as incomplete/to-do)
+8. CRITICAL: Output ONLY a top-level JSON array - do NOT wrap in an object like {"project": ..., "tasks": [...]}
 
-Output format:
+Output format (JSON array - no wrapper object):
 [
   {
     "category": "...",
     "description": "...",
     "steps": ["...", "...", "..."],
+    "passes": false
+  },
+  {
+    "category": "...",
+    "description": "...",
+    "steps": ["..."],
     "passes": false
   }
 ]
@@ -363,6 +478,8 @@ Document to convert:
 
 After generating prd.yaml, verify:
 
+- [ ] File is a top-level array (not wrapped in an object)
+- [ ] All items have `passes: false` (marks them as incomplete)
 - [ ] Each item is completable in one AI iteration
 - [ ] Descriptions start with imperative verbs
 - [ ] Steps are concrete and verifiable
@@ -383,6 +500,8 @@ After generating prd.yaml, verify:
 
 | Mistake | Problem | Fix |
 |---------|---------|-----|
+| Wrapping array in object | `{tasks: [...]}` not valid | Use top-level array, no wrapper |
+| Multi-line strings in YAML | Parsing errors | Keep step text on one line or quote it |
 | Copy-pasting code into steps | PRD file too large, hard to read | Reference source document |
 | Vague descriptions | AI doesn't know what to do | Be specific about what and where |
 | Missing verification | No way to confirm completion | Add test/build/check step |
