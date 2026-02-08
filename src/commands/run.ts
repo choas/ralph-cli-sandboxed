@@ -1299,9 +1299,20 @@ export async function run(args: string[]): Promise<void> {
         lastExitCode = 0;
       }
 
-      // Check for completion signal
+      // Check for completion signal from the LLM.
+      // The LLM only sees a subset of items (branch group or no-branch group),
+      // so its COMPLETE signal means "this group is done", not "all PRD items are done".
+      // We must verify the full PRD before treating this as a global completion.
       if (iterOutput.includes("<promise>COMPLETE</promise>")) {
-        if (loopMode) {
+        const fullCounts = countPrdItems(paths.prd, category);
+        if (fullCounts.incomplete > 0) {
+          // There are still incomplete items in other groups — continue the loop
+          if (debug) {
+            console.log(
+              `\n\x1b[90m[ralph] LLM signalled COMPLETE for current group, but ${fullCounts.incomplete} item(s) remain. Continuing...\x1b[0m`,
+            );
+          }
+        } else if (loopMode) {
           console.log("\n" + "=".repeat(50));
           console.log("PRD iteration complete. Waiting for new items...");
           console.log(`(Checking every ${POLL_INTERVAL_MS / 1000} seconds. Press Ctrl+C to stop)`);
@@ -1319,9 +1330,8 @@ export async function run(args: string[]): Promise<void> {
         } else {
           console.log("\n" + "=".repeat(50));
           if (allMode) {
-            const counts = countPrdItems(paths.prd, category);
             console.log("PRD COMPLETE - All tasks finished!");
-            console.log(`Final Status: ${counts.complete}/${counts.total} complete`);
+            console.log(`Final Status: ${fullCounts.complete}/${fullCounts.total} complete`);
           } else {
             console.log("PRD COMPLETE - All features implemented!");
           }
