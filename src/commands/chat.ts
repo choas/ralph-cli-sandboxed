@@ -318,7 +318,7 @@ async function handleBranchList(
 }
 
 /**
- * Handle /branch pr <name> — add a PRD item to create a pull request.
+ * Handle /branch pr <name> — create a pull request using gh CLI on the host.
  */
 async function handleBranchPr(
   args: string[],
@@ -335,49 +335,106 @@ async function handleBranchPr(
     return;
   }
 
+  // Pre-flight: verify gh is installed
+  try {
+    execSync("gh --version", { stdio: "pipe" });
+  } catch {
+    await client.sendMessage(chatId, `${state.projectName}: Error: 'gh' CLI is not installed.`);
+    return;
+  }
+
+  // Pre-flight: verify gh is authenticated
+  try {
+    execSync("gh auth status", { stdio: "pipe" });
+  } catch {
+    await client.sendMessage(chatId, `${state.projectName}: Error: Not authenticated with GitHub. Run 'gh auth login' on the host.`);
+    return;
+  }
+
   if (!branchExists(branchName)) {
     await client.sendMessage(chatId, `${state.projectName}: Branch "${branchName}" does not exist.`);
     return;
   }
 
+  // Verify a git remote exists
+  let remote: string;
+  try {
+    remote = execSync("git remote", { encoding: "utf-8", cwd: process.cwd() }).trim().split("\n")[0];
+    if (!remote) throw new Error("no remote");
+  } catch {
+    await client.sendMessage(chatId, `${state.projectName}: Error: No git remote configured.`);
+    return;
+  }
+
   const baseBranch = getBaseBranch();
+  const cwd = process.cwd();
+
+  // Auto-push: if branch has no upstream tracking, push it
+  try {
+    execSync(`git rev-parse --abbrev-ref "${branchName}@{upstream}"`, { stdio: "pipe", cwd });
+  } catch {
+    try {
+      execSync(`git push -u "${remote}" "${branchName}"`, { stdio: "pipe", cwd });
+    } catch {
+      await client.sendMessage(chatId, `${state.projectName}: Error: Failed to push "${branchName}" to ${remote}.`);
+      return;
+    }
+  }
+
+  // Build PR body
+  const bodyParts: string[] = [];
+
+  // PRD Items section
   const prdFiles = getPrdFiles();
-  if (prdFiles.none || !prdFiles.primary) {
-    await client.sendMessage(chatId, `${state.projectName}: No PRD file found.`);
-    return;
+  if (!prdFiles.none && prdFiles.primary) {
+    const content = readFileSync(prdFiles.primary, "utf-8");
+    const items = parsePrdContent(prdFiles.primary, content);
+    if (Array.isArray(items)) {
+      const branchItems = items.filter((e) => e.branch === branchName);
+      if (branchItems.length > 0) {
+        bodyParts.push("## PRD Items\n");
+        for (const item of branchItems) {
+          const check = item.passes ? "x" : " ";
+          bodyParts.push(`- [${check}] ${item.description}`);
+        }
+        bodyParts.push("");
+      }
+    }
   }
 
-  const content = readFileSync(prdFiles.primary, "utf-8");
-  const items = parsePrdContent(prdFiles.primary, content);
-  if (!Array.isArray(items)) {
-    await client.sendMessage(chatId, `${state.projectName}: Failed to parse PRD file.`);
-    return;
+  // Commits section
+  try {
+    const log = execSync(`git log "${baseBranch}..${branchName}" --oneline --no-decorate`, {
+      encoding: "utf-8",
+      cwd,
+    }).trim();
+    if (log) {
+      bodyParts.push("## Commits\n");
+      bodyParts.push(log);
+      bodyParts.push("");
+    }
+  } catch {
+    // No commits or branch comparison failed — skip
   }
 
-  items.push({
-    category: "feature",
-    description: `Create a pull request from \`${branchName}\` into \`${baseBranch}\``,
-    steps: [
-      `Ensure all changes on \`${branchName}\` are committed`,
-      `Push \`${branchName}\` to the remote if not already pushed`,
-      `Create a pull request from \`${branchName}\` into \`${baseBranch}\` using the appropriate tool (e.g. gh pr create)`,
-      "Include a descriptive title and summary of the changes in the PR",
-    ],
-    passes: false,
-    branch: branchName,
-  });
+  const prBody = bodyParts.join("\n");
+  const prTitle = branchName;
 
-  const ext = extname(prdFiles.primary).toLowerCase();
-  if (ext === ".yaml" || ext === ".yml") {
-    writeFileSync(prdFiles.primary, YAML.stringify(items));
-  } else {
-    writeFileSync(prdFiles.primary, JSON.stringify(items, null, 2) + "\n");
+  // Create the PR
+  try {
+    const prUrl = execSync(
+      `gh pr create --base "${baseBranch}" --head "${branchName}" --title "${prTitle.replace(/"/g, '\\"')}" --body-file -`,
+      {
+        encoding: "utf-8",
+        input: prBody,
+        cwd,
+      },
+    ).trim();
+    await client.sendMessage(chatId, `${state.projectName}: PR created: ${prUrl}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await client.sendMessage(chatId, `${state.projectName}: Failed to create PR: ${message}`);
   }
-
-  await client.sendMessage(
-    chatId,
-    `${state.projectName}: Added PRD entry: Create PR for ${branchName} -> ${baseBranch}`,
-  );
 }
 
 /**
@@ -936,11 +993,11 @@ async function handleCommand(
         default: {
           const usage = client.provider === "slack"
             ? `/ralph branch list - List branches
-/ralph branch pr <name> - Add PRD item to create PR
+/ralph branch pr <name> - Create a GitHub PR
 /ralph branch merge <name> - Merge branch into base
 /ralph branch delete <name> - Delete branch and worktree`
             : `/branch list - List branches
-/branch pr <name> - Add PRD item to create PR
+/branch pr <name> - Create a GitHub PR
 /branch merge <name> - Merge branch into base
 /branch delete <name> - Delete branch and worktree`;
           await client.sendMessage(chatId, `${state.projectName}: ${usage}`);

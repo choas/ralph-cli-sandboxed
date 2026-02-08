@@ -92,7 +92,7 @@ BRANCH SUBCOMMANDS:
   branch list           List all branches and their status
   branch merge <name>   Merge a branch worktree into the base branch
   branch delete <name>  Delete a branch and remove its worktree
-  branch pr <name>      Create a PRD item to open a PR for a branch
+  branch pr <name>      Create a pull request for a branch using gh CLI
 
 PROGRESS SUBCOMMANDS:
   progress summarize    Add a PRD entry to summarize and compact progress.txt
@@ -149,7 +149,7 @@ EXAMPLES:
   ralph branch list              # List all branches and their PRD status
   ralph branch merge feat/login  # Merge feat/login branch into base branch
   ralph branch delete feat/old   # Delete branch and its worktree
-  ralph branch pr feat/login     # Add PRD item to create PR for feat/login
+  ralph branch pr feat/login     # Create a GitHub PR for feat/login
   ralph progress summarize   # Add PRD entry to summarize progress.txt
 
 CONFIGURATION:

@@ -1,10 +1,9 @@
 import { execSync } from "child_process";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { extname, join } from "path";
-import { getRalphDir, getPrdFiles, loadConfig, loadBranchState, getProjectName } from "../utils/config.js";
+import { existsSync } from "fs";
+import { join } from "path";
+import { getPrdFiles, loadBranchState, getProjectName } from "../utils/config.js";
 import { readPrdFile, writePrdAuto, PrdEntry } from "../utils/prd-validator.js";
 import { promptConfirm } from "../utils/prompt.js";
-import YAML from "yaml";
 
 /**
  * Converts a branch name to a worktree directory name, prefixed with the project name.
@@ -41,11 +40,11 @@ function loadPrdEntries(): { entries: PrdEntry[]; prdPath: string } | null {
 }
 
 /**
- * Gets the base branch (the branch that /workspace is on).
+ * Gets the base branch (the current branch of the project).
  */
 function getBaseBranch(): string {
   try {
-    return execSync("git -C /workspace rev-parse --abbrev-ref HEAD", { encoding: "utf-8" }).trim();
+    return execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf-8" }).trim();
   } catch {
     return "main";
   }
@@ -177,16 +176,16 @@ async function branchMerge(args: string[]): Promise<void> {
     return;
   }
 
-  // Perform the merge from /workspace (which is on the base branch)
+  // Perform the merge into the base branch
   try {
     console.log(`\nMerging "${branchName}" into "${baseBranch}"...`);
-    execSync(`git -C /workspace merge "${branchName}" --no-edit`, { stdio: "pipe" });
+    execSync(`git merge "${branchName}" --no-edit`, { stdio: "pipe" });
     console.log(`\x1b[32mSuccessfully merged "${branchName}" into "${baseBranch}".\x1b[0m`);
   } catch (err) {
     // Check if this is a merge conflict
     let conflictingFiles: string[] = [];
     try {
-      const status = execSync("git -C /workspace status --porcelain", { encoding: "utf-8" });
+      const status = execSync("git status --porcelain", { encoding: "utf-8" });
       conflictingFiles = status
         .split("\n")
         .filter((line) => line.startsWith("UU") || line.startsWith("AA") || line.startsWith("DD") || line.startsWith("AU") || line.startsWith("UA") || line.startsWith("DU") || line.startsWith("UD"))
@@ -205,7 +204,7 @@ async function branchMerge(args: string[]): Promise<void> {
 
       // Abort the merge
       try {
-        execSync("git -C /workspace merge --abort", { stdio: "pipe" });
+        execSync("git merge --abort", { stdio: "pipe" });
         console.error(`\n\x1b[36mMerge aborted.\x1b[0m`);
       } catch {
         console.error("\n\x1b[33mWarning: Could not abort merge. You may need to run 'git merge --abort' manually.\x1b[0m");
@@ -223,7 +222,7 @@ async function branchMerge(args: string[]): Promise<void> {
 
       // Try to abort in case merge is in progress
       try {
-        execSync("git -C /workspace merge --abort", { stdio: "pipe" });
+        execSync("git merge --abort", { stdio: "pipe" });
       } catch {
         // Ignore if nothing to abort
       }
@@ -236,7 +235,7 @@ async function branchMerge(args: string[]): Promise<void> {
   if (existsSync(worktreePath)) {
     console.log(`\nCleaning up worktree at ${worktreePath}...`);
     try {
-      execSync(`git -C /workspace worktree remove "${worktreePath}"`, { stdio: "pipe" });
+      execSync(`git worktree remove "${worktreePath}"`, { stdio: "pipe" });
       console.log(`\x1b[32mWorktree removed.\x1b[0m`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -250,59 +249,31 @@ async function branchMerge(args: string[]): Promise<void> {
 }
 
 /**
- * Gets the PRD file path, preferring the primary if it exists.
+ * Create a pull request for a branch using the gh CLI on the host.
  */
-function getPrdPath(): string {
-  const prdFiles = getPrdFiles();
-  if (prdFiles.primary) {
-    return prdFiles.primary;
-  }
-  return join(getRalphDir(), "prd.json");
-}
-
-/**
- * Parses a PRD file (YAML or JSON) and returns the entries.
- */
-function parsePrdFile(path: string): PrdEntry[] {
-  const content = readFileSync(path, "utf-8");
-  const ext = extname(path).toLowerCase();
-
-  try {
-    let result: PrdEntry[] | null;
-    if (ext === ".yaml" || ext === ".yml") {
-      result = YAML.parse(content);
-    } else {
-      result = JSON.parse(content);
-    }
-    return result ?? [];
-  } catch {
-    console.error(`Error parsing ${path}. Run 'ralph fix-prd' to attempt automatic repair.`);
-    process.exit(1);
-  }
-}
-
-/**
- * Saves PRD entries to the PRD file (YAML or JSON based on extension).
- */
-function savePrd(entries: PrdEntry[]): void {
-  const path = getPrdPath();
-  const ext = extname(path).toLowerCase();
-
-  if (ext === ".yaml" || ext === ".yml") {
-    writeFileSync(path, YAML.stringify(entries));
-  } else {
-    writeFileSync(path, JSON.stringify(entries, null, 2) + "\n");
-  }
-}
-
-/**
- * Create a PRD item to open a pull request for a branch.
- */
-function branchPr(args: string[]): void {
+async function branchPr(args: string[]): Promise<void> {
   const branchName = args[0];
   if (!branchName) {
     console.error("Usage: ralph branch pr <branch-name>");
     console.error("\nExample: ralph branch pr feat/login");
+    process.exit(1);
+  }
+
+  // Pre-flight: verify gh is installed
+  try {
+    execSync("gh --version", { stdio: "pipe" });
+  } catch {
+    console.error("\x1b[31mError: 'gh' CLI is not installed.\x1b[0m");
+    console.error("Install it from https://cli.github.com/");
+    process.exit(1);
+  }
+
+  // Pre-flight: verify gh is authenticated
+  try {
+    execSync("gh auth status", { stdio: "pipe" });
+  } catch {
+    console.error("\x1b[31mError: Not authenticated with GitHub.\x1b[0m");
+    console.error("Run 'gh auth login' first.");
     process.exit(1);
   }
 
@@ -312,29 +283,95 @@ function branchPr(args: string[]): void {
     process.exit(1);
   }
 
+  // Verify a git remote exists
+  let remote: string;
+  try {
+    remote = execSync("git remote", { encoding: "utf-8" }).trim().split("\n")[0];
+    if (!remote) throw new Error("no remote");
+  } catch {
+    console.error("\x1b[31mError: No git remote configured.\x1b[0m");
+    process.exit(1);
+  }
+
   const baseBranch = getBaseBranch();
 
-  const entry: PrdEntry = {
-    category: "feature",
-    description: `Create a pull request from \`${branchName}\` into \`${baseBranch}\``,
-    steps: [
-      `Ensure all changes on \`${branchName}\` are committed`,
-      `Push \`${branchName}\` to the remote if not already pushed`,
-      `Create a pull request from \`${branchName}\` into \`${baseBranch}\` using the appropriate tool (e.g. gh pr create)`,
-      "Include a descriptive title and summary of the changes in the PR",
-    ],
-    passes: false,
-    branch: branchName,
-  };
+  // Auto-push: if branch has no upstream tracking, push it
+  try {
+    execSync(`git rev-parse --abbrev-ref "${branchName}@{upstream}"`, { stdio: "pipe" });
+  } catch {
+    console.log(`Pushing "${branchName}" to ${remote}...`);
+    try {
+      execSync(`git push -u "${remote}" "${branchName}"`, { stdio: "inherit" });
+    } catch {
+      console.error(`\x1b[31mError: Failed to push "${branchName}" to ${remote}.\x1b[0m`);
+      process.exit(1);
+    }
+  }
 
-  const prdPath = getPrdPath();
-  const prd = parsePrdFile(prdPath);
-  prd.push(entry);
-  savePrd(prd);
+  // Build PR title from branch name
+  const prTitle = branchName;
 
-  console.log(`Added PRD entry #${prd.length}: Create PR for ${branchName} → ${baseBranch}`);
-  console.log(`Branch field set to: ${branchName}`);
-  console.log("Run 'ralph run' or 'ralph once' to execute.");
+  // Build PR body
+  const bodyParts: string[] = [];
+
+  // PRD Items section
+  const result = loadPrdEntries();
+  if (result) {
+    const branchItems = result.entries.filter((e) => e.branch === branchName);
+    if (branchItems.length > 0) {
+      bodyParts.push("## PRD Items\n");
+      for (const item of branchItems) {
+        const check = item.passes ? "x" : " ";
+        bodyParts.push(`- [${check}] ${item.description}`);
+      }
+      bodyParts.push("");
+    }
+  }
+
+  // Commits section
+  try {
+    const log = execSync(`git log "${baseBranch}..${branchName}" --oneline --no-decorate`, {
+      encoding: "utf-8",
+    }).trim();
+    if (log) {
+      bodyParts.push("## Commits\n");
+      bodyParts.push(log);
+      bodyParts.push("");
+    }
+  } catch {
+    // No commits or branch comparison failed — skip
+  }
+
+  const prBody = bodyParts.join("\n");
+
+  // Show summary and confirm
+  console.log(`\nCreate PR: ${branchName} → ${baseBranch}`);
+  console.log(`Title: ${prTitle}`);
+  if (prBody) {
+    console.log(`\n${prBody}`);
+  }
+
+  const confirmed = await promptConfirm("Create this pull request?", true);
+  if (!confirmed) {
+    console.log("Cancelled.");
+    return;
+  }
+
+  // Create the PR using gh, piping body via stdin to avoid shell escaping issues
+  try {
+    const prUrl = execSync(
+      `gh pr create --base "${baseBranch}" --head "${branchName}" --title "${prTitle.replace(/"/g, '\\"')}" --body-file -`,
+      {
+        encoding: "utf-8",
+        input: prBody,
+      },
+    ).trim();
+    console.log(`\n\x1b[32mPR created:\x1b[0m ${prUrl}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`\x1b[31mFailed to create PR: ${message}\x1b[0m`);
+    process.exit(1);
+  }
 }
 
 /**
@@ -390,7 +427,7 @@ async function branchDelete(args: string[]): Promise<void> {
   if (hasWorktree) {
     console.log(`\nRemoving worktree at ${worktreePath}...`);
     try {
-      execSync(`git -C /workspace worktree remove "${worktreePath}" --force`, { stdio: "pipe" });
+      execSync(`git worktree remove "${worktreePath}" --force`, { stdio: "pipe" });
       console.log(`\x1b[32mWorktree removed.\x1b[0m`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -402,7 +439,7 @@ async function branchDelete(args: string[]): Promise<void> {
   // Step 2: Delete the git branch
   console.log(`Deleting branch "${branchName}"...`);
   try {
-    execSync(`git -C /workspace branch -D "${branchName}"`, { stdio: "pipe" });
+    execSync(`git branch -D "${branchName}"`, { stdio: "pipe" });
     console.log(`\x1b[32mBranch deleted.\x1b[0m`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -443,7 +480,7 @@ export async function branch(args: string[]): Promise<void> {
       await branchDelete(args.slice(1));
       break;
     case "pr":
-      branchPr(args.slice(1));
+      await branchPr(args.slice(1));
       break;
     default:
       console.error("Usage: ralph branch <subcommand>");
@@ -451,7 +488,7 @@ export async function branch(args: string[]): Promise<void> {
       console.error("  list             List all branches and their status");
       console.error("  merge <name>     Merge a branch worktree into the base branch");
       console.error("  delete <name>    Delete a branch and its worktree");
-      console.error("  pr <name>        Create a PRD item to open a PR for a branch");
+      console.error("  pr <name>        Create a pull request for a branch using gh CLI");
       process.exit(1);
   }
 }
