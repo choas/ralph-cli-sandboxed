@@ -1105,14 +1105,32 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
+      // Merge items tagged with the base branch into the no-branch group,
+      // so they run in /workspace instead of creating a worktree.
+      const baseBranchItems = branchGroups.get(baseBranch);
+      if (baseBranchItems && baseBranchItems.length > 0) {
+        const noBranch = branchGroups.get("") || [];
+        branchGroups.set("", [...noBranch, ...baseBranchItems]);
+        branchGroups.delete(baseBranch);
+      }
+
       // Find the first incomplete item to determine which group to process.
       // If resuming from a previous interruption, prioritize the resumed branch.
       let targetBranch: string;
       if (resumedBranchState) {
         targetBranch = resumedBranchState.currentBranch;
+        // If resumed branch is the base branch, treat as no-branch
+        if (targetBranch === baseBranch) {
+          targetBranch = "";
+          clearBranchState();
+        }
       } else {
         const firstIncomplete = itemsForIteration.find((item) => !item.passes);
         targetBranch = firstIncomplete?.branch || "";
+        // If the target matches the base branch, treat as no-branch
+        if (targetBranch === baseBranch) {
+          targetBranch = "";
+        }
       }
 
       if (targetBranch !== "" && worktreesAvailable && hasCommits) {
