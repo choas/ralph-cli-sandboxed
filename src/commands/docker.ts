@@ -249,6 +249,7 @@ ${cliSnippet}
 
 # Install ralph-cli-sandboxed from npm registry
 RUN npm install -g ralph-cli-sandboxed
+RUN ralph logo
 ${languageSnippet}
 # Setup sudo only for firewall script (no general sudo for security)
 RUN echo "node ALL=(ALL) NOPASSWD: /usr/local/bin/init-firewall.sh" >> /etc/sudoers.d/node-firewall
