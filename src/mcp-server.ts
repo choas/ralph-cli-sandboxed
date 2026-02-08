@@ -21,7 +21,35 @@ interface PrdEntry {
   branch?: string;
 }
 
-const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
+const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"] as const;
+
+const PRD_FILE_JSON = "prd.json";
+const PRD_FILE_YAML = "prd.yaml";
+
+/**
+ * Returns the path to the primary PRD file (MCP-safe version).
+ */
+function getPrdPath(): string {
+  const prdFiles = getPrdFiles();
+  if (prdFiles.primary) {
+    return prdFiles.primary;
+  }
+  return join(getRalphDir(), PRD_FILE_JSON);
+}
+
+/**
+ * Saves PRD entries to disk, auto-detecting format from file extension.
+ */
+function savePrd(entries: PrdEntry[]): void {
+  const path = getPrdPath();
+  const ext = extname(path).toLowerCase();
+
+  if (ext === ".yaml" || ext === ".yml") {
+    writeFileSync(path, YAML.stringify(entries));
+  } else {
+    writeFileSync(path, JSON.stringify(entries, null, 2) + "\n");
+  }
+}
 
 function getVersion(): string {
   const packagePath = join(__dirname, "..", "package.json");
@@ -119,6 +147,58 @@ server.tool(
           {
             type: "text" as const,
             text: `Error loading PRD: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  },
+);
+
+// ralph_prd_add tool
+server.tool(
+  "ralph_prd_add",
+  "Add a new PRD entry with category, description, and verification steps",
+  {
+    category: z.enum(["ui", "feature", "bugfix", "setup", "development", "testing", "docs"]).describe("Category for the new entry"),
+    description: z.string().min(1).describe("Description of the requirement"),
+    steps: z.array(z.string().min(1)).min(1).describe("Verification steps to check if requirement is met"),
+    branch: z.string().optional().describe("Git branch associated with this entry"),
+  },
+  async ({ category, description, steps, branch }) => {
+    try {
+      const entry: PrdEntry = {
+        category,
+        description,
+        steps,
+        passes: false,
+      };
+      if (branch) {
+        entry.branch = branch;
+      }
+
+      const prd = loadPrd();
+      prd.push(entry);
+      savePrd(prd);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              { message: `Added entry #${prd.length}: "${description}"`, entry: { ...entry, index: prd.length } },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Error adding PRD entry: ${err instanceof Error ? err.message : String(err)}`,
           },
         ],
         isError: true,
