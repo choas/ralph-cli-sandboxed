@@ -621,11 +621,11 @@ function validateAndRecoverPrd(
 
   // If we can't even parse the JSON, restore from valid copy (with new items if we found any)
   if (!parsed) {
-    console.log("\n\x1b[33mWarning: PRD corrupted (invalid JSON) - restored from memory.\x1b[0m");
+    console.log("\nNote: PRD corrupted (invalid JSON) - restored from memory.");
     const mergedPrd = [...validPrd, ...newItems];
     writePrd(prdPath, mergedPrd);
     if (newItems.length > 0) {
-      console.log(`\x1b[32mPreserved ${newItems.length} newly-added item(s).\x1b[0m`);
+      console.log(`Preserved ${newItems.length} newly-added item(s).`);
     }
     return { recovered: true, itemsUpdated: 0, newItemsPreserved: newItems.length };
   }
@@ -639,7 +639,7 @@ function validateAndRecoverPrd(
   }
 
   // PRD is corrupted - use smart merge to extract passes flags
-  console.log("\n\x1b[33mWarning: PRD format corrupted by LLM - recovering...\x1b[0m");
+  console.log("\nNote: PRD format corrupted by LLM - recovering...");
 
   const mergeResult = smartMerge(validPrd, parsed.content);
 
@@ -651,18 +651,18 @@ function validateAndRecoverPrd(
 
   if (mergeResult.itemsUpdated > 0) {
     console.log(
-      `\x1b[32mRecovered: merged ${mergeResult.itemsUpdated} passes flag(s) into valid PRD structure.\x1b[0m`,
+      `Recovered: merged ${mergeResult.itemsUpdated} passes flag(s) into valid PRD structure.`,
     );
   } else {
-    console.log("\x1b[32mRecovered: restored valid PRD structure.\x1b[0m");
+    console.log("Recovered: restored valid PRD structure.");
   }
 
   if (newItems.length > 0) {
-    console.log(`\x1b[32mPreserved ${newItems.length} newly-added item(s).\x1b[0m`);
+    console.log(`Preserved ${newItems.length} newly-added item(s).`);
   }
 
   if (mergeResult.warnings.length > 0) {
-    mergeResult.warnings.forEach((w) => console.log(`  \x1b[33m${w}\x1b[0m`));
+    mergeResult.warnings.forEach((w) => console.log(`  ${w}`));
   }
 
   return { recovered: true, itemsUpdated: mergeResult.itemsUpdated, newItemsPreserved: newItems.length };
