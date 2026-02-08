@@ -550,6 +550,25 @@ Responders handle messages and can answer questions about your codebase:
 
 See [docs/CHAT-CLIENTS.md](docs/CHAT-CLIENTS.md) for chat platform setup and [docs/CHAT-RESPONDERS.md](docs/CHAT-RESPONDERS.md) for responder configuration.
 
+## MCP Server
+
+Ralph provides an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server that exposes PRD management as tools for AI assistants. This lets MCP-compatible clients like Claude Code list, add, toggle, and check the status of PRD entries directly through tool calls.
+
+Add to your `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "ralph": {
+      "command": "ralph-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+See [docs/MCP.md](docs/MCP.md) for available tools, parameters, return values, and example conversations.
+
 ## How It Works
 
 1. **Read PRD**: Claude reads your requirements from `prd.json`
