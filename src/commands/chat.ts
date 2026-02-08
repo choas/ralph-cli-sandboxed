@@ -5,9 +5,9 @@
 
 import { existsSync, readFileSync, writeFileSync, watch, type FSWatcher } from "fs";
 import { join, basename, extname } from "path";
-import { spawn } from "child_process";
+import { execSync, spawn } from "child_process";
 import YAML from "yaml";
-import { loadConfig, getRalphDir, isRunningInContainer, RalphConfig, getPrdFiles } from "../utils/config.js";
+import { loadConfig, getRalphDir, isRunningInContainer, RalphConfig, getPrdFiles, loadBranchState, getProjectName as getConfigProjectName } from "../utils/config.js";
 import { createTelegramClient } from "../providers/telegram.js";
 import { createSlackClient } from "../providers/slack.js";
 import { createDiscordClient } from "../providers/discord.js";
@@ -92,6 +92,7 @@ interface PrdItem {
   description?: string;
   steps?: string[];
   passes?: boolean;
+  branch?: string;
 }
 
 /**
@@ -210,6 +211,347 @@ function addPrdTask(description: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Get the current git branch in the project directory.
+ */
+function getBaseBranch(): string {
+  try {
+    return execSync("git rev-parse --abbrev-ref HEAD", {
+      encoding: "utf-8",
+      cwd: process.cwd(),
+    }).trim();
+  } catch {
+    return "main";
+  }
+}
+
+/**
+ * Check if a git branch exists.
+ */
+function branchExists(branch: string): boolean {
+  try {
+    execSync(`git rev-parse --verify "${branch}"`, {
+      stdio: "pipe",
+      cwd: process.cwd(),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Convert branch name to worktree directory name.
+ */
+function branchToWorktreeName(branch: string): string {
+  const projectName = getConfigProjectName();
+  return `${projectName}_${branch.replace(/\//g, "-")}`;
+}
+
+/**
+ * Handle /branch list — show branches from PRD grouped by branch field.
+ */
+async function handleBranchList(
+  chatId: string,
+  client: ChatClient,
+  state: ChatState,
+): Promise<void> {
+  const prdFiles = getPrdFiles();
+  if (prdFiles.none || !prdFiles.primary) {
+    await client.sendMessage(chatId, `${state.projectName}: No PRD file found.`);
+    return;
+  }
+
+  const content = readFileSync(prdFiles.primary, "utf-8");
+  const items = parsePrdContent(prdFiles.primary, content);
+  if (!Array.isArray(items) || items.length === 0) {
+    await client.sendMessage(chatId, `${state.projectName}: No PRD items found.`);
+    return;
+  }
+
+  const activeBranch = loadBranchState();
+
+  // Group items by branch
+  const branchGroups = new Map<string, PrdItem[]>();
+  const noBranchItems: PrdItem[] = [];
+
+  for (const item of items) {
+    if (item.branch) {
+      const group = branchGroups.get(item.branch) || [];
+      group.push(item);
+      branchGroups.set(item.branch, group);
+    } else {
+      noBranchItems.push(item);
+    }
+  }
+
+  if (branchGroups.size === 0 && noBranchItems.length === 0) {
+    await client.sendMessage(chatId, `${state.projectName}: No PRD items found.`);
+    return;
+  }
+
+  const lines: string[] = [`${state.projectName}: Branches\n`];
+  const sortedBranches = [...branchGroups.keys()].sort();
+
+  for (const branchName of sortedBranches) {
+    const branchItems = branchGroups.get(branchName)!;
+    const passing = branchItems.filter((e) => e.passes === true).length;
+    const total = branchItems.length;
+    const allPassing = passing === total;
+    const isActive = activeBranch?.currentBranch === branchName;
+
+    const icon = allPassing ? "[OK]" : "[ ]";
+    const active = isActive ? " << active" : "";
+    lines.push(`  ${icon} ${branchName}  ${passing}/${total}${active}`);
+  }
+
+  if (noBranchItems.length > 0) {
+    const passing = noBranchItems.filter((e) => e.passes === true).length;
+    const total = noBranchItems.length;
+    const icon = passing === total ? "[OK]" : "[ ]";
+    lines.push(`  ${icon} (no branch)  ${passing}/${total}`);
+  }
+
+  await client.sendMessage(chatId, lines.join("\n"));
+}
+
+/**
+ * Handle /branch pr <name> — add a PRD item to create a pull request.
+ */
+async function handleBranchPr(
+  args: string[],
+  chatId: string,
+  client: ChatClient,
+  state: ChatState,
+): Promise<void> {
+  const branchName = args[0];
+  if (!branchName) {
+    const usage = client.provider === "slack"
+      ? "/ralph branch pr <branch-name>"
+      : "/branch pr <branch-name>";
+    await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
+    return;
+  }
+
+  if (!branchExists(branchName)) {
+    await client.sendMessage(chatId, `${state.projectName}: Branch "${branchName}" does not exist.`);
+    return;
+  }
+
+  const baseBranch = getBaseBranch();
+  const prdFiles = getPrdFiles();
+  if (prdFiles.none || !prdFiles.primary) {
+    await client.sendMessage(chatId, `${state.projectName}: No PRD file found.`);
+    return;
+  }
+
+  const content = readFileSync(prdFiles.primary, "utf-8");
+  const items = parsePrdContent(prdFiles.primary, content);
+  if (!Array.isArray(items)) {
+    await client.sendMessage(chatId, `${state.projectName}: Failed to parse PRD file.`);
+    return;
+  }
+
+  items.push({
+    category: "feature",
+    description: `Create a pull request from \`${branchName}\` into \`${baseBranch}\``,
+    steps: [
+      `Ensure all changes on \`${branchName}\` are committed`,
+      `Push \`${branchName}\` to the remote if not already pushed`,
+      `Create a pull request from \`${branchName}\` into \`${baseBranch}\` using the appropriate tool (e.g. gh pr create)`,
+      "Include a descriptive title and summary of the changes in the PR",
+    ],
+    passes: false,
+    branch: branchName,
+  });
+
+  const ext = extname(prdFiles.primary).toLowerCase();
+  if (ext === ".yaml" || ext === ".yml") {
+    writeFileSync(prdFiles.primary, YAML.stringify(items));
+  } else {
+    writeFileSync(prdFiles.primary, JSON.stringify(items, null, 2) + "\n");
+  }
+
+  await client.sendMessage(
+    chatId,
+    `${state.projectName}: Added PRD entry: Create PR for ${branchName} -> ${baseBranch}`,
+  );
+}
+
+/**
+ * Handle /branch merge <name> — merge branch into base branch.
+ * Skips confirmation (user explicitly typed the command in chat).
+ */
+async function handleBranchMerge(
+  args: string[],
+  chatId: string,
+  client: ChatClient,
+  state: ChatState,
+): Promise<void> {
+  const branchName = args[0];
+  if (!branchName) {
+    const usage = client.provider === "slack"
+      ? "/ralph branch merge <branch-name>"
+      : "/branch merge <branch-name>";
+    await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
+    return;
+  }
+
+  if (!branchExists(branchName)) {
+    await client.sendMessage(chatId, `${state.projectName}: Branch "${branchName}" does not exist.`);
+    return;
+  }
+
+  const baseBranch = getBaseBranch();
+  const cwd = process.cwd();
+
+  try {
+    execSync(`git merge "${branchName}" --no-edit`, { stdio: "pipe", cwd });
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: Merged "${branchName}" into "${baseBranch}".`,
+    );
+  } catch {
+    // Check for merge conflicts
+    let conflictingFiles: string[] = [];
+    try {
+      const status = execSync("git status --porcelain", { encoding: "utf-8", cwd });
+      conflictingFiles = status
+        .split("\n")
+        .filter((line) =>
+          line.startsWith("UU") || line.startsWith("AA") || line.startsWith("DD") ||
+          line.startsWith("AU") || line.startsWith("UA") || line.startsWith("DU") ||
+          line.startsWith("UD"))
+        .map((line) => line.substring(3).trim());
+    } catch {
+      // Ignore status errors
+    }
+
+    if (conflictingFiles.length > 0) {
+      // Abort the merge
+      try {
+        execSync("git merge --abort", { stdio: "pipe", cwd });
+      } catch {
+        // Ignore abort errors
+      }
+      await client.sendMessage(
+        chatId,
+        `${state.projectName}: Merge conflict! Conflicting files:\n${conflictingFiles.join("\n")}\nMerge aborted.`,
+      );
+    } else {
+      try {
+        execSync("git merge --abort", { stdio: "pipe", cwd });
+      } catch {
+        // Ignore
+      }
+      await client.sendMessage(
+        chatId,
+        `${state.projectName}: Merge of "${branchName}" failed. Merge aborted.`,
+      );
+    }
+    return;
+  }
+
+  // Clean up worktree if it exists
+  const dirName = branchToWorktreeName(branchName);
+  const config = loadConfig();
+  const worktreesPath = config.docker?.worktreesPath;
+  if (worktreesPath) {
+    const worktreePath = join(worktreesPath, dirName);
+    if (existsSync(worktreePath)) {
+      try {
+        execSync(`git worktree remove "${worktreePath}"`, { stdio: "pipe", cwd });
+      } catch {
+        // Non-critical, ignore
+      }
+    }
+  }
+}
+
+/**
+ * Handle /branch delete <name> — delete branch, worktree, and untag PRD items.
+ * Skips confirmation (user explicitly typed the command in chat).
+ */
+async function handleBranchDelete(
+  args: string[],
+  chatId: string,
+  client: ChatClient,
+  state: ChatState,
+): Promise<void> {
+  const branchName = args[0];
+  if (!branchName) {
+    const usage = client.provider === "slack"
+      ? "/ralph branch delete <branch-name>"
+      : "/branch delete <branch-name>";
+    await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
+    return;
+  }
+
+  if (!branchExists(branchName)) {
+    await client.sendMessage(chatId, `${state.projectName}: Branch "${branchName}" does not exist.`);
+    return;
+  }
+
+  const cwd = process.cwd();
+  const results: string[] = [];
+
+  // Step 1: Remove worktree if it exists
+  const dirName = branchToWorktreeName(branchName);
+  const config = loadConfig();
+  const worktreesPath = config.docker?.worktreesPath;
+  if (worktreesPath) {
+    const worktreePath = join(worktreesPath, dirName);
+    if (existsSync(worktreePath)) {
+      try {
+        execSync(`git worktree remove "${worktreePath}" --force`, { stdio: "pipe", cwd });
+        results.push("Worktree removed.");
+      } catch {
+        results.push("Warning: Could not remove worktree.");
+      }
+    }
+  }
+
+  // Step 2: Delete the git branch
+  try {
+    execSync(`git branch -D "${branchName}"`, { stdio: "pipe", cwd });
+    results.push("Branch deleted.");
+  } catch {
+    results.push("Warning: Could not delete git branch.");
+  }
+
+  // Step 3: Remove branch tag from PRD items
+  const prdFiles = getPrdFiles();
+  if (!prdFiles.none && prdFiles.primary) {
+    const content = readFileSync(prdFiles.primary, "utf-8");
+    const items = parsePrdContent(prdFiles.primary, content);
+    if (Array.isArray(items)) {
+      const taggedCount = items.filter((e) => e.branch === branchName).length;
+      if (taggedCount > 0) {
+        const updatedItems = items.map((item) => {
+          if (item.branch === branchName) {
+            const { branch: _, ...rest } = item;
+            return rest;
+          }
+          return item;
+        });
+
+        const ext = extname(prdFiles.primary).toLowerCase();
+        if (ext === ".yaml" || ext === ".yml") {
+          writeFileSync(prdFiles.primary, YAML.stringify(updatedItems));
+        } else {
+          writeFileSync(prdFiles.primary, JSON.stringify(updatedItems, null, 2) + "\n");
+        }
+        results.push(`${taggedCount} PRD item(s) untagged.`);
+      }
+    }
+  }
+
+  await client.sendMessage(
+    chatId,
+    `${state.projectName}: Deleted "${branchName}". ${results.join(" ")}`,
+  );
 }
 
 /**
@@ -574,6 +916,39 @@ async function handleCommand(
       break;
     }
 
+    case "branch": {
+      const subCmd = args[0]?.toLowerCase();
+      const branchArgs = args.slice(1);
+
+      switch (subCmd) {
+        case "list":
+          await handleBranchList(chatId, client, state);
+          break;
+        case "pr":
+          await handleBranchPr(branchArgs, chatId, client, state);
+          break;
+        case "merge":
+          await handleBranchMerge(branchArgs, chatId, client, state);
+          break;
+        case "delete":
+          await handleBranchDelete(branchArgs, chatId, client, state);
+          break;
+        default: {
+          const usage = client.provider === "slack"
+            ? `/ralph branch list - List branches
+/ralph branch pr <name> - Add PRD item to create PR
+/ralph branch merge <name> - Merge branch into base
+/ralph branch delete <name> - Delete branch and worktree`
+            : `/branch list - List branches
+/branch pr <name> - Add PRD item to create PR
+/branch merge <name> - Merge branch into base
+/branch delete <name> - Delete branch and worktree`;
+          await client.sendMessage(chatId, `${state.projectName}: ${usage}`);
+        }
+      }
+      break;
+    }
+
     case "help": {
       const isSlack = client.provider === "slack";
 
@@ -585,6 +960,7 @@ async function handleCommand(
 /ralph add [desc] - Add task
 /ralph exec [cmd] - Shell command
 /ralph action [name] - Run action
+/ralph branch ... - Manage branches
 /ralph <prompt> - Run Claude Code`
         : `/help - This help
 /status - PRD progress
@@ -593,6 +969,7 @@ async function handleCommand(
 /add [desc] - Add task
 /exec [cmd] - Shell command
 /action [name] - Run action
+/branch ... - Manage branches
 /claude [prompt] - Run Claude Code`;
 
       await client.sendMessage(chatId, helpText);
@@ -838,6 +1215,7 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
       console.log("  /ralph add ...    - Add new task to PRD");
       console.log("  /ralph exec ...   - Execute shell command");
       console.log("  /ralph action ... - Run daemon action");
+      console.log("  /ralph branch ... - Manage branches");
       console.log("  /ralph <prompt>   - Run Claude Code with prompt");
     } else {
       console.log("  /run         - Start ralph automation");

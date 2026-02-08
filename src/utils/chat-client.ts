@@ -189,6 +189,7 @@ export function parseCommand(text: string, message: ChatMessage): ChatCommand | 
     "start",
     "action",
     "claude",
+    "branch",
   ];
 
   // Check for slash command format: /command [args...]

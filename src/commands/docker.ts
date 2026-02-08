@@ -220,26 +220,30 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
     -a "export HISTFILE=/commandhistory/.zsh_history" \\
     -a 'alias ll="ls -la"'
 
-# Set custom prompt for node user (after oh-my-zsh to avoid override)
+# Copy oh-my-zsh config to node user (after oh-my-zsh to avoid override)
 RUN cp -r /root/.oh-my-zsh /home/node/.oh-my-zsh && chown -R node:node /home/node/.oh-my-zsh && \\
     cp /root/.zshrc /home/node/.zshrc && chown node:node /home/node/.zshrc && \\
-    sed -i 's|/root/.oh-my-zsh|/home/node/.oh-my-zsh|g' /home/node/.zshrc && \\
-    echo 'PROMPT="%K{yellow}%F{black}[ralph]%f%k%K{yellow}%F{black}%d%f%k\\$ "' >> /home/node/.zshrc && \\
-    echo '' >> /home/node/.zshrc && \\
-    echo '# Ralph ASCII art banner' >> /home/node/.zshrc && \\
-    echo 'if [ -z "$RALPH_BANNER_SHOWN" ]; then' >> /home/node/.zshrc && \\
-    echo '  export RALPH_BANNER_SHOWN=1' >> /home/node/.zshrc && \\
-    echo '  echo ""' >> /home/node/.zshrc && \\
-    echo '  echo "\\033[38;2;255;245;157m██████╗  █████╗ ██╗     ██████╗ ██╗  ██╗     ██████╗██╗     ██╗\\033[0m"' >> /home/node/.zshrc && \\
-    echo '  echo "\\033[38;2;255;238;88m██╔══██╗██╔══██╗██║     ██╔══██╗██║  ██║    ██╔════╝██║     ██║\\033[0m"' >> /home/node/.zshrc && \\
-    echo '  echo "\\033[38;2;255;235;59m██████╔╝███████║██║     ██████╔╝███████║    ██║     ██║     ██║  sandboxed\\033[0m"' >> /home/node/.zshrc && \\
-    echo '  echo "\\033[38;2;253;216;53m██╔══██╗██╔══██║██║     ██╔═══╝ ██╔══██║    ██║     ██║     ██║\\033[0m"' >> /home/node/.zshrc && \\
-    echo '  echo "\\033[38;2;251;192;45m██║  ██║██║  ██║███████╗██║     ██║  ██║    ╚██████╗███████╗██║\\033[0m"' >> /home/node/.zshrc && \\
-    echo '  echo "\\033[38;2;249;168;37m╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝     ╚═════╝╚══════╝╚═╝\\033[0m"' >> /home/node/.zshrc && \\
-    echo '  RALPH_VERSION=$(ralph --version 2>/dev/null | head -1 || echo "unknown")' >> /home/node/.zshrc && \\
-    echo '  echo "\\033[38;5;248mv$RALPH_VERSION\\033[0m"' >> /home/node/.zshrc && \\
-    echo '  echo ""' >> /home/node/.zshrc && \\
-    echo 'fi' >> /home/node/.zshrc
+    sed -i 's|/root/.oh-my-zsh|/home/node/.oh-my-zsh|g' /home/node/.zshrc
+
+# Set custom prompt and Ralph ASCII art banner
+RUN cat >> /home/node/.zshrc <<'RALPH_BANNER'
+PROMPT="%K{yellow}%F{black}[ralph]%f%k%K{yellow}%F{black}%d%f%k\\$ "
+
+# Ralph ASCII art banner
+if [ -z "$RALPH_BANNER_SHOWN" ]; then
+  export RALPH_BANNER_SHOWN=1
+  echo ""
+  echo "\\033[38;2;255;245;157m██████╗  █████╗ ██╗     ██████╗ ██╗  ██╗     ██████╗██╗     ██╗\\033[0m"
+  echo "\\033[38;2;255;238;88m██╔══██╗██╔══██╗██║     ██╔══██╗██║  ██║    ██╔════╝██║     ██║\\033[0m"
+  echo "\\033[38;2;255;235;59m██████╔╝███████║██║     ██████╔╝███████║    ██║     ██║     ██║  sandboxed\\033[0m"
+  echo "\\033[38;2;253;216;53m██╔══██╗██╔══██║██║     ██╔═══╝ ██╔══██║    ██║     ██║     ██║\\033[0m"
+  echo "\\033[38;2;251;192;45m██║  ██║██║  ██║███████╗██║     ██║  ██║    ╚██████╗███████╗██║\\033[0m"
+  echo "\\033[38;2;249;168;37m╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝     ╚═════╝╚══════╝╚═╝\\033[0m"
+  RALPH_VERSION=$(ralph --version 2>/dev/null | head -1 || echo "unknown")
+  echo "\\033[38;5;248mv$RALPH_VERSION\\033[0m"
+  echo ""
+fi
+RALPH_BANNER
 
 ${cliSnippet}
 

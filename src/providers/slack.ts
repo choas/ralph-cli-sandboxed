@@ -674,7 +674,7 @@ export class SlackChatClient implements ChatClient {
     // Handle the unified /ralph command
     // Subcommands: help, status, run, stop, add, exec, action
     // Anything else is treated as a prompt for Claude
-    const knownSubcommands = ["help", "status", "run", "stop", "add", "exec", "action"];
+    const knownSubcommands = ["help", "status", "run", "stop", "add", "exec", "action", "branch"];
 
     if (this.debug) {
       console.log(`[slack] Registering command: /ralph`);
