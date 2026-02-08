@@ -2,12 +2,26 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { readFileSync } from "fs";
-import { dirname, join } from "path";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { dirname, extname, join } from "path";
 import { fileURLToPath } from "url";
+import { z } from "zod";
+import YAML from "yaml";
+import { getRalphDir, getPrdFiles } from "./utils/config.js";
+import { DEFAULT_PRD_YAML } from "./templates/prompts.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+interface PrdEntry {
+  category: string;
+  description: string;
+  steps: string[];
+  passes: boolean;
+  branch?: string;
+}
+
+const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
 
 function getVersion(): string {
   const packagePath = join(__dirname, "..", "package.json");
@@ -15,10 +29,103 @@ function getVersion(): string {
   return packageJson.version;
 }
 
+/**
+ * Parses a PRD file based on its extension (MCP-safe version that throws instead of process.exit).
+ */
+function parsePrdFile(path: string): PrdEntry[] {
+  const content = readFileSync(path, "utf-8");
+  const ext = extname(path).toLowerCase();
+
+  let result: PrdEntry[] | null;
+  if (ext === ".yaml" || ext === ".yml") {
+    result = YAML.parse(content);
+  } else {
+    result = JSON.parse(content);
+  }
+
+  if (result == null) return [];
+  if (!Array.isArray(result)) {
+    throw new Error(`${path} does not contain an array`);
+  }
+  return result;
+}
+
+/**
+ * Loads PRD entries (MCP-safe version that throws instead of process.exit).
+ */
+function loadPrd(): PrdEntry[] {
+  const prdFiles = getPrdFiles();
+
+  if (prdFiles.none) {
+    const ralphDir = getRalphDir();
+    if (!existsSync(ralphDir)) {
+      mkdirSync(ralphDir, { recursive: true });
+    }
+    const prdPath = join(ralphDir, "prd.yaml");
+    writeFileSync(prdPath, DEFAULT_PRD_YAML);
+    return parsePrdFile(prdPath);
+  }
+
+  const primary = parsePrdFile(prdFiles.primary!);
+
+  if (prdFiles.both && prdFiles.secondary) {
+    const secondary = parsePrdFile(prdFiles.secondary);
+    return [...primary, ...secondary];
+  }
+
+  return primary;
+}
+
 const server = new McpServer({
   name: "ralph-mcp",
   version: getVersion(),
 });
+
+// ralph_prd_list tool
+server.tool(
+  "ralph_prd_list",
+  "List PRD entries with optional category and status filters",
+  {
+    category: z.enum(["ui", "feature", "bugfix", "setup", "development", "testing", "docs"]).optional().describe("Filter by category"),
+    status: z.enum(["all", "passing", "failing"]).optional().describe("Filter by status: all (default), passing, or failing"),
+  },
+  async ({ category, status }) => {
+    try {
+      const prd = loadPrd();
+
+      let filtered = prd.map((entry, i) => ({ ...entry, index: i + 1 }));
+
+      if (category) {
+        filtered = filtered.filter((entry) => entry.category === category);
+      }
+
+      if (status === "passing") {
+        filtered = filtered.filter((entry) => entry.passes);
+      } else if (status === "failing") {
+        filtered = filtered.filter((entry) => !entry.passes);
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(filtered, null, 2),
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Error loading PRD: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  },
+);
 
 async function main() {
   const transport = new StdioServerTransport();
