@@ -207,6 +207,65 @@ server.tool(
   },
 );
 
+// ralph_prd_status tool
+server.tool(
+  "ralph_prd_status",
+  "Get PRD completion status with counts, percentage, per-category breakdown, and remaining items",
+  {},
+  async () => {
+    try {
+      const prd = loadPrd();
+
+      if (prd.length === 0) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify({ passing: 0, total: 0, percentage: 0, categories: {}, remaining: [] }, null, 2),
+            },
+          ],
+        };
+      }
+
+      const passing = prd.filter((e) => e.passes).length;
+      const total = prd.length;
+      const percentage = Math.round((passing / total) * 100);
+
+      const categories: Record<string, { passing: number; total: number }> = {};
+      prd.forEach((entry) => {
+        if (!categories[entry.category]) {
+          categories[entry.category] = { passing: 0, total: 0 };
+        }
+        categories[entry.category].total++;
+        if (entry.passes) categories[entry.category].passing++;
+      });
+
+      const remaining = prd
+        .map((entry, i) => ({ index: i + 1, category: entry.category, description: entry.description }))
+        .filter((_, i) => !prd[i].passes);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify({ passing, total, percentage, categories, remaining }, null, 2),
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Error loading PRD: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  },
+);
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
