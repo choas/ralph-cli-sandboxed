@@ -4,7 +4,8 @@
   "description": "AI-driven development automation CLI for Claude Code",
   "type": "module",
   "bin": {
-    "ralph": "dist/index.js"
+    "ralph": "dist/index.js",
+    "ralph-mcp": "dist/mcp-server.js"
   },
   "main": "./dist/index.js",
   "files": [
@@ -26,6 +27,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@inkjs/ui": "^2.0.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@slack/bolt": "^4.6.0",
     "@slack/web-api": "^7.13.0",
     "discord.js": "^14.16.0",
