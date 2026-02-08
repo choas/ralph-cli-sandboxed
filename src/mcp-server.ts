@@ -266,6 +266,69 @@ server.tool(
   },
 );
 
+// ralph_prd_toggle tool
+server.tool(
+  "ralph_prd_toggle",
+  "Toggle completion status (passes) for PRD entries by 1-based index",
+  {
+    indices: z.array(z.number().int().min(1)).min(1).describe("1-based indices of PRD entries to toggle"),
+  },
+  async ({ indices }) => {
+    try {
+      const prd = loadPrd();
+
+      // Validate all indices are in range
+      for (const index of indices) {
+        if (index > prd.length) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Invalid entry number: ${index}. Must be 1-${prd.length}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      }
+
+      // Deduplicate and sort
+      const uniqueIndices = [...new Set(indices)].sort((a, b) => a - b);
+
+      const toggled = uniqueIndices.map((index) => {
+        const entry = prd[index - 1];
+        entry.passes = !entry.passes;
+        return {
+          index,
+          description: entry.description,
+          passes: entry.passes,
+        };
+      });
+
+      savePrd(prd);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify({ message: `Toggled ${toggled.length} entry/entries`, toggled }, null, 2),
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Error toggling PRD entries: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  },
+);
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
