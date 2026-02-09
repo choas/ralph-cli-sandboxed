@@ -7,6 +7,7 @@ import { existsSync, readFileSync, writeFileSync, watch, type FSWatcher } from "
 import { join, basename, extname } from "path";
 import { execSync, spawn } from "child_process";
 import YAML from "yaml";
+import { robustYamlParse } from "../utils/prd-validator.js";
 import { loadConfig, getRalphDir, isRunningInContainer, RalphConfig, getPrdFiles, loadBranchState, getProjectName as getConfigProjectName } from "../utils/config.js";
 import { createTelegramClient } from "../providers/telegram.js";
 import { createSlackClient } from "../providers/slack.js";
@@ -103,7 +104,7 @@ function parsePrdContent(filePath: string, content: string): PrdItem[] | null {
   try {
     let parsed: unknown;
     if (ext === ".yaml" || ext === ".yml") {
-      parsed = YAML.parse(content);
+      parsed = robustYamlParse(content);
     } else {
       parsed = JSON.parse(content);
     }

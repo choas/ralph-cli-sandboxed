@@ -5,6 +5,7 @@ import { getRalphDir, getPrdFiles } from "../utils/config.js";
 import { convert as prdConvert } from "./prd-convert.js";
 import { DEFAULT_PRD_YAML } from "../templates/prompts.js";
 import YAML from "yaml";
+import { robustYamlParse } from "../utils/prd-validator.js";
 
 interface PrdEntry {
   category: string;
@@ -42,7 +43,7 @@ function parsePrdFile(path: string): PrdEntry[] {
   try {
     let result: PrdEntry[] | null;
     if (ext === ".yaml" || ext === ".yml") {
-      result = YAML.parse(content);
+      result = robustYamlParse(content) as PrdEntry[] | null;
     } else {
       result = JSON.parse(content);
     }

@@ -11,6 +11,7 @@ import {
   writePrdAuto,
 } from "../utils/prd-validator.js";
 import YAML from "yaml";
+import { robustYamlParse } from "../utils/prd-validator.js";
 
 /**
  * Resolves a backup path - can be absolute, relative, or just a filename.
@@ -35,7 +36,7 @@ function resolveBackupPath(backupArg: string): string {
 function parseBackupContent(backupPath: string, content: string): unknown {
   const ext = extname(backupPath).toLowerCase();
   if (ext === ".yaml" || ext === ".yml") {
-    return YAML.parse(content);
+    return robustYamlParse(content);
   }
   return JSON.parse(content);
 }

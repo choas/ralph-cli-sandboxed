@@ -532,6 +532,74 @@ export function createTemplatePrd(backupPath?: string): PrdEntry[] {
 }
 
 /**
+ * Checks if a YAML plain scalar value contains embedded double-quoted segments
+ * with YAML special characters that would cause parsing issues.
+ *
+ * Example: Add "server: { port: 9999 }" to vite.config.ts
+ * The parser interprets "server: { port: 9999 }" as a double-quoted scalar,
+ * then finds unexpected text after the closing quote.
+ */
+function hasProblematicEmbeddedQuotes(value: string): boolean {
+  // Look for "...special chars..." followed by more text
+  const regex = /"[^"]*[:{}\[\]][^"]*"/g;
+  let match;
+
+  while ((match = regex.exec(value)) !== null) {
+    const afterQuote = value.substring(match.index + match[0].length);
+    if (afterQuote.trim().length > 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Fixes YAML values that contain embedded double-quoted strings with special characters.
+ *
+ * Example problematic line:
+ *   - Add "server: { port: 9999 }" to vite.config.ts
+ *
+ * The YAML parser interprets "server: { port: 9999 }" as a double-quoted scalar,
+ * then chokes on the trailing text. Fix: wrap the entire value in single quotes.
+ */
+function fixYamlEmbeddedQuotes(yaml: string): string {
+  const lines = yaml.split("\n");
+  const result: string[] = [];
+
+  for (const line of lines) {
+    // Try list item: `  - value`
+    let match = line.match(/^(\s*-\s+)(.+)$/);
+    if (!match) {
+      // Try key-value: `  key: value`
+      match = line.match(/^(\s*[a-zA-Z_][a-zA-Z0-9_]*:\s+)(.+)$/);
+    }
+
+    if (match) {
+      const prefix = match[1];
+      const value = match[2];
+
+      // Skip if already quoted
+      if (value.startsWith('"') || value.startsWith("'") || value.startsWith("|") || value.startsWith(">")) {
+        result.push(line);
+        continue;
+      }
+
+      if (hasProblematicEmbeddedQuotes(value)) {
+        // Wrap in single quotes, escaping existing single quotes by doubling
+        const escaped = value.replace(/'/g, "''");
+        result.push(`${prefix}'${escaped}'`);
+        continue;
+      }
+    }
+
+    result.push(line);
+  }
+
+  return result.join("\n");
+}
+
+/**
  * Fixes common YAML issues caused by LLMs writing multi-line strings incorrectly.
  * The main issue is list items that span multiple lines without proper quoting:
  *
@@ -608,6 +676,19 @@ function fixYamlMultilineStrings(yaml: string): string {
 }
 
 /**
+ * Robustly parses YAML content, applying automatic fixes for common
+ * LLM-generated YAML issues (multiline strings, embedded quotes).
+ */
+export function robustYamlParse(content: string): unknown {
+  try {
+    return YAML.parse(content);
+  } catch {
+    const fixed = fixYamlEmbeddedQuotes(fixYamlMultilineStrings(content));
+    return YAML.parse(fixed);
+  }
+}
+
+/**
  * Common wrapper keys that LLMs use to wrap PRD arrays.
  * If parsed content is an object with one of these keys containing an array,
  * we unwrap it automatically.
@@ -641,13 +722,12 @@ function unwrapPrdContent(content: unknown): unknown {
 export function readYamlPrdFile(prdPath: string): { content: unknown; raw: string } | null {
   try {
     const raw = readFileSync(prdPath, "utf-8");
-    // Try parsing as-is first
+    // Try parsing as-is first, then with fixes for common LLM issues
     let content: unknown;
     try {
       content = YAML.parse(raw);
     } catch {
-      // Try fixing common issues and parse again
-      const fixed = fixYamlMultilineStrings(raw);
+      const fixed = fixYamlEmbeddedQuotes(fixYamlMultilineStrings(raw));
       content = YAML.parse(fixed);
     }
     // Unwrap if wrapped in common object structure
@@ -673,12 +753,11 @@ export function readPrdFile(prdPath: string): { content: unknown; raw: string } 
     // Parse based on file extension
     let content: unknown;
     if (ext === ".yaml" || ext === ".yml") {
-      // Try parsing as-is first
+      // Try parsing as-is first, then with fixes for common LLM issues
       try {
         content = YAML.parse(raw);
       } catch {
-        // Try fixing common issues and parse again
-        const fixed = fixYamlMultilineStrings(raw);
+        const fixed = fixYamlEmbeddedQuotes(fixYamlMultilineStrings(raw));
         content = YAML.parse(fixed);
         // Unwrap if wrapped in common object structure
         content = unwrapPrdContent(content);

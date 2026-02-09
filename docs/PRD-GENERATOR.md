@@ -413,6 +413,7 @@ Rules:
 6. Order items by logical execution sequence
 7. ALWAYS set "passes: false" for all items (this marks them as incomplete/to-do)
 8. CRITICAL: Output ONLY a top-level YAML array - do NOT wrap in an object like {project: ..., tasks: [...]}
+9. YAML quoting: If a step or description contains curly braces, brackets, or colons inside double quotes, wrap the ENTIRE value in single quotes, e.g. - 'Add "server: { port: 9999 }" to config'
 
 Output format (YAML array - no wrapper object):
 - category: ...
@@ -502,6 +503,7 @@ After generating prd.yaml, verify:
 |---------|---------|-----|
 | Wrapping array in object | `{tasks: [...]}` not valid | Use top-level array, no wrapper |
 | Multi-line strings in YAML | Parsing errors | Keep step text on one line or quote it |
+| Special chars in values (`{ } : [ ]`) | YAML parsing errors | Wrap the value in single quotes: `'Add "server: { port: 9999 }" to config'` |
 | Copy-pasting code into steps | PRD file too large, hard to read | Reference source document |
 | Vague descriptions | AI doesn't know what to do | Be specific about what and where |
 | Missing verification | No way to confirm completion | Add test/build/check step |
