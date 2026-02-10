@@ -336,12 +336,30 @@ server.tool(
   },
 );
 
+function isConnectionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("EPIPE") ||
+    message.includes("ECONNRESET") ||
+    message.includes("ECONNREFUSED") ||
+    message.includes("ERR_USE_AFTER_CLOSE") ||
+    message.includes("write after end") ||
+    message.includes("This socket has been ended") ||
+    message.includes("transport") ||
+    message.includes("broken pipe")
+  );
+}
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
 
 main().catch((error) => {
+  if (isConnectionError(error)) {
+    console.error("MCP connection error: transport closed or unavailable.");
+    process.exit(0);
+  }
   console.error("Server error:", error);
   process.exit(1);
 });
