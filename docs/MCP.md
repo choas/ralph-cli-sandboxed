@@ -47,7 +47,7 @@ If ralph is installed locally (not globally), use npx:
   "mcpServers": {
     "ralph": {
       "command": "npx",
-      "args": ["ralph-cli-sandboxed", "--mcp"]
+      "args": ["--package", "ralph-cli-sandboxed", "ralph-mcp"]
     }
   }
 }
