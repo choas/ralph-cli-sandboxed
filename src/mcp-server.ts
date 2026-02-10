@@ -94,7 +94,11 @@ function loadPrd(): PrdEntry[] {
     return parsePrdFile(prdPath);
   }
 
-  const primary = parsePrdFile(prdFiles.primary!);
+  if (!prdFiles.primary) {
+    throw new Error("No PRD file found. Run `ralph init` to create one.");
+  }
+
+  const primary = parsePrdFile(prdFiles.primary);
 
   if (prdFiles.both && prdFiles.secondary) {
     const secondary = parsePrdFile(prdFiles.secondary);
