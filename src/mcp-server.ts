@@ -23,6 +23,42 @@ interface PrdEntry {
 
 const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"] as const;
 
+// Structured error codes for MCP tool error responses
+const ErrorCode = {
+  PRD_NOT_FOUND: "PRD_NOT_FOUND",
+  PRD_PARSE_ERROR: "PRD_PARSE_ERROR",
+  PRD_WRITE_ERROR: "PRD_WRITE_ERROR",
+  INVALID_INDEX: "INVALID_INDEX",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+} as const;
+
+function classifyError(err: unknown): { code: string; message: string } {
+  const message = err instanceof Error ? err.message : String(err);
+
+  if (message.includes("No PRD file found") || message.includes("ENOENT")) {
+    return { code: ErrorCode.PRD_NOT_FOUND, message };
+  }
+  if (message.includes("does not contain an array") || message.includes("JSON") || message.includes("YAML")) {
+    return { code: ErrorCode.PRD_PARSE_ERROR, message };
+  }
+  if (message.includes("EACCES") || message.includes("EPERM")) {
+    return { code: ErrorCode.PRD_WRITE_ERROR, message };
+  }
+  return { code: ErrorCode.INTERNAL_ERROR, message };
+}
+
+function errorResponse(code: string, message: string) {
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: JSON.stringify({ code, message }),
+      },
+    ],
+    isError: true,
+  };
+}
+
 const PRD_FILE_JSON = "prd.json";
 const PRD_FILE_YAML = "prd.yaml";
 
@@ -146,15 +182,8 @@ server.tool(
         ],
       };
     } catch (err) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error loading PRD: ${err instanceof Error ? err.message : String(err)}`,
-          },
-        ],
-        isError: true,
-      };
+      const { code, message } = classifyError(err);
+      return errorResponse(code, message);
     }
   },
 );
@@ -198,15 +227,8 @@ server.tool(
         ],
       };
     } catch (err) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error adding PRD entry: ${err instanceof Error ? err.message : String(err)}`,
-          },
-        ],
-        isError: true,
-      };
+      const { code, message } = classifyError(err);
+      return errorResponse(code, message);
     }
   },
 );
@@ -257,15 +279,8 @@ server.tool(
         ],
       };
     } catch (err) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error loading PRD: ${err instanceof Error ? err.message : String(err)}`,
-          },
-        ],
-        isError: true,
-      };
+      const { code, message } = classifyError(err);
+      return errorResponse(code, message);
     }
   },
 );
@@ -284,15 +299,10 @@ server.tool(
       // Validate all indices are in range
       for (const index of indices) {
         if (index > prd.length) {
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: `Invalid entry number: ${index}. Must be 1-${prd.length}`,
-              },
-            ],
-            isError: true,
-          };
+          return errorResponse(
+            ErrorCode.INVALID_INDEX,
+            `Invalid entry number: ${index}. Must be 1-${prd.length}`,
+          );
         }
       }
 
@@ -320,15 +330,8 @@ server.tool(
         ],
       };
     } catch (err) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error toggling PRD entries: ${err instanceof Error ? err.message : String(err)}`,
-          },
-        ],
-        isError: true,
-      };
+      const { code, message } = classifyError(err);
+      return errorResponse(code, message);
     }
   },
 );
