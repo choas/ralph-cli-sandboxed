@@ -154,7 +154,7 @@ server.tool(
   "ralph_prd_list",
   "List PRD entries with optional category and status filters",
   {
-    category: z.enum(["ui", "feature", "bugfix", "setup", "development", "testing", "docs"]).optional().describe("Filter by category"),
+    category: z.enum(CATEGORIES).optional().describe("Filter by category"),
     status: z.enum(["all", "passing", "failing"]).optional().describe("Filter by status: all (default), passing, or failing"),
   },
   async ({ category, status }) => {
@@ -193,7 +193,7 @@ server.tool(
   "ralph_prd_add",
   "Add a new PRD entry with category, description, and verification steps",
   {
-    category: z.enum(["ui", "feature", "bugfix", "setup", "development", "testing", "docs"]).describe("Category for the new entry"),
+    category: z.enum(CATEGORIES).describe("Category for the new entry"),
     description: z.string().min(1).describe("Description of the requirement"),
     steps: z.array(z.string().min(1)).min(1).describe("Verification steps to check if requirement is met"),
     branch: z.string().optional().describe("Git branch associated with this entry"),
