@@ -20,7 +20,6 @@ import {
   validatePrd,
   smartMerge,
   readPrdFile,
-  writePrd,
   writePrdAuto,
   expandPrdFileReferences,
   PrdEntry,
@@ -623,7 +622,7 @@ function validateAndRecoverPrd(
   if (!parsed) {
     console.log("\nNote: PRD corrupted (invalid JSON) - restored from memory.");
     const mergedPrd = [...validPrd, ...newItems];
-    writePrd(prdPath, mergedPrd);
+    writePrdAuto(prdPath, mergedPrd);
     if (newItems.length > 0) {
       console.log(`Preserved ${newItems.length} newly-added item(s).`);
     }
@@ -647,7 +646,7 @@ function validateAndRecoverPrd(
   const mergedPrd = [...mergeResult.merged, ...newItems];
 
   // Write the valid structure back (with new items)
-  writePrd(prdPath, mergedPrd);
+  writePrdAuto(prdPath, mergedPrd);
 
   if (mergeResult.itemsUpdated > 0) {
     console.log(
