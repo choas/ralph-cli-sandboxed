@@ -392,9 +392,9 @@ ralph action gen_xcode
 With Ralph's Telegram integration, you can trigger actions remotely:
 
 ```
-/notify gen_xcode     # Generate Xcode project
-/notify build         # Build the project
-/notify fastlane_beta # Deploy to TestFlight
+/action gen_xcode     # Generate Xcode project
+/action build         # Build the project
+/action fastlane_beta # Deploy to TestFlight
 ```
 
 See the [Chat documentation](../README.md#chat-client-configuration) for setup.
