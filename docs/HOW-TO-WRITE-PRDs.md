@@ -22,16 +22,13 @@ Use consistent categories to organize your PRD:
 
 | Category | Use for |
 |----------|---------|
-| `setup` | Initial project configuration, build verification |
+| `ui` | User interface changes |
 | `feature` | New functionality |
 | `bugfix` | Fixing broken behavior |
-| `refactor` | Code improvements without behavior change |
+| `setup` | Initial project configuration, build verification |
+| `development` | Code improvements, refactoring, configuration |
+| `testing` | Adding or updating tests |
 | `docs` | Documentation updates |
-| `test` | Adding or updating tests |
-| `release` | Version bumps, changelog updates |
-| `config` | Configuration file changes |
-| `ui` | User interface changes |
-| `integration` | Connecting components, wiring, orchestration |
 
 ## Writing Good Descriptions
 
@@ -186,7 +183,7 @@ Break large features into smaller, independently completable items. Each item sh
 ## Quick Reference
 
 ```yaml
-- category: setup|feature|bugfix|refactor|docs|test|release|config|ui|integration
+- category: ui|feature|bugfix|setup|development|testing|docs
   description: Imperative verb + specific what + where (context)
   steps:
     - Concrete action with `commands` and file paths
