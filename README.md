@@ -42,8 +42,10 @@ ralph docker run
 | `ralph status` | Show PRD completion status |
 | `ralph toggle <n>` | Toggle passes status for entry n |
 | `ralph clean` | Remove all passing entries from PRD |
+| `ralph reset` | Reset all PRD entries to passes: false |
 | `ralph fix-prd [opts]` | Validate and recover corrupted PRD file |
 | `ralph prompt [opts]` | Display resolved prompt |
+| `ralph progress <sub>` | Manage progress file (summarize) |
 | `ralph branch <sub>` | Manage PRD branches (list, merge, pr, delete) |
 | `ralph docker <sub>` | Manage Docker sandbox environment |
 | `ralph daemon <sub>` | Manage host daemon for sandbox notifications |
@@ -233,10 +235,10 @@ Ralph supports 18 programming languages with pre-configured build/test commands:
 | Java | `mvn compile` | `mvn test` |
 | Kotlin | `gradle build` | `gradle test` |
 | C#/.NET | `dotnet build` | `dotnet test` |
-| Ruby | `bundle exec rubocop` | `bundle exec rspec` |
-| PHP | `composer validate` | `vendor/bin/phpunit` |
+| Ruby | `bundle exec rubocop --fail-level error` | `bundle exec rspec` |
+| PHP | `composer validate && php -l` | `vendor/bin/phpunit` |
 | Swift | `swift build` | `swift test` |
-| Elixir | `mix compile` | `mix test` |
+| Elixir | `mix compile --warnings-as-errors` | `mix test` |
 | Scala | `sbt compile` | `sbt test` |
 | Zig | `zig build` | `zig build test` |
 | Haskell | `stack build` | `stack test` |
@@ -255,6 +257,7 @@ Ralph supports multiple AI CLI tools. Select your provider during `ralph init`:
 | [OpenCode](https://github.com/anomalyco/opencode) | Working | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` | No autonomous/yolo mode yet. Requires [PR #9073](https://github.com/anomalyco/opencode/pull/9073) |
 | [Aider](https://github.com/paul-gauthier/aider) | Working | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | |
 | [Goose](https://github.com/block/goose) | Working | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | Block's AI coding agent |
+| [Ollama](https://ollama.com/) | Working | (none) | Local LLM server |
 | [Codex CLI](https://github.com/openai/codex) | Testers wanted | `OPENAI_API_KEY` | Sponsors welcome |
 | [AMP](https://ampcode.com/) | Testers wanted | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | Sponsors welcome |
 | Custom | - | User-defined | Configure your own CLI |
@@ -353,6 +356,7 @@ Not all CLI providers support stream-json output. Here's the compatibility matri
 | Goose | ✅ Yes | `--output-format stream-json` |
 | Aider | ❌ No | - |
 | AMP | ❌ No | - |
+| Ollama | ❌ No | - |
 | Custom | ❌ No* | *Add `streamJsonArgs` to your custom config |
 
 Each provider uses different command-line arguments and output formats. Ralph automatically selects the correct parser based on your configured provider.
@@ -426,7 +430,7 @@ The PRD (`prd.json`) is an array of requirements:
 ]
 ```
 
-Categories: `setup`, `feature`, `bugfix`, `refactor`, `docs`, `test`, `release`, `config`, `ui`
+Categories: `ui`, `feature`, `bugfix`, `setup`, `development`, `testing`, `docs`
 
 ### Branching
 
@@ -499,7 +503,7 @@ ralph fix-prd backup.json  # Restore from a specific backup file
 
 ### Dynamic Iteration Limits
 
-To prevent runaway loops, `ralph run` limits iterations to `incomplete_tasks + 3`. This limit adjusts dynamically if new tasks are added during execution.
+To prevent runaway loops, `ralph run` stops after 3 consecutive iterations without progress (no tasks completed and no new tasks added). It also stops after 3 consecutive failures with the same exit code.
 
 ## Docker Sandbox
 
