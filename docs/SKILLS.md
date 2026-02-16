@@ -174,11 +174,11 @@ Target project-specific requirements:
 
 ## How Skills Are Applied
 
-When ralph runs an iteration:
+During `ralph docker init`:
 
 1. Skills from `claude.skills` are loaded from config
-2. Skill instructions are injected into the prompt template
-3. Claude receives the combined prompt with all active skill instructions
+2. Each skill is written as a `.claude/commands/<name>.md` file with YAML frontmatter (`description`, `user-invocable`)
+3. Claude Code natively reads these command files and applies the skill instructions
 
 This ensures Claude consistently follows your defined rules across all iterations.
 
