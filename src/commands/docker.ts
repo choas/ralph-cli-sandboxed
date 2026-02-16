@@ -27,6 +27,7 @@ function computeConfigHash(config: RalphConfig): string {
     cliProvider: config.cliProvider,
     docker: config.docker,
     claude: config.claude,
+    cliModel: config.cli?.model,
   };
   const content = JSON.stringify(relevantConfig, null, 2);
   return createHash("sha256").update(content).digest("hex").substring(0, 16);
@@ -97,9 +98,17 @@ function generateDockerfile(
   javaVersion?: number,
   cliProvider?: string,
   dockerConfig?: RalphConfig["docker"],
+  cliModel?: string,
 ): string {
   const languageSnippet = getLanguageSnippet(language, javaVersion);
   const cliSnippet = getCliProviderSnippet(cliProvider);
+
+  // Ollama model pull: when provider is ollama and a model is configured,
+  // start the server briefly and pull the model during the Docker build
+  let ollamaModelPull = "";
+  if (cliProvider === "ollama" && cliModel) {
+    ollamaModelPull = `\n# Pull Ollama model during build\nRUN ollama serve & sleep 2 && ollama pull ${cliModel}\n`;
+  }
 
   // Build custom packages section
   let customPackages = "";
@@ -246,7 +255,7 @@ fi
 RALPH_BANNER
 
 ${cliSnippet}
-
+${ollamaModelPull}
 # Install ralph-cli-sandboxed from npm registry
 RUN npm install -g ralph-cli-sandboxed
 RUN ralph logo
@@ -717,6 +726,7 @@ async function generateFiles(
   cliProvider?: string,
   dockerConfig?: RalphConfig["docker"],
   claudeConfig?: RalphConfig["claude"],
+  cliModel?: string,
 ): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
 
@@ -730,7 +740,7 @@ async function generateFiles(
   const files: { name: string; content: string }[] = [
     {
       name: "Dockerfile",
-      content: generateDockerfile(language, javaVersion, cliProvider, dockerConfig),
+      content: generateDockerfile(language, javaVersion, cliProvider, dockerConfig, cliModel),
     },
     { name: "init-firewall.sh", content: generateFirewallScript(customDomains) },
     { name: "docker-compose.yml", content: generateDockerCompose(imageName, dockerConfig) },
@@ -877,6 +887,7 @@ async function generateFiles(
     cliProvider,
     docker: dockerConfig,
     claude: claudeConfig,
+    cli: cliModel ? { command: "", model: cliModel } : undefined,
   };
   const hash = computeConfigHash(configForHash);
   saveConfigHash(dockerDir, hash);
@@ -911,6 +922,7 @@ async function buildImage(ralphDir: string): Promise<void> {
         config.cliProvider,
         config.docker,
         config.claude,
+        config.cli?.model,
       );
       console.log("");
     }
@@ -1086,6 +1098,7 @@ async function runContainer(
       cliProvider,
       docker: dockerConfig,
       claude: claudeConfig,
+      cli: fullConfig?.cli?.model ? { command: "", model: fullConfig.cli.model } : undefined,
     };
     if (hasConfigChanged(ralphDir, configForHash)) {
       const regenerate = await promptConfirm(
@@ -1101,6 +1114,7 @@ async function runContainer(
           cliProvider,
           dockerConfig,
           claudeConfig,
+          fullConfig?.cli?.model,
         );
         console.log("");
       }
@@ -1120,6 +1134,7 @@ async function runContainer(
         cliProvider,
         dockerConfig,
         claudeConfig,
+        fullConfig?.cli?.model,
       );
       console.log("");
     }
@@ -1456,6 +1471,7 @@ export async function dockerInit(silent: boolean = false): Promise<void> {
     config.cliProvider,
     config.docker,
     config.claude,
+    config.cli?.model,
   );
 
   if (!silent) {
@@ -1606,6 +1622,7 @@ INSTALLING PACKAGES (works with Docker & Podman):
         config.cliProvider,
         config.docker,
         config.claude,
+        config.cli?.model,
       );
 
       console.log(`

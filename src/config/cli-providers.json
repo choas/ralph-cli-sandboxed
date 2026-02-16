@@ -135,6 +135,24 @@
       },
       "modelArgs": ["--model"]
     },
+    "ollama": {
+      "name": "Ollama",
+      "description": "Local LLM server with CLI interface",
+      "command": "ollama",
+      "defaultArgs": [],
+      "yoloArgs": [],
+      "promptArgs": ["run"],
+      "docker": {
+        "install": "# Install zstd (required for Ollama model layers)\nRUN apt-get update && apt-get install -y zstd && rm -rf /var/lib/apt/lists/*\n\n# Install Ollama\nRUN curl -fsSL https://ollama.com/install.sh | sh",
+        "note": "After building, Ollama needs a model pulled. Set cli.model in config.json and rebuild, or pull manually inside the container with: ollama pull <model>"
+      },
+      "envVars": [],
+      "credentialMount": null,
+      "modelConfig": {
+        "note": "Set cli.model in config.json (e.g., \"qwen3:1.7b\") to auto-pull during docker build. Or pull manually: ollama pull <model>"
+      },
+      "modelArgs": []
+    },
     "custom": {
       "name": "Custom CLI",
       "description": "Configure your own AI CLI tool",
