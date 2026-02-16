@@ -239,8 +239,8 @@ if [ -z "$RALPH_BANNER_SHOWN" ]; then
   echo "\\033[38;2;253;216;53m██╔══██╗██╔══██║██║     ██╔═══╝ ██╔══██║    ██║     ██║     ██║\\033[0m"
   echo "\\033[38;2;251;192;45m██║  ██║██║  ██║███████╗██║     ██║  ██║    ╚██████╗███████╗██║\\033[0m"
   echo "\\033[38;2;249;168;37m╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝     ╚═════╝╚══════╝╚═╝\\033[0m"
-  RALPH_VERSION=$(ralph --version 2>/dev/null | head -1 || echo "unknown")
-  echo "\\033[38;5;248mv$RALPH_VERSION\\033[0m"
+  RALPH_VERSION=$(ralph --version 2>/dev/null | awk '{print $NF}' || echo "unknown")
+  echo "\\033[38;5;248m$RALPH_VERSION\\033[0m"
   echo ""
 fi
 RALPH_BANNER
