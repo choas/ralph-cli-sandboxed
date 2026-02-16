@@ -482,6 +482,7 @@ config.json
 # Runtime state files
 messages.json
 chat-state.json
+prd-tasks.json
 
 # Service logs
 daemon.log
