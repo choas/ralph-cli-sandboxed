@@ -79,6 +79,7 @@ The bot will respond to commands in the allowed chats.
 | `/stop` | Stop running ralph process |
 | `/action build` | Execute a daemon action |
 | `/claude Fix the CSS` | Run Claude Code with a prompt |
+| `/branch list` | List branches and their status |
 | `/help` | Show available commands |
 
 ---
@@ -132,20 +133,14 @@ Socket Mode allows the bot to receive events without a public URL.
    - `message.im` - Direct messages
 4. Click **Save Changes**
 
-### Step 6: Create Slash Commands (Optional)
+### Step 6: Create Slash Command (Optional)
 
 1. Go to **Slash Commands**
-2. Click **Create New Command** for each:
+2. Click **Create New Command**:
 
 | Command | Request URL | Description |
 |---------|-------------|-------------|
-| `/run` | (leave empty for Socket Mode) | Start ralph automation |
-| `/status` | (leave empty for Socket Mode) | Show PRD progress |
-| `/add` | (leave empty for Socket Mode) | Add new task |
-| `/exec` | (leave empty for Socket Mode) | Execute shell command |
-| `/stop` | (leave empty for Socket Mode) | Stop ralph process |
-| `/action` | (leave empty for Socket Mode) | Execute daemon action |
-| `/claude` | (leave empty for Socket Mode) | Run Claude Code |
+| `/ralph` | (leave empty for Socket Mode) | Ralph unified command (use subcommands like `/ralph run`, `/ralph status`) |
 
 ### Step 7: Get Channel IDs
 
@@ -186,17 +181,18 @@ ralph chat start
 
 ### Slack Commands
 
-Use either slash commands (`/run`) or message the bot with commands:
+Use the `/ralph` slash command with subcommands, or message the bot directly:
 
 | Command | Description |
 |---------|-------------|
-| `/run` or `/run feature` | Start automation |
-| `/status` | Show PRD progress |
-| `/add Fix the bug` | Add a task |
-| `/exec npm test` | Execute command |
-| `/stop` | Stop ralph |
-| `/action build` | Execute action |
-| `/claude Fix CSS` | Run Claude Code |
+| `/ralph run` or `/ralph run feature` | Start automation |
+| `/ralph status` | Show PRD progress |
+| `/ralph add Fix the bug` | Add a task |
+| `/ralph exec npm test` | Execute command |
+| `/ralph stop` | Stop ralph |
+| `/ralph action build` | Execute action |
+| `/ralph branch list` | Manage branches |
+| `/ralph Fix CSS` | Run Claude Code (any unrecognized subcommand) |
 
 ---
 
