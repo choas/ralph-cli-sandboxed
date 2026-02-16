@@ -89,29 +89,30 @@ Set up a Ralph CLI project based on the configuration above.
 
 | Stack | language | checkCommand | testCommand |
 |-------|----------|--------------|-------------|
-| Node/TS (pnpm) | `typescript` | `pnpm lint && pnpm build` | `pnpm test` |
-| Node/TS (npm) | `node` | `npm run lint && npm run build` | `npm test` |
-| Node/TS (bun) | `typescript` | `bun run lint && bun run build` | `bun test` |
-| Python (pip) | `python` | `mypy . && ruff check .` | `pytest` |
-| Python (poetry) | `python` | `poetry run mypy . && poetry run ruff check .` | `poetry run pytest` |
-| Python (uv) | `python` | `uv run mypy . && uv run ruff check .` | `uv run pytest` |
-| Go | `go` | `go build ./... && go vet ./...` | `go test ./...` |
-| Rust | `rust` | `cargo build && cargo clippy` | `cargo test` |
+| Node/TS (npm) | `node` | `npm run typecheck` | `npm test` |
+| Node/TS (bun) | `bun` | `bun check` | `bun test` |
+| Python | `python` | `mypy .` | `pytest` |
+| Go | `go` | `go build ./...` | `go test ./...` |
+| Rust | `rust` | `cargo check` | `cargo test` |
 
-### Required Domains by Tech Stack
+### Firewall Domains
 
-| Stack | Package Registry Domains |
-|-------|--------------------------|
-| Node.js | `registry.npmjs.org`, `github.com` |
-| Python | `pypi.org`, `files.pythonhosted.org`, `github.com` |
-| Go | `proxy.golang.org`, `sum.golang.org`, `github.com` |
-| Rust | `crates.io`, `static.crates.io`, `github.com` |
+The Docker firewall allows these domains by default: `github.com`, `api.github.com`, `raw.githubusercontent.com`, `registry.npmjs.org`, `api.anthropic.com`.
+
+Add additional domains to `docker.firewall.allowedDomains` in `.ralph/config.json` based on your stack:
+
+| Stack | Recommended Additions |
+|-------|----------------------|
+| Python | `pypi.org`, `files.pythonhosted.org` |
+| Go | `proxy.golang.org`, `sum.golang.org` |
+| Rust | `crates.io`, `static.crates.io` |
 
 ### API Provider Domains
 
+Add these to `docker.firewall.allowedDomains` if using external APIs:
+
 | Provider | Domains |
 |----------|---------|
-| Anthropic Claude | `api.anthropic.com` |
 | OpenAI | `api.openai.com` |
 | Google AI | `generativelanguage.googleapis.com` |
 | AWS | `*.amazonaws.com` |
@@ -124,6 +125,8 @@ Set up a Ralph CLI project based on the configuration above.
 
 ### Notifications Config
 
+Supported providers: `ntfy`, `pushover`, `gotify`, `command`.
+
 Using ntfy (recommended - no install needed):
 ```json
 {
@@ -132,6 +135,32 @@ Using ntfy (recommended - no install needed):
     "ntfy": {
       "topic": "my-ralph-notifications",
       "server": "https://ntfy.sh"
+    }
+  }
+}
+```
+
+Using pushover:
+```json
+{
+  "notifications": {
+    "provider": "pushover",
+    "pushover": {
+      "user": "your-user-key",
+      "token": "your-app-token"
+    }
+  }
+}
+```
+
+Using gotify:
+```json
+{
+  "notifications": {
+    "provider": "gotify",
+    "gotify": {
+      "server": "https://gotify.example.com",
+      "token": "your-app-token"
     }
   }
 }
@@ -205,10 +234,14 @@ Log task completions and ralph finished to file:
 ```
 
 Chat commands (send in Telegram):
-- `/run` - Start ralph automation
+- `/run [category]` - Start ralph automation
 - `/status` - Show PRD progress
+- `/stop` - Stop a running ralph process
 - `/add [desc]` - Add new task
 - `/exec [cmd]` - Execute shell command
+- `/action [name]` - Execute a daemon action
+- `/claude [prompt]` - Run Claude Code with a prompt
+- `/branch [subcommand]` - Manage git branches
 - `/help` - Show help
 
 ### PRD Task Categories
@@ -216,12 +249,11 @@ Chat commands (send in Telegram):
 | Category | Use For |
 |----------|---------|
 | `setup` | Project initialization, dependency installation |
-| `config` | Environment variables, configuration files |
 | `feature` | New functionality implementation |
-| `integration` | External API clients, third-party services |
-| `test` | Unit tests, integration tests |
-| `refactor` | Code restructuring without behavior change |
 | `bugfix` | Bug fixes |
+| `ui` | User interface changes |
+| `development` | Development tooling, build configuration |
+| `testing` | Unit tests, integration tests |
 | `docs` | Documentation |
 
 ### PRD Guidelines
@@ -231,7 +263,7 @@ Chat commands (send in Telegram):
 - Include 2-4 concrete steps per task
 - End with a verification step (build, typecheck, test)
 - All tasks start with `"passes": false`
-- Order by dependency: setup -> config -> features -> tests -> docs
+- Order by dependency: setup -> development -> feature -> testing -> docs
 
 ### Sandbox Safety
 
