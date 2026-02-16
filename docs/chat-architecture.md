@@ -47,7 +47,8 @@ The Ralph CLI chat system enables external control of Ralph projects via chat pl
 │  │ └─────────┘ │                    ▼                                        │
 │  └─────────────┘    ┌───────────────────────────────────────┐               │
 │                     │           Command Handler              │               │
-│                     │  run, stop, status, exec, add, claude  │               │
+│                     │  run, stop, status, exec, add, claude, │               │
+│                     │  help, start, action, branch           │               │
 │                     └───────────────────┬───────────────────┘               │
 │                                         │                                    │
 │                                         ▼                                    │
@@ -96,7 +97,7 @@ The Ralph CLI chat system enables external control of Ralph projects via chat pl
 ┌─────────────────────────────────────────────────────────────────┐
 │                    ResponderMatcher                              │
 │                                                                  │
-│  1. Check @mention triggers: @qa, @review, @explain, @code      │
+│  1. Check @mention triggers: @qa, @review, @arch, @explain, @code│
 │  2. Check keyword triggers: !lint, help                          │
 │  3. Fall back to default responder                               │
 └─────────────────────────────┬───────────────────────────────────┘
@@ -111,11 +112,11 @@ The Ralph CLI chat system enables external control of Ralph projects via chat pl
 ┌─────────────────────────────────────────────────────────────────┐
 │                    LLM Responder                                 │
 │                                                                  │
-│  1. Detect git keyword: "last" → git show HEAD                  │
+│  1. Detect git keyword: "last" → git show HEAD --stat --patch   │
 │  2. Fetch git diff content                                       │
 │  3. Build message with diff                                      │
 │  4. Load conversation history (if thread)                        │
-│  5. Send to LLM (Anthropic/OpenAI)                              │
+│  5. Send to LLM (Anthropic/OpenAI/Ollama)                       │
 │  6. Log to .ralph/logs/responder-YYYY-MM-DD.log                 │
 │  7. Return response                                              │
 └─────────────────────────────┬───────────────────────────────────┘
@@ -168,32 +169,38 @@ Reply in thread               history (max 20 messages)
 
 ## Message Queue Format
 
+The messages file stores a direct JSON array (no wrapper object):
+
 ```json
-{
-  "messages": [
-    {
-      "id": "uuid-1234",
-      "from": "host",
-      "action": "run",
-      "args": ["feature"],
-      "timestamp": 1706789012345,
-      "status": "pending"
-    },
-    {
-      "id": "uuid-1234",
-      "from": "host",
-      "action": "run",
-      "args": ["feature"],
-      "timestamp": 1706789012345,
-      "status": "done",
-      "response": {
-        "success": true,
-        "output": "Ralph run started (category: feature)"
-      }
+[
+  {
+    "id": "uuid-1234",
+    "from": "host",
+    "action": "run",
+    "args": ["feature"],
+    "timestamp": 1706789012345,
+    "status": "pending"
+  },
+  {
+    "id": "uuid-1234",
+    "from": "host",
+    "action": "run",
+    "args": ["feature"],
+    "timestamp": 1706789012345,
+    "status": "done",
+    "response": {
+      "success": true,
+      "output": "Ralph run started (category: feature)"
     }
-  ]
-}
+  }
+]
 ```
+
+Fields:
+- `from`: `"sandbox"` or `"host"`
+- `args`: optional string array
+- `status`: `"pending"` or `"done"`
+- `response`: optional, contains `success` (boolean), `output` (optional string), and `error` (optional string)
 
 ## Git Diff Keywords
 
@@ -201,15 +208,15 @@ Reply in thread               history (max 20 messages)
 |---------|-------------|-------------|
 | `diff` / `changes` | `git diff` | Unstaged changes |
 | `staged` | `git diff --cached` | Staged changes |
-| `last` / `last commit` | `git show HEAD` | Last commit |
+| `last` / `last commit` | `git show HEAD --stat --patch` | Last commit |
 | `all` | `git diff HEAD` | All uncommitted |
-| `HEAD~N` | `git show HEAD~N` | N commits ago |
+| `HEAD~N` | `git show HEAD~N --stat --patch` | N commits ago |
 
 ## Responder Types
 
 | Type | Description | Example Trigger |
 |------|-------------|-----------------|
-| `llm` | Send to LLM (Anthropic/OpenAI) | `@qa`, `@review` |
+| `llm` | Send to LLM (Anthropic/OpenAI/Ollama) | `@qa`, `@review` |
 | `claude-code` | Spawn Claude Code CLI | `@code` |
 | `cli` | Run shell command | `!lint` |
 
