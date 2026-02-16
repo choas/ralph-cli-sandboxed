@@ -150,6 +150,14 @@ export async function init(args: string[]): Promise<void> {
 
     console.log(`\nSelected CLI provider: ${CLI_PROVIDERS[selectedCliProviderKey].name}`);
 
+    // Optional: specify default model
+    const modelInput = await promptInput(
+      "Enter default model name (optional, press Enter to skip): ",
+    );
+    if (modelInput.trim()) {
+      cliConfig.model = modelInput.trim();
+    }
+
     // Step 2: Select language (second)
     const languageKeys = Object.keys(LANGUAGES);
     const languageNames = languageKeys.map(

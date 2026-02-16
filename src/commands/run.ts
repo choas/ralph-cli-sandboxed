@@ -764,6 +764,11 @@ export async function run(args: string[]): Promise<void> {
   const paths = getPaths();
   const cliConfig = getCliConfig(config);
 
+  // Use config model as fallback when --model flag is not provided
+  if (!model && cliConfig.model) {
+    model = cliConfig.model;
+  }
+
   // Check if stream-json output is enabled
   const streamJsonConfig = config.docker?.asciinema?.streamJson;
   // Get provider-specific streamJsonArgs, falling back to Claude's defaults

@@ -8,6 +8,7 @@ export interface CliConfig {
   yoloArgs?: string[];
   promptArgs?: string[];
   modelArgs?: string[];
+  model?: string; // Default model name to use (e.g., "claude-sonnet-4-20250514"). Overridden by --model flag.
   fileArgs?: string[]; // Args for including files (e.g., ["--read"] for Aider). If not set, uses @file syntax in prompt.
 }
 
