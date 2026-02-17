@@ -176,7 +176,7 @@ function setupWorktreeRalphDir(
 
 /**
  * Creates a filtered PRD file containing only incomplete items (passes: false).
- * Optionally filters by category if specified.
+ * Optionally filters by category and/or branch if specified.
  * Expands @{filepath} references to include file contents.
  * Returns the path to the temp file, or null if all items pass.
  */
@@ -184,6 +184,8 @@ function createFilteredPrd(
   prdPath: string,
   baseDir: string,
   category?: string,
+  branchFilterActive?: boolean,
+  branchFilter?: string,
 ): { tempPath: string; hasIncomplete: boolean } {
   // Use readPrdFile to handle both JSON and YAML formats
   const parsed = readPrdFile(prdPath);
@@ -210,6 +212,11 @@ function createFilteredPrd(
   // Apply category filter if specified
   if (category) {
     filteredItems = filteredItems.filter((item) => item.category === category);
+  }
+
+  // Apply branch filter if specified
+  if (branchFilterActive) {
+    filteredItems = applyBranchFilter(filteredItems, branchFilter!);
   }
 
   // Expand @{filepath} references in description and steps
@@ -525,12 +532,28 @@ function formatElapsedTime(startTime: number, endTime: number): string {
 }
 
 /**
+ * Filters PRD items by branch.
+ * - branchFilter = "name": only items whose branch field matches "name"
+ * - branchFilter = "": only items that have any branch field set (non-empty)
+ */
+function applyBranchFilter(items: PrdItem[], branchFilter: string): PrdItem[] {
+  if (branchFilter === "") {
+    // --branch without value: include only items that have a branch set
+    return items.filter((item) => item.branch && item.branch.length > 0);
+  }
+  // --branch <name>: include only items whose branch matches
+  return items.filter((item) => item.branch === branchFilter);
+}
+
+/**
  * Counts total and incomplete items in the PRD.
- * Optionally filters by category if specified.
+ * Optionally filters by category and/or branch if specified.
  */
 function countPrdItems(
   prdPath: string,
   category?: string,
+  branchFilterActive?: boolean,
+  branchFilter?: string,
 ): { total: number; incomplete: number; complete: number } {
   // Use readPrdFile to handle both JSON and YAML formats
   const parsed = readPrdFile(prdPath);
@@ -554,7 +577,10 @@ function countPrdItems(
   const items: PrdItem[] = parsed.content;
   let filteredItems = items;
   if (category) {
-    filteredItems = items.filter((item) => item.category === category);
+    filteredItems = filteredItems.filter((item) => item.category === category);
+  }
+  if (branchFilterActive) {
+    filteredItems = applyBranchFilter(filteredItems, branchFilter!);
   }
 
   const complete = filteredItems.filter((item) => item.passes === true).length;
@@ -689,6 +715,8 @@ function loadValidPrd(prdPath: string): PrdEntry[] {
 export async function run(args: string[]): Promise<void> {
   // Parse flags
   let category: string | undefined;
+  let branchFilter: string | undefined; // undefined = no filter, "" = any branch, "name" = specific branch
+  let branchFilterActive = false; // true when --branch flag is present
   let model: string | undefined;
   let loopMode = false;
   let allModeExplicit = false;
@@ -704,6 +732,16 @@ export async function run(args: string[]): Promise<void> {
         console.error("Error: --category requires a value");
         console.error(`Valid categories: ${CATEGORIES.join(", ")}`);
         process.exit(1);
+      }
+    } else if (args[i] === "--branch" || args[i] === "-b") {
+      branchFilterActive = true;
+      // Check if next arg is a branch name (not another flag)
+      if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
+        branchFilter = args[i + 1];
+        i++; // Skip the branch value
+      } else {
+        // --branch without a value: filter to items that have any branch set
+        branchFilter = "";
       }
     } else if (args[i] === "--model" || args[i] === "-m") {
       if (i + 1 < args.length) {
@@ -798,7 +836,7 @@ export async function run(args: string[]): Promise<void> {
   const sandboxed = true;
 
   if (allMode) {
-    const counts = countPrdItems(paths.prd, category);
+    const counts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
     console.log("Starting ralph in --all mode (runs until all tasks complete)...");
     console.log(
       `PRD Status: ${counts.complete}/${counts.total} complete, ${counts.incomplete} remaining`,
@@ -810,6 +848,24 @@ export async function run(args: string[]): Promise<void> {
   }
   if (category) {
     console.log(`Filtering PRD items by category: ${category}`);
+  }
+  if (branchFilterActive) {
+    if (branchFilter === "") {
+      console.log("Filtering PRD items to only branched items");
+    } else {
+      console.log(`Filtering PRD items by branch: ${branchFilter}`);
+    }
+
+    // Check if any items match the branch filter; if not, exit early
+    const branchCounts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
+    if (branchCounts.total === 0) {
+      if (branchFilter === "") {
+        console.error("\nNo PRD items have a branch field set.");
+      } else {
+        console.error(`\nNo PRD items match branch "${branchFilter}".`);
+      }
+      process.exit(1);
+    }
   }
   if (streamJson?.enabled) {
     console.log("Stream JSON output enabled - displaying formatted Claude output");
@@ -831,7 +887,7 @@ export async function run(args: string[]): Promise<void> {
 
   // Progress tracking for --all mode
   // Progress = tasks completed OR new tasks added (allows ralph to expand the PRD)
-  const initialCounts = countPrdItems(paths.prd, category);
+  const initialCounts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
   let lastCompletedCount = initialCounts.complete;
   let lastTotalCount = initialCounts.total;
   let iterationsWithoutProgress = 0;
@@ -1008,7 +1064,7 @@ export async function run(args: string[]): Promise<void> {
     while (true) {
       iterationCount++;
 
-      const currentCounts = countPrdItems(paths.prd, category);
+      const currentCounts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
 
       // Check if we should stop (not in loop mode)
       if (!loopMode && !allMode) {
@@ -1039,6 +1095,9 @@ export async function run(args: string[]): Promise<void> {
       if (category) {
         itemsForIteration = itemsForIteration.filter((item) => item.category === category);
       }
+      if (branchFilterActive) {
+        itemsForIteration = applyBranchFilter(itemsForIteration, branchFilter!);
+      }
       const branchGroups = groupItemsByBranch(itemsForIteration);
 
       // Check if there are any incomplete items
@@ -1055,7 +1114,7 @@ export async function run(args: string[]): Promise<void> {
 
           while (true) {
             await sleep(POLL_INTERVAL_MS);
-            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, paths.dir, category);
+            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, paths.dir, category, branchFilterActive, branchFilter);
             if (newItems) {
               console.log("\nNew incomplete item(s) detected! Resuming...");
               break;
@@ -1066,7 +1125,7 @@ export async function run(args: string[]): Promise<void> {
         } else {
           console.log("\n" + "=".repeat(50));
           if (allMode) {
-            const counts = countPrdItems(paths.prd, category);
+            const counts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
             if (category) {
               console.log(`PRD COMPLETE - All "${category}" tasks finished!`);
             } else {
@@ -1218,7 +1277,7 @@ export async function run(args: string[]): Promise<void> {
           }
 
           // Create filtered PRD for no-branch items only (or all items if no branches exist)
-          const { tempPath } = createFilteredPrd(paths.prd, paths.dir, category);
+          const { tempPath } = createFilteredPrd(paths.prd, paths.dir, category, branchFilterActive, branchFilter);
           filteredPrdPath = tempPath;
 
           // If there are branch groups, rewrite prd-tasks.json to only include no-branch items
@@ -1247,7 +1306,7 @@ export async function run(args: string[]): Promise<void> {
 
       // Track progress for --all mode: stop if no progress after N iterations
       if (allMode) {
-        const progressCounts = countPrdItems(paths.prd, category);
+        const progressCounts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
         const tasksCompleted = progressCounts.complete > lastCompletedCount;
         const tasksAdded = progressCounts.total > lastTotalCount;
 
@@ -1326,7 +1385,7 @@ export async function run(args: string[]): Promise<void> {
       // so its COMPLETE signal means "this group is done", not "all PRD items are done".
       // We must verify the full PRD before treating this as a global completion.
       if (iterOutput.includes("<promise>COMPLETE</promise>")) {
-        const fullCounts = countPrdItems(paths.prd, category);
+        const fullCounts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
         if (fullCounts.incomplete > 0) {
           // There are still incomplete items in other groups — continue the loop
           if (debug) {
@@ -1342,7 +1401,7 @@ export async function run(args: string[]): Promise<void> {
 
           while (true) {
             await sleep(POLL_INTERVAL_MS);
-            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, paths.dir, category);
+            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, paths.dir, category, branchFilterActive, branchFilter);
             if (newItems) {
               console.log("\nNew incomplete item(s) detected! Resuming...");
               break;
