@@ -137,7 +137,7 @@
       "checkCommand": "mvn compile",
       "testCommand": "mvn test",
       "docker": {
-        "install": "# Install Java ${version} and Maven\nRUN apt-get update && apt-get install -y \\\n    openjdk-${version}-jdk \\\n    maven \\\n    && rm -rf /var/lib/apt/lists/* \\\n    && ln -s /usr/lib/jvm/java-${version}-openjdk-$(dpkg --print-architecture) /usr/lib/jvm/java-${version}-openjdk\nENV JAVA_HOME=\"/usr/lib/jvm/java-${version}-openjdk\"",
+        "install": "# Install Java ${version} and Maven (via Eclipse Temurin)\nRUN mkdir -p /etc/apt/keyrings \\\n    && wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor -o /etc/apt/keyrings/adoptium.gpg \\\n    && echo \"deb [signed-by=/etc/apt/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb bookworm main\" > /etc/apt/sources.list.d/adoptium.list \\\n    && apt-get update && apt-get install -y \\\n    temurin-${version}-jdk \\\n    maven \\\n    && rm -rf /var/lib/apt/lists/* \\\n    && ln -s /usr/lib/jvm/temurin-${version}-jdk-$(dpkg --print-architecture) /usr/lib/jvm/temurin-${version}-jdk\nENV JAVA_HOME=\"/usr/lib/jvm/temurin-${version}-jdk\"\nENV PATH=\"$JAVA_HOME/bin:$PATH\"",
         "version": 17,
         "versionConfigurable": true
       },
@@ -165,7 +165,7 @@
       "checkCommand": "gradle build",
       "testCommand": "gradle test",
       "docker": {
-        "install": "# Install Kotlin and Gradle (Java ${version})\nRUN apt-get update && apt-get install -y \\\n    openjdk-${version}-jdk \\\n    && rm -rf /var/lib/apt/lists/* \\\n    && ln -s /usr/lib/jvm/java-${version}-openjdk-$(dpkg --print-architecture) /usr/lib/jvm/java-${version}-openjdk\nENV JAVA_HOME=\"/usr/lib/jvm/java-${version}-openjdk\"\n# Install Gradle\nRUN curl -fsSL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip && \\\n    unzip -d /opt /tmp/gradle.zip && \\\n    rm /tmp/gradle.zip\nENV PATH=\"/opt/gradle-8.5/bin:$PATH\"\n# Install Kotlin compiler\nRUN curl -fsSL https://github.com/JetBrains/kotlin/releases/download/v1.9.22/kotlin-compiler-1.9.22.zip -o /tmp/kotlin.zip && \\\n    unzip -d /opt /tmp/kotlin.zip && \\\n    rm /tmp/kotlin.zip\nENV PATH=\"/opt/kotlinc/bin:$PATH\"",
+        "install": "# Install Kotlin and Gradle (Java ${version} via Eclipse Temurin)\nRUN mkdir -p /etc/apt/keyrings \\\n    && wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor -o /etc/apt/keyrings/adoptium.gpg \\\n    && echo \"deb [signed-by=/etc/apt/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb bookworm main\" > /etc/apt/sources.list.d/adoptium.list \\\n    && apt-get update && apt-get install -y \\\n    temurin-${version}-jdk \\\n    && rm -rf /var/lib/apt/lists/* \\\n    && ln -s /usr/lib/jvm/temurin-${version}-jdk-$(dpkg --print-architecture) /usr/lib/jvm/temurin-${version}-jdk\nENV JAVA_HOME=\"/usr/lib/jvm/temurin-${version}-jdk\"\nENV PATH=\"$JAVA_HOME/bin:$PATH\"\n# Install Gradle\nRUN curl -fsSL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip && \\\n    unzip -d /opt /tmp/gradle.zip && \\\n    rm /tmp/gradle.zip\nENV PATH=\"/opt/gradle-8.5/bin:$PATH\"\n# Install Kotlin compiler\nRUN curl -fsSL https://github.com/JetBrains/kotlin/releases/download/v1.9.22/kotlin-compiler-1.9.22.zip -o /tmp/kotlin.zip && \\\n    unzip -d /opt /tmp/kotlin.zip && \\\n    rm /tmp/kotlin.zip\nENV PATH=\"/opt/kotlinc/bin:$PATH\"",
         "version": 17,
         "versionConfigurable": true,
         "gradleVersion": "8.5",
