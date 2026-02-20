@@ -282,7 +282,9 @@
       "checkCommand": "mix compile --warnings-as-errors",
       "testCommand": "mix test",
       "docker": {
-        "install": "# Install Erlang and Elixir\nRUN apt-get update && apt-get install -y \\\n    erlang \\\n    elixir \\\n    && rm -rf /var/lib/apt/lists/*\nRUN mix local.hex --force && mix local.rebar --force"
+        "install": "# Install Erlang/OTP 27 from RabbitMQ team's apt repo\nRUN apt-get update && apt-get install -y curl gnupg \\\n    && curl -1sLf \"https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA\" | gpg --dearmor > /usr/share/keyrings/rabbitmq-erlang.gpg \\\n    && echo \"deb [signed-by=/usr/share/keyrings/rabbitmq-erlang.gpg] https://deb1.rabbitmq.com/rabbitmq-erlang/debian/bookworm bookworm main\" > /etc/apt/sources.list.d/rabbitmq-erlang.list \\\n    && apt-get update && apt-get install -y erlang-base erlang-dev erlang-parsetools erlang-xmerl erlang-tools erlang-ssl erlang-public-key erlang-asn1 erlang-crypto erlang-runtime-tools erlang-inets erlang-mnesia erlang-eunit \\\n    && rm -rf /var/lib/apt/lists/*\n# Install Elixir 1.19.5 (precompiled for OTP 27)\nRUN curl -fsSL https://github.com/elixir-lang/elixir/releases/download/v1.19.5/elixir-otp-27.zip -o /tmp/elixir.zip \\\n    && mkdir -p /opt/elixir \\\n    && unzip -q /tmp/elixir.zip -d /opt/elixir \\\n    && rm /tmp/elixir.zip\nENV PATH=\"/opt/elixir/bin:$PATH\"\nRUN mix local.hex --force && mix local.rebar --force",
+        "elixirVersion": "1.19.5",
+        "erlangVersion": "27"
       },
       "technologies": [
         { "name": "Phoenix", "description": "Web framework for Elixir" },
