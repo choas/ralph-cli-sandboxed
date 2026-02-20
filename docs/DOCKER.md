@@ -81,6 +81,20 @@ Then regenerate: `ralph docker init`
 }
 ```
 
+### Environment File
+
+Mount a `.env` file into the container and inject its variables as real environment variables. This means code can access them via `os.environ` (Python), `process.env` (Node.js), etc. — no dotenv library required. The file is also mounted read-only at `/workspace/.env` for tools that read it directly.
+
+```json
+{
+  "docker": {
+    "envFile": ".env"
+  }
+}
+```
+
+The path is relative to the project root. Make sure to add your `.env` file to `.gitignore` to avoid committing secrets.
+
 ### Git Configuration
 
 ```json

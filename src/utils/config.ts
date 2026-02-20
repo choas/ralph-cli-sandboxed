@@ -223,6 +223,7 @@ export interface RalphConfig {
     autoStart?: boolean; // Automatically restart container when Docker/Podman starts
     restartCount?: number; // Max restart attempts on failure (uses on-failure policy). 0 = no restart, >0 = max retries
     worktreesPath?: string; // Host-side path for git worktree storage, mounted at /worktrees in the container
+    envFile?: string; // Path to .env file (relative to project root) to mount and inject into container
   };
   claude?: {
     mcpServers?: Record<string, McpServerConfig>;

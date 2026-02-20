@@ -416,6 +416,12 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig["do
     baseVolumes.push(`      - ${dockerConfig.worktreesPath}:/worktrees`);
   }
 
+  // Mount env file if configured (read-only)
+  if (dockerConfig?.envFile) {
+    baseVolumes.push("      # Mount env file into container");
+    baseVolumes.push(`      - ../../${dockerConfig.envFile}:/workspace/${dockerConfig.envFile}:ro`);
+  }
+
   if (dockerConfig?.volumes && dockerConfig.volumes.length > 0) {
     const customVolumeLines = dockerConfig.volumes.map((vol) => `      - ${vol}`);
     baseVolumes.push(...customVolumeLines);
@@ -491,7 +497,7 @@ services:
       dockerfile: Dockerfile
 ${portsSection}    volumes:
 ${volumesSection}
-${environmentSection}    working_dir: /workspace
+${environmentSection}${dockerConfig?.envFile ? `    env_file:\n      - ../../${dockerConfig.envFile}\n` : ""}    working_dir: /workspace
     stdin_open: true
     tty: true
     cap_add:
