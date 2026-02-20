@@ -19,6 +19,11 @@ export async function action(args: string[]): Promise<void> {
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
+    if (actionName) {
+      // Once we have an action name, everything else is passthrough
+      actionArgs = args.slice(i);
+      break;
+    }
     if (arg === "--debug" || arg === "-d") {
       debug = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -27,13 +32,7 @@ export async function action(args: string[]): Promise<void> {
     } else if (arg === "--list" || arg === "-l") {
       showList = true;
     } else if (!arg.startsWith("-")) {
-      if (!actionName) {
-        actionName = arg;
-      } else {
-        // Collect remaining args as action arguments
-        actionArgs = args.slice(i);
-        break;
-      }
+      actionName = arg;
     }
   }
 
