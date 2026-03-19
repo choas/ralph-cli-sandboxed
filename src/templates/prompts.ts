@@ -16,6 +16,7 @@ export interface DockerConfig {
   versionConfigurable?: boolean;
   gradleVersion?: string;
   kotlinVersion?: string;
+  firewallDomains?: string[];
 }
 
 export interface LanguageConfigJson {

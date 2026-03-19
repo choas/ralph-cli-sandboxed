@@ -8,6 +8,14 @@
         "userInvocable": false
       }
     ],
+    "deno": [
+      {
+        "name": "deno-no-npm",
+        "description": "Prevents using npm/npx in Deno projects — use deno commands instead",
+        "instructions": "IMPORTANT: This project uses Deno as its runtime. Do NOT use npm, npx, yarn, or pnpm for package management or script execution.\n\nAVOID these commands:\n- `npm install`, `npm run`, `npm test`, `npm start`\n- `npx <package>`\n- `yarn add`, `yarn run`\n- `pnpm install`, `pnpm run`\n- Do NOT create or modify `package.json` for dependency management\n\nINSTEAD, use Deno's built-in tools:\n- Dependencies: Use `import` with URLs or `deno.json` imports map\n  - `import { serve } from \"https://deno.land/std/http/server.ts\";`\n  - Or add to `deno.json`: `{ \"imports\": { \"std/\": \"https://deno.land/std/\" } }`\n  - Use `jsr:` imports for JSR packages: `import { z } from \"jsr:@zod/zod\";`\n- Run scripts: `deno run`, `deno task`\n- Type checking: `deno check`\n- Testing: `deno test`\n- Formatting: `deno fmt`\n- Linting: `deno lint`\n- Install tools: `deno install`\n- Compile: `deno compile`\n\nDeno uses `deno.json` (or `deno.jsonc`) for project configuration, NOT `package.json`.\n\nIf you need an npm package that has no Deno equivalent, use the `npm:` specifier:\n  `import express from \"npm:express\";`\nThis uses Deno's built-in npm compatibility — no need to run `npm install`.",
+        "userInvocable": false
+      }
+    ],
     "swift": [
       {
         "name": "swift-main-naming",
