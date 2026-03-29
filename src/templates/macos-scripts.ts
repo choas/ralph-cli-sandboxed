@@ -396,7 +396,7 @@ app_identifier "${bundleId}"
  * Generate README section for Fastlane setup
  * This provides documentation on how to use Fastlane with the project
  *
- * @param projectName - Name of the Xcode project/app
+ * @param _projectName - Name of the Xcode project/app
  */
 export function generateFastlaneReadmeSection(_projectName: string = "App"): string {
   return `## Fastlane Deployment
