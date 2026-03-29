@@ -1,10 +1,5 @@
 import { spawn } from "child_process";
-import {
-  isRunningInContainer,
-  DaemonEventType,
-  DaemonConfig,
-  ChatConfig,
-} from "./config.js";
+import { isRunningInContainer, DaemonEventType, DaemonConfig, ChatConfig } from "./config.js";
 import {
   isDaemonAvailable,
   sendDaemonNotification,

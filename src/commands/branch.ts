@@ -1,12 +1,7 @@
 import { execSync } from "child_process";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { extname, join } from "path";
-import {
-  getRalphDir,
-  getPrdFiles,
-  loadBranchState,
-  getProjectName,
-} from "../utils/config.js";
+import { getRalphDir, getPrdFiles, loadBranchState, getProjectName } from "../utils/config.js";
 import { readPrdFile, writePrdAuto, PrdEntry } from "../utils/prd-validator.js";
 import { promptConfirm } from "../utils/prompt.js";
 import YAML from "yaml";

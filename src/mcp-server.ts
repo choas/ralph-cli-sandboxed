@@ -13,6 +13,8 @@ import { DEFAULT_PRD_YAML } from "./templates/prompts.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"] as const;
+
 type Category = (typeof CATEGORIES)[number];
 
 interface PrdEntry {
@@ -22,8 +24,6 @@ interface PrdEntry {
   passes: boolean;
   branch?: string;
 }
-
-const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"] as const;
 
 // Structured error codes for MCP tool error responses
 const ErrorCode = {
