@@ -486,6 +486,21 @@ After generating prd.yaml, verify:
 - [ ] References to source docs are accurate
 - [ ] No duplicate or overlapping items
 
+## Don't Forget the README
+
+Every project should include a PRD item for generating a `README.md` that describes the project, setup instructions, and how to run it. Add this near the end of your PRD so the AI can reference the completed codebase:
+
+```yaml
+- category: docs
+  description: Create README.md with project overview, setup instructions, and usage guide
+  steps:
+    - Write a README.md that describes what the project does and its key features
+    - Add setup/installation instructions (dependencies, environment variables, etc.)
+    - Document how to run the project (build, test, and start commands)
+    - Include any configuration options or examples
+  passes: false
+```
+
 ## Tips for Large Documents
 
 1. **Process in phases** - Convert one section at a time

@@ -26,7 +26,16 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
     id: "cli",
     label: "CLI",
     icon: "⌨",
-    fields: ["cliProvider", "cli.command", "cli.args", "cli.model", "cli.yoloArgs", "cli.promptArgs", "cli.modelArgs", "cli.fileArgs"],
+    fields: [
+      "cliProvider",
+      "cli.command",
+      "cli.args",
+      "cli.model",
+      "cli.yoloArgs",
+      "cli.promptArgs",
+      "cli.modelArgs",
+      "cli.fileArgs",
+    ],
   },
   {
     id: "docker",
@@ -62,7 +71,14 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
     id: "chat",
     label: "Chat",
     icon: "💬",
-    fields: ["chat.enabled", "chat.provider", "chat.telegram", "chat.slack", "chat.discord", "chat.responders"],
+    fields: [
+      "chat.enabled",
+      "chat.provider",
+      "chat.telegram",
+      "chat.slack",
+      "chat.discord",
+      "chat.responders",
+    ],
   },
   {
     id: "notifications",

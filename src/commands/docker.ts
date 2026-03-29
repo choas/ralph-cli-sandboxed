@@ -1,5 +1,5 @@
 import { existsSync, writeFileSync, readFileSync, mkdirSync, chmodSync, openSync } from "fs";
-import { join, basename } from "path";
+import { join, basename, normalize } from "path";
 import { spawn, ChildProcess } from "child_process";
 import { createHash } from "crypto";
 import {
@@ -8,7 +8,6 @@ import {
   RalphConfig,
   McpServerConfig,
   SkillConfig,
-  AsciinemaConfig,
 } from "../utils/config.js";
 import { promptConfirm } from "../utils/prompt.js";
 import { getLanguagesJson, getCliProvidersJson } from "../templates/prompts.js";
@@ -416,6 +415,26 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig["do
     baseVolumes.push(`      - ${dockerConfig.worktreesPath}:/worktrees`);
   }
 
+  // Mount env file if configured (read-only)
+  // Validate envFile to prevent path traversal outside the project root
+  let sanitizedEnvFile: string | undefined;
+  if (dockerConfig?.envFile) {
+    const normalized = normalize(dockerConfig.envFile);
+    if (
+      normalized.startsWith("/") ||
+      normalized.startsWith("..") ||
+      normalized.includes("/../") ||
+      normalized.includes("\\")
+    ) {
+      throw new Error(
+        `Invalid envFile path "${dockerConfig.envFile}": must be a relative path within the project root (no "..", absolute paths, or backslashes).`,
+      );
+    }
+    sanitizedEnvFile = normalized;
+    baseVolumes.push("      # Mount env file into container");
+    baseVolumes.push(`      - ../../${sanitizedEnvFile}:/workspace/${sanitizedEnvFile}:ro`);
+  }
+
   if (dockerConfig?.volumes && dockerConfig.volumes.length > 0) {
     const customVolumeLines = dockerConfig.volumes.map((vol) => `      - ${vol}`);
     baseVolumes.push(...customVolumeLines);
@@ -491,7 +510,7 @@ services:
       dockerfile: Dockerfile
 ${portsSection}    volumes:
 ${volumesSection}
-${environmentSection}    working_dir: /workspace
+${environmentSection}${sanitizedEnvFile ? `    env_file:\n      - ../../${sanitizedEnvFile}\n` : ""}    working_dir: /workspace
     stdin_open: true
     tty: true
     cap_add:
@@ -580,7 +599,7 @@ claude \\
   --output-format stream-json \\
   --verbose \\
   --print \\
-  "\$@" 2>&1 \\
+  "$@" 2>&1 \\
 | grep --line-buffered '^{' \\
 | eval $TEE_CMD \\
 | jq --unbuffered -rj "$JQ_FILTER"
@@ -744,7 +763,7 @@ function generateClaudeSettings(language?: string): string {
       hooks: [
         {
           type: "command",
-          command: "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-dangerous-commands.sh",
+          command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/block-dangerous-commands.sh',
         },
       ],
     },
@@ -757,7 +776,7 @@ function generateClaudeSettings(language?: string): string {
       hooks: [
         {
           type: "command",
-          command: "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-npm-commands.sh",
+          command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/block-npm-commands.sh',
         },
       ],
     });

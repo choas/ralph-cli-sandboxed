@@ -204,10 +204,15 @@ function truncateJsonString(str: string, maxLen: number): string {
 /**
  * Simple syntax highlighting for JSON preview.
  */
-function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React.ReactElement[] {
+function highlightJson(
+  json: string,
+  maxLines: number,
+  maxLineWidth = 60,
+  scrollOffset = 0,
+): React.ReactElement[] {
   const lines = json.split("\n");
-  const displayLines = lines.slice(0, maxLines);
-  const hasMore = lines.length > maxLines;
+  const displayLines = lines.slice(scrollOffset, scrollOffset + maxLines);
+  const hasMore = lines.length > scrollOffset + maxLines;
 
   const elements: React.ReactElement[] = [];
 
@@ -216,7 +221,7 @@ function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React
 
   for (let i = 0; i < displayLines.length; i++) {
     const line = displayLines[i];
-    const lineNum = String(i + 1).padStart(3, " ");
+    const lineNum = String(scrollOffset + i + 1).padStart(3, " ");
 
     // Simple tokenization for highlighting
     const tokens: React.ReactElement[] = [];
@@ -314,7 +319,7 @@ function highlightJson(json: string, maxLines: number, maxLineWidth = 60): React
   if (hasMore) {
     elements.push(
       <Box key="more">
-        <Text dimColor> ... ({lines.length - maxLines} more lines)</Text>
+        <Text dimColor> ... ({lines.length - scrollOffset - maxLines} more lines)</Text>
       </Box>,
     );
   }
@@ -343,8 +348,8 @@ export function JsonSnippetEditor({
   const [editText, setEditText] = useState(initialJson);
   const [parseError, setParseError] = useState<JsonParseError | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [scrollOffset, setScrollOffset] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   // Validate JSON as user types
   useEffect(() => {
@@ -543,7 +548,7 @@ export function JsonSnippetEditor({
   // Render view mode with syntax-highlighted preview
   // Account for border (2) and padding (2) when calculating preview width
   const previewWidth = Math.max(40, maxWidth - 4);
-  const previewLines = highlightJson(editText, previewMaxLines, previewWidth);
+  const previewLines = highlightJson(editText, previewMaxLines, previewWidth, scrollOffset);
 
   return (
     <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>

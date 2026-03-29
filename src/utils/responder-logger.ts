@@ -139,22 +139,20 @@ export function logResponderCallToConsole(entry: ResponderLogEntry): void {
 /**
  * Create a log entry and optionally log to console.
  */
-export function createResponderLog(
-  options: {
-    responderName?: string;
-    responderType?: string;
-    trigger?: string;
-    gitCommand?: string;
-    gitDiffLength?: number;
-    filesRead?: string[];
-    filesNotFound?: string[];
-    filesTotalLength?: number;
-    threadContextLength?: number;
-    message: string;
-    systemPrompt?: string;
-    debug?: boolean;
-  },
-): void {
+export function createResponderLog(options: {
+  responderName?: string;
+  responderType?: string;
+  trigger?: string;
+  gitCommand?: string;
+  gitDiffLength?: number;
+  filesRead?: string[];
+  filesNotFound?: string[];
+  filesTotalLength?: number;
+  threadContextLength?: number;
+  message: string;
+  systemPrompt?: string;
+  debug?: boolean;
+}): void {
   const entry: ResponderLogEntry = {
     timestamp: new Date().toISOString(),
     responderName: options.responderName,

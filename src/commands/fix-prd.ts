@@ -10,7 +10,6 @@ import {
   readPrdFile,
   writePrdAuto,
 } from "../utils/prd-validator.js";
-import YAML from "yaml";
 import { robustYamlParse } from "../utils/prd-validator.js";
 
 /**
@@ -157,13 +156,16 @@ export async function fixPrd(args: string[] = []): Promise<void> {
   const prdFiles = getPrdFiles();
 
   if (prdFiles.none) {
-    console.error("Error: No PRD file found (.ralph/prd.yaml or .ralph/prd.json). Run 'ralph init' first.");
+    console.error(
+      "Error: No PRD file found (.ralph/prd.yaml or .ralph/prd.json). Run 'ralph init' first.",
+    );
     process.exit(1);
   }
 
   // Use the primary PRD path (YAML preferred over JSON)
   const prdPath = paths.prd;
-  const isYamlFile = extname(prdPath).toLowerCase() === ".yaml" || extname(prdPath).toLowerCase() === ".yml";
+  const isYamlFile =
+    extname(prdPath).toLowerCase() === ".yaml" || extname(prdPath).toLowerCase() === ".yml";
   const fileFormatName = isYamlFile ? "YAML" : "JSON";
 
   console.log(`Checking PRD structure (${fileFormatName})...\n`);
