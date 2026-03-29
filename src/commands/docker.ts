@@ -716,9 +716,10 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
-# Check if command contains npm/npx/yarn/pnpm invocations (bare or with subcommands)
-# Match: npm, npm install, npx ..., yarn add, pnpm install, etc.
-if echo "$COMMAND" | grep -qE '(^|[[:space:]])(npm|npx|yarn|pnpm)([[:space:]]|$)'; then
+# Match package-manager invocations at shell-command boundaries.
+# Examples matched: npm test, cd app && pnpm install
+# Examples ignored: grep "npm test" README.md
+if echo "$COMMAND" | grep -qE '(^|[;&|][&|]?[[:space:]]*)(npm|npx|yarn|pnpm)([[:space:]]|$)'; then
   jq -n --arg reason "Blocked: This is a Deno project. Use 'deno' commands instead of npm/npx/yarn/pnpm. Examples: 'deno task' instead of 'npm run', 'deno test' instead of 'npm test', 'deno add' or import maps instead of 'npm install'." '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
