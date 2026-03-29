@@ -27,7 +27,7 @@ interface ExtractedItem {
   passes: boolean;
 }
 
-const VALID_CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
+export const VALID_CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"] as const;
 
 /**
  * Validates that a PRD structure is correct.
@@ -134,10 +134,7 @@ export function extractPassingItems(corrupted: unknown): ExtractedItem[] {
   if (typeof corrupted === "object") {
     const obj = corrupted as Record<string, unknown>;
 
-    // Common wrapper keys LLMs might use
-    const wrapperKeys = ["features", "items", "entries", "prd", "tasks", "requirements"];
-
-    for (const key of wrapperKeys) {
+    for (const key of PRD_WRAPPER_KEYS) {
       if (Array.isArray(obj[key])) {
         for (const item of obj[key]) {
           const extracted = extractFromItem(item);
@@ -308,9 +305,7 @@ export function attemptRecovery(corrupted: unknown): PrdEntry[] | null {
   // Strategy 1: Unwrap from common wrapper objects
   if (typeof corrupted === "object" && corrupted !== null && !Array.isArray(corrupted)) {
     const obj = corrupted as Record<string, unknown>;
-    const wrapperKeys = ["features", "items", "entries", "prd", "tasks", "requirements"];
-
-    for (const key of wrapperKeys) {
+    for (const key of PRD_WRAPPER_KEYS) {
       if (Array.isArray(obj[key])) {
         const result = attemptArrayRecovery(obj[key]);
         if (result) return result;
