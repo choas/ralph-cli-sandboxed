@@ -132,10 +132,7 @@ function parsePrdFile(path: string): PrdEntry[] {
     }
     const obj = entry as Record<string, unknown>;
 
-    if (
-      typeof obj.category !== "string" ||
-      !CATEGORIES.includes(obj.category as Category)
-    ) {
+    if (typeof obj.category !== "string" || !CATEGORIES.includes(obj.category as Category)) {
       throw new Error(
         `${path}[${index}]: missing or invalid "category" (expected one of: ${CATEGORIES.join(", ")})`,
       );
@@ -436,5 +433,13 @@ async function main() {
     process.exit(1);
   }
 }
+
+process.on("uncaughtException", (error) => {
+  if (isConnectionError(error)) {
+    process.exit(0);
+  }
+  console.error("Uncaught exception:", error);
+  process.exit(1);
+});
 
 main();
