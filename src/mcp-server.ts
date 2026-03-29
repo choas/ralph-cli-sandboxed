@@ -176,11 +176,16 @@ function loadPrd(): PrdEntry[] {
 
   if (prdFiles.none) {
     const ralphDir = getRalphDir();
-    if (!existsSync(ralphDir)) {
-      mkdirSync(ralphDir, { recursive: true });
-    }
     const prdPath = join(ralphDir, "prd.yaml");
-    writeFileSync(prdPath, DEFAULT_PRD_YAML);
+    try {
+      if (!existsSync(ralphDir)) {
+        mkdirSync(ralphDir, { recursive: true });
+      }
+      writeFileSync(prdPath, DEFAULT_PRD_YAML);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to save PRD file at ${prdPath}: ${msg}`);
+    }
     return parsePrdFile(prdPath);
   }
 
@@ -447,6 +452,14 @@ process.on("uncaughtException", (error) => {
     process.exit(0);
   }
   console.error("Uncaught exception:", error);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  if (isConnectionError(reason)) {
+    process.exit(0);
+  }
+  console.error("Unhandled rejection at:", promise, "reason:", reason);
   process.exit(1);
 });
 
