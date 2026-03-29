@@ -2,18 +2,19 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "fs";
 import { dirname, extname, join } from "path";
 import { fileURLToPath } from "url";
 import { z } from "zod";
 import YAML from "yaml";
 import { getRalphDir, getPrdFiles } from "./utils/config.js";
 import { DEFAULT_PRD_YAML } from "./templates/prompts.js";
+import { VALID_CATEGORIES } from "./utils/prd-validator.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"] as const;
+const CATEGORIES = VALID_CATEGORIES;
 
 type Category = (typeof CATEGORIES)[number];
 
@@ -82,7 +83,8 @@ function getPrdPath(): string {
  * Saves PRD entries to disk, auto-detecting format from file extension.
  */
 function savePrd(entries: PrdEntry[]): void {
-  const path = getPrdPath();
+  const prdFiles = getPrdFiles();
+  const path = prdFiles.primary ?? join(getRalphDir(), PRD_FILE_JSON);
   const ext = extname(path).toLowerCase();
 
   try {
@@ -90,6 +92,12 @@ function savePrd(entries: PrdEntry[]): void {
       writeFileSync(path, YAML.stringify(entries));
     } else {
       writeFileSync(path, JSON.stringify(entries, null, 2) + "\n");
+    }
+
+    // One-time migration: if a secondary PRD file exists, remove it now that
+    // the merged entries have been written to the primary file.
+    if (prdFiles.secondary && existsSync(prdFiles.secondary)) {
+      unlinkSync(prdFiles.secondary);
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
