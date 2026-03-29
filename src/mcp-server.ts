@@ -145,7 +145,7 @@ function parsePrdFile(path: string): PrdEntry[] {
         `${path}[${index}]: missing or invalid "category" (expected one of: ${CATEGORIES.join(", ")})`,
       );
     }
-    if (typeof obj.description !== "string") {
+    if (typeof obj.description !== "string" || obj.description.trim().length === 0) {
       throw new Error(`${path}[${index}]: missing or invalid "description" (expected string)`);
     }
     if (!Array.isArray(obj.steps) || !obj.steps.every((s: unknown) => typeof s === "string")) {
@@ -338,13 +338,15 @@ server.tool(
         if (entry.passes) categories[entry.category].passing++;
       });
 
-      const remaining = prd
-        .map((entry, i) => ({
-          index: i + 1,
-          category: entry.category,
-          description: entry.description,
-        }))
-        .filter((_, i) => !prd[i].passes);
+      const remaining = prd.reduce<{ index: number; category: string; description: string }[]>(
+        (acc, entry, i) => {
+          if (!entry.passes) {
+            acc.push({ index: i + 1, category: entry.category, description: entry.description });
+          }
+          return acc;
+        },
+        [],
+      );
 
       return {
         content: [
