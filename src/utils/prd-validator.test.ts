@@ -1127,15 +1127,17 @@ describe("expandFileReferences", () => {
   });
 
   it("handles numeric input (non-string) via nullish coalescing", () => {
-    // `text ?? ""` returns 42 since it's not null/undefined
+    // Non-string input should still return a string per the function's contract
     const result = expandFileReferences(42 as unknown as string, "/base");
-    expect(result).toBe(42);
+    expect(typeof result).toBe("string");
+    expect(result).toBe(String(42));
   });
 
   it("handles boolean input (non-string) via nullish coalescing", () => {
-    // `text ?? ""` returns true since it's not null/undefined
+    // Non-string input should still return a string per the function's contract
     const result = expandFileReferences(true as unknown as string, "/base");
-    expect(result).toBe(true);
+    expect(typeof result).toBe("string");
+    expect(result).toBe(String(true));
   });
 
   it("handles absolute file paths", () => {

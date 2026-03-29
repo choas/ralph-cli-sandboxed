@@ -824,7 +824,7 @@ export function writePrdAuto(prdPath: string, entries: PrdEntry[]): void {
 export function expandFileReferences(text: string, baseDir: string): string {
   // Handle null/undefined text
   if (typeof text !== "string") {
-    return text ?? "";
+    return String(text ?? "");
   }
 
   // Match @{filepath} patterns
