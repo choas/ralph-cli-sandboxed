@@ -1,5 +1,5 @@
 import { existsSync, writeFileSync, readFileSync, mkdirSync, chmodSync, openSync } from "fs";
-import { join, basename } from "path";
+import { join, basename, normalize } from "path";
 import { spawn, ChildProcess } from "child_process";
 import { createHash } from "crypto";
 import {
@@ -416,9 +416,23 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig["do
   }
 
   // Mount env file if configured (read-only)
+  // Validate envFile to prevent path traversal outside the project root
+  let sanitizedEnvFile: string | undefined;
   if (dockerConfig?.envFile) {
+    const normalized = normalize(dockerConfig.envFile);
+    if (
+      normalized.startsWith("/") ||
+      normalized.startsWith("..") ||
+      normalized.includes("/../") ||
+      normalized.includes("\\")
+    ) {
+      throw new Error(
+        `Invalid envFile path "${dockerConfig.envFile}": must be a relative path within the project root (no "..", absolute paths, or backslashes).`,
+      );
+    }
+    sanitizedEnvFile = normalized;
     baseVolumes.push("      # Mount env file into container");
-    baseVolumes.push(`      - ../../${dockerConfig.envFile}:/workspace/${dockerConfig.envFile}:ro`);
+    baseVolumes.push(`      - ../../${sanitizedEnvFile}:/workspace/${sanitizedEnvFile}:ro`);
   }
 
   if (dockerConfig?.volumes && dockerConfig.volumes.length > 0) {
@@ -496,7 +510,7 @@ services:
       dockerfile: Dockerfile
 ${portsSection}    volumes:
 ${volumesSection}
-${environmentSection}${dockerConfig?.envFile ? `    env_file:\n      - ../../${dockerConfig.envFile}\n` : ""}    working_dir: /workspace
+${environmentSection}${sanitizedEnvFile ? `    env_file:\n      - ../../${sanitizedEnvFile}\n` : ""}    working_dir: /workspace
     stdin_open: true
     tty: true
     cap_add:
