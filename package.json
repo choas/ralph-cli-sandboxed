@@ -1,6 +1,6 @@
 {
   "name": "ralph-cli-sandboxed",
-  "version": "0.6.6",
+  "version": "0.7.0",
   "description": "AI-driven development automation CLI for Claude Code",
   "type": "module",
   "bin": {
@@ -60,7 +60,7 @@
     "devtools"
   ],
   "author": "Lars Gregori",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/choas/ralph-cli-sandboxed.git"

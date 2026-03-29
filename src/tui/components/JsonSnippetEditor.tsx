@@ -204,7 +204,12 @@ function truncateJsonString(str: string, maxLen: number): string {
 /**
  * Simple syntax highlighting for JSON preview.
  */
-function highlightJson(json: string, maxLines: number, maxLineWidth = 60, scrollOffset = 0): React.ReactElement[] {
+function highlightJson(
+  json: string,
+  maxLines: number,
+  maxLineWidth = 60,
+  scrollOffset = 0,
+): React.ReactElement[] {
   const lines = json.split("\n");
   const displayLines = lines.slice(scrollOffset, scrollOffset + maxLines);
   const hasMore = lines.length > scrollOffset + maxLines;
