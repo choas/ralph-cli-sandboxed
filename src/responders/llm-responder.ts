@@ -292,7 +292,8 @@ export function detectAndReadFiles(message: string): FileDetectionResult {
   );
 
   // Also match common config files without extensions
-  const configFilePattern = /(?:^|\s|["'`(])((?:\.?[\w/-]+)?(?:Dockerfile|Makefile|\.gitignore|\.env(?:\.local)?))(?=[\s"'`),]|$)/gi;
+  const configFilePattern =
+    /(?:^|\s|["'`(])((?:\.?[\w/-]+)?(?:Dockerfile|Makefile|\.gitignore|\.env(?:\.local)?))(?=[\s"'`),]|$)/gi;
 
   const seenFiles = new Set<string>();
   const matches: Array<{ path: string; lineNumber?: number }> = [];

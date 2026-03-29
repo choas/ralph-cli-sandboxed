@@ -612,7 +612,16 @@ function fixYamlMultilineStrings(yaml: string): string {
  * If parsed content is an object with one of these keys containing an array,
  * we unwrap it automatically.
  */
-const PRD_WRAPPER_KEYS = ["features", "items", "entries", "prd", "tasks", "requirements", "todo", "checklist"];
+const PRD_WRAPPER_KEYS = [
+  "features",
+  "items",
+  "entries",
+  "prd",
+  "tasks",
+  "requirements",
+  "todo",
+  "checklist",
+];
 
 /**
  * Unwraps PRD content if it's wrapped in a common object structure.

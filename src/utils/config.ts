@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, basename } from "path";
 import { getCliProviders, DEFAULT_PRD_YAML, DEFAULT_PROGRESS } from "../templates/prompts.js";
 
@@ -386,7 +386,9 @@ export function getProjectName(): string {
   } catch {
     // Config not available, fall back to directory name
   }
-  return basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-");
+  return basename(process.cwd())
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-");
 }
 
 export function loadPrompt(): string {
@@ -580,7 +582,7 @@ export function getLLMProviderBaseUrl(provider: LLMProviderConfig): string {
 export function getLLMProviders(config: RalphConfig): LLMProvidersConfig {
   return {
     ...DEFAULT_LLM_PROVIDERS,
-    ...(config.llmProviders ?? {}),
+    ...config.llmProviders,
   };
 }
 

@@ -38,7 +38,11 @@ function classifyError(err: unknown): { code: string; message: string } {
   if (message.includes("No PRD file found") || message.includes("ENOENT")) {
     return { code: ErrorCode.PRD_NOT_FOUND, message };
   }
-  if (message.includes("does not contain an array") || message.includes("JSON") || message.includes("YAML")) {
+  if (
+    message.includes("does not contain an array") ||
+    message.includes("JSON") ||
+    message.includes("YAML")
+  ) {
     return { code: ErrorCode.PRD_PARSE_ERROR, message };
   }
   if (message.includes("EACCES") || message.includes("EPERM")) {
@@ -60,7 +64,6 @@ function errorResponse(code: string, message: string) {
 }
 
 const PRD_FILE_JSON = "prd.json";
-const PRD_FILE_YAML = "prd.yaml";
 
 /**
  * Returns the path to the primary PRD file (MCP-safe version).
@@ -155,7 +158,10 @@ server.tool(
   "List PRD entries with optional category and status filters",
   {
     category: z.enum(CATEGORIES).optional().describe("Filter by category"),
-    status: z.enum(["all", "passing", "failing"]).optional().describe("Filter by status: all (default), passing, or failing"),
+    status: z
+      .enum(["all", "passing", "failing"])
+      .optional()
+      .describe("Filter by status: all (default), passing, or failing"),
   },
   async ({ category, status }) => {
     try {
@@ -195,7 +201,10 @@ server.tool(
   {
     category: z.enum(CATEGORIES).describe("Category for the new entry"),
     description: z.string().min(1).describe("Description of the requirement"),
-    steps: z.array(z.string().min(1)).min(1).describe("Verification steps to check if requirement is met"),
+    steps: z
+      .array(z.string().min(1))
+      .min(1)
+      .describe("Verification steps to check if requirement is met"),
     branch: z.string().optional().describe("Git branch associated with this entry"),
   },
   async ({ category, description, steps, branch }) => {
@@ -219,7 +228,10 @@ server.tool(
           {
             type: "text" as const,
             text: JSON.stringify(
-              { message: `Added entry #${prd.length}: "${description}"`, entry: { ...entry, index: prd.length } },
+              {
+                message: `Added entry #${prd.length}: "${description}"`,
+                entry: { ...entry, index: prd.length },
+              },
               null,
               2,
             ),
@@ -247,7 +259,11 @@ server.tool(
           content: [
             {
               type: "text" as const,
-              text: JSON.stringify({ passing: 0, total: 0, percentage: 0, categories: {}, remaining: [] }, null, 2),
+              text: JSON.stringify(
+                { passing: 0, total: 0, percentage: 0, categories: {}, remaining: [] },
+                null,
+                2,
+              ),
             },
           ],
         };
@@ -267,7 +283,11 @@ server.tool(
       });
 
       const remaining = prd
-        .map((entry, i) => ({ index: i + 1, category: entry.category, description: entry.description }))
+        .map((entry, i) => ({
+          index: i + 1,
+          category: entry.category,
+          description: entry.description,
+        }))
         .filter((_, i) => !prd[i].passes);
 
       return {
@@ -290,7 +310,10 @@ server.tool(
   "ralph_prd_toggle",
   "Toggle completion status (passes) for PRD entries by 1-based index",
   {
-    indices: z.array(z.number().int().min(1)).min(1).describe("1-based indices of PRD entries to toggle"),
+    indices: z
+      .array(z.number().int().min(1))
+      .min(1)
+      .describe("1-based indices of PRD entries to toggle"),
   },
   async ({ indices }) => {
     try {
@@ -325,7 +348,11 @@ server.tool(
         content: [
           {
             type: "text" as const,
-            text: JSON.stringify({ message: `Toggled ${toggled.length} entry/entries`, toggled }, null, 2),
+            text: JSON.stringify(
+              { message: `Toggled ${toggled.length} entry/entries`, toggled },
+              null,
+              2,
+            ),
           },
         ],
       };

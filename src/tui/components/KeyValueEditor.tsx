@@ -82,7 +82,11 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
   ],
   openai: [
     { key: "type", description: "Provider type (openai)", required: true },
-    { key: "model", description: "Model name (e.g., gpt-4o, gpt-4-turbo, gpt-3.5-turbo)", required: true },
+    {
+      key: "model",
+      description: "Model name (e.g., gpt-4o, gpt-4-turbo, gpt-3.5-turbo)",
+      required: true,
+    },
     { key: "apiKey", description: "API key (defaults to OPENAI_API_KEY env var)" },
     { key: "baseUrl", description: "Custom API base URL (for OpenAI-compatible services)" },
   ],

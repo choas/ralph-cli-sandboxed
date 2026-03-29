@@ -303,12 +303,7 @@ export function LLMProvidersEditor({
   // Handle keyboard input for text editing modes
   useInput(
     (_input, key) => {
-      if (
-        !isFocused ||
-        mode === "list" ||
-        mode === "select-type" ||
-        mode === "edit-provider"
-      )
+      if (!isFocused || mode === "list" || mode === "select-type" || mode === "edit-provider")
         return;
 
       if (key.escape) {
@@ -316,11 +311,7 @@ export function LLMProvidersEditor({
       }
     },
     {
-      isActive:
-        isFocused &&
-        mode !== "list" &&
-        mode !== "select-type" &&
-        mode !== "edit-provider",
+      isActive: isFocused && mode !== "list" && mode !== "select-type" && mode !== "edit-provider",
     },
   );
 
@@ -383,13 +374,23 @@ export function LLMProvidersEditor({
           const isHighlighted = index === typeIndex;
           return (
             <Box key={type}>
-              <Text color={isHighlighted ? "cyan" : undefined}>
-                {isHighlighted ? "▸ " : "  "}
-              </Text>
-              <Text bold={isHighlighted} color={isHighlighted ? "cyan" : undefined} inverse={isHighlighted}>
+              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
+              <Text
+                bold={isHighlighted}
+                color={isHighlighted ? "cyan" : undefined}
+                inverse={isHighlighted}
+              >
                 {type}
               </Text>
-              <Text dimColor> - {type === "anthropic" ? "Claude models" : type === "openai" ? "GPT models" : "Local models"}</Text>
+              <Text dimColor>
+                {" "}
+                -{" "}
+                {type === "anthropic"
+                  ? "Claude models"
+                  : type === "openai"
+                    ? "GPT models"
+                    : "Local models"}
+              </Text>
             </Box>
           );
         })}
@@ -473,7 +474,8 @@ export function LLMProvidersEditor({
 
   // Render API key input mode
   if (mode === "edit-apikey" && editingProvider) {
-    const envVar = editingProvider.config.type === "anthropic" ? "ANTHROPIC_API_KEY" : "OPENAI_API_KEY";
+    const envVar =
+      editingProvider.config.type === "anthropic" ? "ANTHROPIC_API_KEY" : "OPENAI_API_KEY";
     return (
       <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         <Box marginBottom={1}>
@@ -629,7 +631,11 @@ export function LLMProvidersEditor({
                 <Text color={isHighlighted ? "cyan" : undefined}>
                   {isHighlighted ? "▸ " : "  "}
                 </Text>
-                <Text bold={isHighlighted} color={isHighlighted ? "cyan" : "yellow"} inverse={isHighlighted}>
+                <Text
+                  bold={isHighlighted}
+                  color={isHighlighted ? "cyan" : "yellow"}
+                  inverse={isHighlighted}
+                >
                   {name}
                 </Text>
                 <Text dimColor>: </Text>

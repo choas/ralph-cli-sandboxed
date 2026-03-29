@@ -1,7 +1,12 @@
 import { execSync } from "child_process";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { extname, join } from "path";
-import { getRalphDir, getPrdFiles, loadConfig, loadBranchState, getProjectName } from "../utils/config.js";
+import {
+  getRalphDir,
+  getPrdFiles,
+  loadBranchState,
+  getProjectName,
+} from "../utils/config.js";
 import { readPrdFile, writePrdAuto, PrdEntry } from "../utils/prd-validator.js";
 import { promptConfirm } from "../utils/prompt.js";
 import YAML from "yaml";
@@ -119,7 +124,9 @@ function branchList(): void {
     const worktreeStatus = hasWorktree ? " \x1b[32m[worktree]\x1b[0m" : "";
     const countStr = `${passing}/${total}`;
 
-    console.log(`  ${statusIcon} \x1b[1m${branchName}\x1b[0m  ${countStr}${worktreeStatus}${activeIndicator}`);
+    console.log(
+      `  ${statusIcon} \x1b[1m${branchName}\x1b[0m  ${countStr}${worktreeStatus}${activeIndicator}`,
+    );
   }
 
   // Show no-branch group
@@ -167,10 +174,7 @@ async function branchMerge(args: string[]): Promise<void> {
   console.log();
 
   // Ask for confirmation
-  const confirmed = await promptConfirm(
-    `Merge "${branchName}" into "${baseBranch}"?`,
-    true,
-  );
+  const confirmed = await promptConfirm(`Merge "${branchName}" into "${baseBranch}"?`, true);
 
   if (!confirmed) {
     console.log("Merge cancelled.");
@@ -189,7 +193,16 @@ async function branchMerge(args: string[]): Promise<void> {
       const status = execSync("git -C /workspace status --porcelain", { encoding: "utf-8" });
       conflictingFiles = status
         .split("\n")
-        .filter((line) => line.startsWith("UU") || line.startsWith("AA") || line.startsWith("DD") || line.startsWith("AU") || line.startsWith("UA") || line.startsWith("DU") || line.startsWith("UD"))
+        .filter(
+          (line) =>
+            line.startsWith("UU") ||
+            line.startsWith("AA") ||
+            line.startsWith("DD") ||
+            line.startsWith("AU") ||
+            line.startsWith("UA") ||
+            line.startsWith("DU") ||
+            line.startsWith("UD"),
+        )
         .map((line) => line.substring(3).trim());
     } catch {
       // Ignore status errors
@@ -208,7 +221,9 @@ async function branchMerge(args: string[]): Promise<void> {
         execSync("git -C /workspace merge --abort", { stdio: "pipe" });
         console.error(`\n\x1b[36mMerge aborted.\x1b[0m`);
       } catch {
-        console.error("\n\x1b[33mWarning: Could not abort merge. You may need to run 'git merge --abort' manually.\x1b[0m");
+        console.error(
+          "\n\x1b[33mWarning: Could not abort merge. You may need to run 'git merge --abort' manually.\x1b[0m",
+        );
       }
 
       console.error(`\nTo resolve:`);
@@ -246,7 +261,9 @@ async function branchMerge(args: string[]): Promise<void> {
   }
 
   // Clean up the branch itself (optional - merged branches can be deleted)
-  console.log(`\n\x1b[32mDone!\x1b[0m Branch "${branchName}" has been merged into "${baseBranch}".`);
+  console.log(
+    `\n\x1b[32mDone!\x1b[0m Branch "${branchName}" has been merged into "${baseBranch}".`,
+  );
 }
 
 /**
@@ -362,9 +379,7 @@ async function branchDelete(args: string[]): Promise<void> {
 
   // Load PRD to check for tagged items
   const result = loadPrdEntries();
-  const taggedCount = result
-    ? result.entries.filter((e) => e.branch === branchName).length
-    : 0;
+  const taggedCount = result ? result.entries.filter((e) => e.branch === branchName).length : 0;
 
   console.log(`Branch: ${branchName}`);
   if (hasWorktree) {

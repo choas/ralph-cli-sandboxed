@@ -7,7 +7,15 @@ import { existsSync, readFileSync, writeFileSync, watch, type FSWatcher } from "
 import { join, basename, extname } from "path";
 import { execSync, spawn } from "child_process";
 import YAML from "yaml";
-import { loadConfig, getRalphDir, isRunningInContainer, RalphConfig, getPrdFiles, loadBranchState, getProjectName as getConfigProjectName } from "../utils/config.js";
+import {
+  loadConfig,
+  getRalphDir,
+  isRunningInContainer,
+  RalphConfig,
+  getPrdFiles,
+  loadBranchState,
+  getProjectName as getConfigProjectName,
+} from "../utils/config.js";
 import { createTelegramClient } from "../providers/telegram.js";
 import { createSlackClient } from "../providers/slack.js";
 import { createDiscordClient } from "../providers/discord.js";
@@ -328,15 +336,17 @@ async function handleBranchPr(
 ): Promise<void> {
   const branchName = args[0];
   if (!branchName) {
-    const usage = client.provider === "slack"
-      ? "/ralph branch pr <branch-name>"
-      : "/branch pr <branch-name>";
+    const usage =
+      client.provider === "slack" ? "/ralph branch pr <branch-name>" : "/branch pr <branch-name>";
     await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
     return;
   }
 
   if (!branchExists(branchName)) {
-    await client.sendMessage(chatId, `${state.projectName}: Branch "${branchName}" does not exist.`);
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: Branch "${branchName}" does not exist.`,
+    );
     return;
   }
 
@@ -392,15 +402,19 @@ async function handleBranchMerge(
 ): Promise<void> {
   const branchName = args[0];
   if (!branchName) {
-    const usage = client.provider === "slack"
-      ? "/ralph branch merge <branch-name>"
-      : "/branch merge <branch-name>";
+    const usage =
+      client.provider === "slack"
+        ? "/ralph branch merge <branch-name>"
+        : "/branch merge <branch-name>";
     await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
     return;
   }
 
   if (!branchExists(branchName)) {
-    await client.sendMessage(chatId, `${state.projectName}: Branch "${branchName}" does not exist.`);
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: Branch "${branchName}" does not exist.`,
+    );
     return;
   }
 
@@ -420,10 +434,16 @@ async function handleBranchMerge(
       const status = execSync("git status --porcelain", { encoding: "utf-8", cwd });
       conflictingFiles = status
         .split("\n")
-        .filter((line) =>
-          line.startsWith("UU") || line.startsWith("AA") || line.startsWith("DD") ||
-          line.startsWith("AU") || line.startsWith("UA") || line.startsWith("DU") ||
-          line.startsWith("UD"))
+        .filter(
+          (line) =>
+            line.startsWith("UU") ||
+            line.startsWith("AA") ||
+            line.startsWith("DD") ||
+            line.startsWith("AU") ||
+            line.startsWith("UA") ||
+            line.startsWith("DU") ||
+            line.startsWith("UD"),
+        )
         .map((line) => line.substring(3).trim());
     } catch {
       // Ignore status errors
@@ -482,15 +502,19 @@ async function handleBranchDelete(
 ): Promise<void> {
   const branchName = args[0];
   if (!branchName) {
-    const usage = client.provider === "slack"
-      ? "/ralph branch delete <branch-name>"
-      : "/branch delete <branch-name>";
+    const usage =
+      client.provider === "slack"
+        ? "/ralph branch delete <branch-name>"
+        : "/branch delete <branch-name>";
     await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
     return;
   }
 
   if (!branchExists(branchName)) {
-    await client.sendMessage(chatId, `${state.projectName}: Branch "${branchName}" does not exist.`);
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: Branch "${branchName}" does not exist.`,
+    );
     return;
   }
 
@@ -934,12 +958,13 @@ async function handleCommand(
           await handleBranchDelete(branchArgs, chatId, client, state);
           break;
         default: {
-          const usage = client.provider === "slack"
-            ? `/ralph branch list - List branches
+          const usage =
+            client.provider === "slack"
+              ? `/ralph branch list - List branches
 /ralph branch pr <name> - Add PRD item to create PR
 /ralph branch merge <name> - Merge branch into base
 /ralph branch delete <name> - Delete branch and worktree`
-            : `/branch list - List branches
+              : `/branch list - List branches
 /branch pr <name> - Add PRD item to create PR
 /branch merge <name> - Merge branch into base
 /branch delete <name> - Delete branch and worktree`;
@@ -1111,9 +1136,7 @@ async function processSandboxMessage(
 
     if (client.provider !== expectedProvider) {
       if (debug) {
-        console.log(
-          `[chat] Ignoring ${action} - current provider is ${client.provider}`,
-        );
+        console.log(`[chat] Ignoring ${action} - current provider is ${client.provider}`);
       }
       respondToMessage(messagesPath, message.id, {
         success: false,

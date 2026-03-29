@@ -437,10 +437,12 @@ export function RespondersEditor({
           const isHighlighted = index === typeIndex;
           return (
             <Box key={type}>
-              <Text color={isHighlighted ? "cyan" : undefined}>
-                {isHighlighted ? "▸ " : "  "}
-              </Text>
-              <Text bold={isHighlighted} color={isHighlighted ? "cyan" : undefined} inverse={isHighlighted}>
+              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
+              <Text
+                bold={isHighlighted}
+                color={isHighlighted ? "cyan" : undefined}
+                inverse={isHighlighted}
+              >
                 {type}
               </Text>
               <Text dimColor> - {TYPE_DESCRIPTIONS[type]}</Text>
@@ -732,7 +734,9 @@ export function RespondersEditor({
 
         <Box>
           <Text color="yellow">[O] Timeout: </Text>
-          <Text dimColor={!config.timeout}>{config.timeout || DEFAULT_TIMEOUTS[config.type]}ms</Text>
+          <Text dimColor={!config.timeout}>
+            {config.timeout || DEFAULT_TIMEOUTS[config.type]}ms
+          </Text>
         </Box>
 
         <Box>
@@ -742,7 +746,8 @@ export function RespondersEditor({
 
         <Box marginTop={1} flexDirection="column">
           <Text dimColor>
-            [T]ype [G]trigger{isLLM ? " [P]rovider [Y]system" : ""}{isCLI ? " [C]ommand" : ""} [O]timeout [L]ength
+            [T]ype [G]trigger{isLLM ? " [P]rovider [Y]system" : ""}
+            {isCLI ? " [C]ommand" : ""} [O]timeout [L]ength
           </Text>
           <Text dimColor>S: save | Esc: cancel</Text>
         </Box>
@@ -794,10 +799,12 @@ export function RespondersEditor({
 
           return (
             <Box key={name}>
-              <Text color={isHighlighted ? "cyan" : undefined}>
-                {isHighlighted ? "▸ " : "  "}
-              </Text>
-              <Text bold={isHighlighted} color={isHighlighted ? "cyan" : "yellow"} inverse={isHighlighted}>
+              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
+              <Text
+                bold={isHighlighted}
+                color={isHighlighted ? "cyan" : "yellow"}
+                inverse={isHighlighted}
+              >
                 {name.padEnd(12)}
               </Text>
               <Text color="magenta">{typeAbbrev.padEnd(8)}</Text>

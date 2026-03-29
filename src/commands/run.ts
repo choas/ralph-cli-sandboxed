@@ -1,5 +1,13 @@
 import { spawn, execSync } from "child_process";
-import { existsSync, readFileSync, writeFileSync, unlinkSync, appendFileSync, mkdirSync, copyFileSync } from "fs";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+  appendFileSync,
+  mkdirSync,
+  copyFileSync,
+} from "fs";
 import { extname, join } from "path";
 import {
   checkFilesExist,
@@ -105,7 +113,9 @@ function ensureWorktree(branch: string, worktreesBase: string): string {
   const worktreePath = join(worktreesBase, dirName);
 
   if (existsSync(worktreePath)) {
-    console.log(`\x1b[90m[ralph] Reusing worktree for branch "${branch}" at ${worktreePath}\x1b[0m`);
+    console.log(
+      `\x1b[90m[ralph] Reusing worktree for branch "${branch}" at ${worktreePath}\x1b[0m`,
+    );
     return worktreePath;
   }
 
@@ -665,7 +675,11 @@ function validateAndRecoverPrd(
     mergeResult.warnings.forEach((w) => console.log(`  ${w}`));
   }
 
-  return { recovered: true, itemsUpdated: mergeResult.itemsUpdated, newItemsPreserved: newItems.length };
+  return {
+    recovered: true,
+    itemsUpdated: mergeResult.itemsUpdated,
+    newItemsPreserved: newItems.length,
+  };
 }
 
 /**
@@ -922,7 +936,9 @@ export async function run(args: string[]): Promise<void> {
     if (targetDir !== workspaceCwd) {
       process.chdir(targetDir);
       if (branchLabel) {
-        console.log(`\x1b[90m[ralph] Working in worktree: ${targetDir} (branch: ${branchLabel})\x1b[0m`);
+        console.log(
+          `\x1b[90m[ralph] Working in worktree: ${targetDir} (branch: ${branchLabel})\x1b[0m`,
+        );
       }
     }
 
@@ -1123,7 +1139,9 @@ export async function run(args: string[]): Promise<void> {
           // Resumed branch has no remaining items — clear state and fall through
           clearBranchState();
         } else {
-          console.log(`\n\x1b[36m--- Branch group: ${targetBranch} (${branchItems.length} item(s)) ---\x1b[0m`);
+          console.log(
+            `\n\x1b[36m--- Branch group: ${targetBranch} (${branchItems.length} item(s)) ---\x1b[0m`,
+          );
 
           // Save active branch state to config for resume after interruption
           saveBranchState(baseBranch, targetBranch);
@@ -1133,7 +1151,9 @@ export async function run(args: string[]): Promise<void> {
           try {
             worktreePath = ensureWorktree(targetBranch, worktreesBase);
           } catch (err) {
-            console.error(`\x1b[31mError creating worktree for "${targetBranch}": ${err instanceof Error ? err.message : err}\x1b[0m`);
+            console.error(
+              `\x1b[31mError creating worktree for "${targetBranch}": ${err instanceof Error ? err.message : err}\x1b[0m`,
+            );
             clearBranchState();
             continue;
           }
@@ -1187,12 +1207,18 @@ export async function run(args: string[]): Promise<void> {
       }
 
       // Process no-branch items in /workspace (when target is no-branch, or branch was skipped)
-      if (targetBranch === "" || (!worktreesAvailable && targetBranch !== "") || (!hasCommits && targetBranch !== "")) {
+      if (
+        targetBranch === "" ||
+        (!worktreesAvailable && targetBranch !== "") ||
+        (!hasCommits && targetBranch !== "")
+      ) {
         const noBranchItems = branchGroups.get("") || [];
         if (noBranchItems.length > 0) {
           const hasBranches = [...branchGroups.keys()].some((key) => key !== "");
           if (hasBranches) {
-            console.log(`\n\x1b[36m--- No-branch items (${noBranchItems.length} item(s)) ---\x1b[0m`);
+            console.log(
+              `\n\x1b[36m--- No-branch items (${noBranchItems.length} item(s)) ---\x1b[0m`,
+            );
           }
 
           // Create filtered PRD for no-branch items only (or all items if no branches exist)
@@ -1205,12 +1231,7 @@ export async function run(args: string[]): Promise<void> {
             writeFileSync(filteredPrdPath, JSON.stringify(expandedNoBranch, null, 2));
           }
 
-          const result = await runIterationInDir(
-            paths,
-            filteredPrdPath,
-            validPrd,
-            workspaceCwd,
-          );
+          const result = await runIterationInDir(paths, filteredPrdPath, validPrd, workspaceCwd);
           filteredPrdPath = null;
 
           iterExitCode = result.exitCode;
