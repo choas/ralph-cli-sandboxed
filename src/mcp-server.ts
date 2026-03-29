@@ -114,7 +114,7 @@ function parsePrdFile(path: string): PrdEntry[] {
   const content = readFileSync(path, "utf-8");
   const ext = extname(path).toLowerCase();
 
-  let result: PrdEntry[] | null;
+  let result: unknown;
   if (ext === ".yaml" || ext === ".yml") {
     result = YAML.parse(content);
   } else {
@@ -125,7 +125,42 @@ function parsePrdFile(path: string): PrdEntry[] {
   if (!Array.isArray(result)) {
     throw new Error(`${path} does not contain an array`);
   }
-  return result;
+
+  return result.map((entry: unknown, index: number) => {
+    if (typeof entry !== "object" || entry === null) {
+      throw new Error(`${path}[${index}]: entry must be an object`);
+    }
+    const obj = entry as Record<string, unknown>;
+
+    if (
+      typeof obj.category !== "string" ||
+      !CATEGORIES.includes(obj.category as Category)
+    ) {
+      throw new Error(
+        `${path}[${index}]: missing or invalid "category" (expected one of: ${CATEGORIES.join(", ")})`,
+      );
+    }
+    if (typeof obj.description !== "string") {
+      throw new Error(`${path}[${index}]: missing or invalid "description" (expected string)`);
+    }
+    if (!Array.isArray(obj.steps) || !obj.steps.every((s: unknown) => typeof s === "string")) {
+      throw new Error(`${path}[${index}]: missing or invalid "steps" (expected string array)`);
+    }
+    if (typeof obj.passes !== "boolean") {
+      throw new Error(`${path}[${index}]: missing or invalid "passes" (expected boolean)`);
+    }
+    if (obj.branch !== undefined && typeof obj.branch !== "string") {
+      throw new Error(`${path}[${index}]: invalid "branch" (expected string)`);
+    }
+
+    return {
+      category: obj.category as Category,
+      description: obj.description,
+      steps: obj.steps as string[],
+      passes: obj.passes,
+      ...(obj.branch !== undefined && { branch: obj.branch as string }),
+    };
+  });
 }
 
 /**
@@ -389,15 +424,17 @@ function isConnectionError(error: unknown): boolean {
 }
 
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  try {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+  } catch (error) {
+    if (isConnectionError(error)) {
+      console.error("MCP connection error: transport closed or unavailable.");
+      process.exit(0);
+    }
+    console.error("Server error:", error);
+    process.exit(1);
+  }
 }
 
-main().catch((error) => {
-  if (isConnectionError(error)) {
-    console.error("MCP connection error: transport closed or unavailable.");
-    process.exit(0);
-  }
-  console.error("Server error:", error);
-  process.exit(1);
-});
+main();
