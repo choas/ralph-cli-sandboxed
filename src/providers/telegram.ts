@@ -6,7 +6,6 @@
 import https from "https";
 import {
   ChatClient,
-  ChatCommand,
   ChatCommandHandler,
   ChatMessage,
   ChatMessageHandler,
@@ -292,7 +291,7 @@ export class TelegramChatClient implements ChatClient {
                 ),
               );
             }
-          } catch (err) {
+          } catch {
             reject(new Error(`Failed to parse Telegram response: ${data}`));
           }
         });

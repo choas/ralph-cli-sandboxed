@@ -121,7 +121,7 @@ function highlightJson(jsonString: string): HighlightedLine[] {
       }
 
       // Match brackets
-      const bracketMatch = remaining.match(/^[\[\]{}]/);
+      const bracketMatch = remaining.match(/^[[\]{}]/);
       if (bracketMatch) {
         tokens.push({ type: "bracket", value: bracketMatch[0] });
         remaining = remaining.slice(1);

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, basename } from "path";
 import { getCliProviders, DEFAULT_PRD_YAML, DEFAULT_PROGRESS } from "../templates/prompts.js";
 
@@ -223,6 +223,7 @@ export interface RalphConfig {
     autoStart?: boolean; // Automatically restart container when Docker/Podman starts
     restartCount?: number; // Max restart attempts on failure (uses on-failure policy). 0 = no restart, >0 = max retries
     worktreesPath?: string; // Host-side path for git worktree storage, mounted at /worktrees in the container
+    envFile?: string; // Path to .env file (relative to project root) to mount and inject into container
   };
   claude?: {
     mcpServers?: Record<string, McpServerConfig>;
@@ -387,7 +388,9 @@ export function getProjectName(): string {
   } catch {
     // Config not available, fall back to directory name
   }
-  return basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-");
+  return basename(process.cwd())
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-");
 }
 
 export function loadPrompt(): string {

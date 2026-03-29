@@ -541,7 +541,7 @@ export function createTemplatePrd(backupPath?: string): PrdEntry[] {
  */
 function hasProblematicEmbeddedQuotes(value: string): boolean {
   // Look for "...special chars..." followed by more text
-  const regex = /"[^"]*[:{}\[\]][^"]*"/g;
+  const regex = /"[^"]*[:{}[\]][^"]*"/g;
   let match;
 
   while ((match = regex.exec(value)) !== null) {
@@ -580,7 +580,12 @@ function fixYamlEmbeddedQuotes(yaml: string): string {
       const value = match[2];
 
       // Skip if already quoted
-      if (value.startsWith('"') || value.startsWith("'") || value.startsWith("|") || value.startsWith(">")) {
+      if (
+        value.startsWith('"') ||
+        value.startsWith("'") ||
+        value.startsWith("|") ||
+        value.startsWith(">")
+      ) {
         result.push(line);
         continue;
       }
@@ -693,7 +698,16 @@ export function robustYamlParse(content: string): unknown {
  * If parsed content is an object with one of these keys containing an array,
  * we unwrap it automatically.
  */
-const PRD_WRAPPER_KEYS = ["features", "items", "entries", "prd", "tasks", "requirements", "todo", "checklist"];
+const PRD_WRAPPER_KEYS = [
+  "features",
+  "items",
+  "entries",
+  "prd",
+  "tasks",
+  "requirements",
+  "todo",
+  "checklist",
+];
 
 /**
  * Unwraps PRD content if it's wrapped in a common object structure.
@@ -810,7 +824,7 @@ export function writePrdAuto(prdPath: string, entries: PrdEntry[]): void {
 export function expandFileReferences(text: string, baseDir: string): string {
   // Handle null/undefined text
   if (typeof text !== "string") {
-    return text ?? "";
+    return String(text ?? "");
   }
 
   // Match @{filepath} patterns

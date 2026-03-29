@@ -3,13 +3,7 @@
  * Used by chat clients to respond to messages matched by the responder matcher.
  */
 
-import {
-  ResponderConfig,
-  getLLMProviders,
-  loadConfig,
-  RalphConfig,
-  LLMProviderConfig,
-} from "../utils/config.js";
+import { ResponderConfig, getLLMProviders, loadConfig, RalphConfig } from "../utils/config.js";
 import { createLLMClient, LLMClient, Message, ChatOptions } from "../utils/llm-client.js";
 import { createResponderLog } from "../utils/responder-logger.js";
 import { basename, resolve } from "path";
@@ -292,7 +286,8 @@ export function detectAndReadFiles(message: string): FileDetectionResult {
   );
 
   // Also match common config files without extensions
-  const configFilePattern = /(?:^|\s|["'`(])((?:\.?[\w/-]+)?(?:Dockerfile|Makefile|\.gitignore|\.env(?:\.local)?))(?=[\s"'`),]|$)/gi;
+  const configFilePattern =
+    /(?:^|\s|["'`(])((?:\.?[\w/-]+)?(?:Dockerfile|Makefile|\.gitignore|\.env(?:\.local)?))(?=[\s"'`),]|$)/gi;
 
   const seenFiles = new Set<string>();
   const matches: Array<{ path: string; lineNumber?: number }> = [];

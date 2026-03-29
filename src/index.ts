@@ -23,6 +23,7 @@ import { fixPrd } from "./commands/fix-prd.js";
 import { fixConfig } from "./commands/fix-config.js";
 import { daemon } from "./commands/daemon.js";
 import { notify } from "./commands/notify.js";
+import { ask } from "./commands/ask.js";
 import { chat } from "./commands/chat.js";
 import { listen } from "./commands/listen.js";
 import { config } from "./commands/config.js";
@@ -51,6 +52,7 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   docker,
   daemon,
   notify,
+  ask,
   chat,
   listen,
   config,

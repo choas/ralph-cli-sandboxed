@@ -1,11 +1,5 @@
 import { spawn } from "child_process";
-import {
-  isRunningInContainer,
-  DaemonEventType,
-  DaemonEventConfig,
-  DaemonConfig,
-  ChatConfig,
-} from "./config.js";
+import { isRunningInContainer, DaemonEventType, DaemonConfig, ChatConfig } from "./config.js";
 import {
   isDaemonAvailable,
   sendDaemonNotification,
@@ -300,8 +294,7 @@ async function sendChatNotifications(
   }
 
   // Check if Telegram is configured and enabled
-  const telegramEnabled =
-    chatConfig?.telegram?.botToken && chatConfig?.telegram?.enabled !== false;
+  const telegramEnabled = chatConfig?.telegram?.botToken && chatConfig?.telegram?.enabled !== false;
 
   if (telegramEnabled) {
     try {

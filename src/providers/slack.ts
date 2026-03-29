@@ -271,12 +271,7 @@ export class SlackChatClient implements ChatClient {
             `[slack] Continuing thread conversation with ${existingConversation.responderName}`,
           );
         }
-        return this.continueThreadConversation(
-          existingConversation,
-          threadTs,
-          message.text,
-          say,
-        );
+        return this.continueThreadConversation(existingConversation, threadTs, message.text, say);
       }
     }
 
@@ -356,9 +351,7 @@ export class SlackChatClient implements ChatClient {
     }));
 
     if (this.debug) {
-      console.log(
-        `[slack] Conversation history: ${conversationHistory.length} messages`,
-      );
+      console.log(`[slack] Conversation history: ${conversationHistory.length} messages`);
     }
 
     // Execute responder with conversation history

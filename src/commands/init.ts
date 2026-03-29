@@ -9,7 +9,6 @@ import {
   getCliProviders,
   getSkillsForLanguage,
   type LanguageConfig,
-  type SkillDefinition,
 } from "../templates/prompts.js";
 import {
   generateGenXcodeScript,

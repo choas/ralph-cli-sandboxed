@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import type { RalphConfig } from "../../utils/config.js";
-import { CONFIG_SECTIONS, type ConfigSection } from "./SectionNav.js";
+import { CONFIG_SECTIONS } from "./SectionNav.js";
 import type { ValidationError } from "../utils/validation.js";
 import { getFieldErrors, hasFieldError } from "../utils/validation.js";
 
