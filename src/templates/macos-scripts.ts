@@ -398,10 +398,10 @@ app_identifier "${bundleId}"
  *
  * @param projectName - Name of the Xcode project/app
  */
-export function generateFastlaneReadmeSection(_projectName: string = "App"): string {
-  return `## Fastlane Deployment
+export function generateFastlaneReadmeSection(projectName: string = "App"): string {
+  return `## Fastlane Deployment for ${projectName}
 
-This project includes [Fastlane](https://fastlane.tools/) configuration for automated builds and deployments.
+This project includes [Fastlane](https://fastlane.tools/) configuration for automated builds and deployments of ${projectName}.
 
 ### Setup
 
@@ -428,9 +428,9 @@ Run Fastlane commands from the \`scripts/\` directory:
 
 | Lane | Description |
 |------|-------------|
-| \`fastlane tests\` | Run all unit and UI tests |
-| \`fastlane beta\` | Build and upload to TestFlight |
-| \`fastlane release\` | Build and submit to App Store |
+| \`fastlane tests\` | Run all ${projectName} unit and UI tests |
+| \`fastlane beta\` | Build ${projectName} and upload to TestFlight |
+| \`fastlane release\` | Build ${projectName} and submit to App Store |
 
 ### Using with Ralph
 
@@ -448,8 +448,8 @@ ralph action fastlane_release
 
 ### Customization
 
-- **Fastfile** (\`scripts/fastlane/Fastfile\`): Add custom lanes for your workflow
-- **Appfile** (\`scripts/fastlane/Appfile\`): Configure app bundle ID and team settings
+- **Fastfile** (\`scripts/fastlane/Fastfile\`): Add custom lanes for your ${projectName} workflow
+- **Appfile** (\`scripts/fastlane/Appfile\`): Configure ${projectName} bundle ID and team settings
 
 For more information, see the [Fastlane documentation](https://docs.fastlane.tools/).
 `;
