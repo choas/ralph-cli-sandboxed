@@ -17,7 +17,6 @@ import {
   getCliConfig,
   CliConfig,
   requireContainer,
-  getPrdFiles,
   saveBranchState,
   loadBranchState,
   clearBranchState,
@@ -33,7 +32,7 @@ import {
   PrdEntry,
 } from "../utils/prd-validator.js";
 import { getStreamJsonParser, StreamJsonParser } from "../utils/stream-json.js";
-import { sendNotificationWithDaemonEvents, triggerDaemonEvents } from "../utils/notification.js";
+import { sendNotificationWithDaemonEvents } from "../utils/notification.js";
 
 /**
  * Stream JSON configuration for clean output display

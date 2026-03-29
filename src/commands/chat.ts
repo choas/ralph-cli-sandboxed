@@ -959,7 +959,6 @@ async function handleCommand(
         return;
       }
 
-      const prompt = args.join(" ");
       await client.sendMessage(
         chatId,
         `⏳ ${state.projectName}: Running Claude Code...\n(this may take a few minutes)`,

@@ -242,6 +242,7 @@ export function escapeHtml(text: string): string {
  */
 export function stripAnsiCodes(text: string): string {
   // Match ANSI escape sequences: ESC[...m (SGR), ESC[...K (EL), etc.
+  // eslint-disable-next-line no-control-regex
   return text.replace(/\x1B\[[0-9;]*[mKJHfsu]/g, "");
 }
 

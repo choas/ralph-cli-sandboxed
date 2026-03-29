@@ -10,7 +10,6 @@ import {
   readPrdFile,
   writePrdAuto,
 } from "../utils/prd-validator.js";
-import YAML from "yaml";
 import { robustYamlParse } from "../utils/prd-validator.js";
 
 /**

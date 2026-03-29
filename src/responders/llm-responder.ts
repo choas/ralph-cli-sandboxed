@@ -3,13 +3,7 @@
  * Used by chat clients to respond to messages matched by the responder matcher.
  */
 
-import {
-  ResponderConfig,
-  getLLMProviders,
-  loadConfig,
-  RalphConfig,
-  LLMProviderConfig,
-} from "../utils/config.js";
+import { ResponderConfig, getLLMProviders, loadConfig, RalphConfig } from "../utils/config.js";
 import { createLLMClient, LLMClient, Message, ChatOptions } from "../utils/llm-client.js";
 import { createResponderLog } from "../utils/responder-logger.js";
 import { basename, resolve } from "path";

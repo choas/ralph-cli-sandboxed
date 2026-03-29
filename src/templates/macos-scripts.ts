@@ -155,8 +155,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.$PROJECT_NAME
-        INFOPLIST_FILE: Sources/\$PROJECT_NAME/Supporting Files/Info.plist
-        CODE_SIGN_ENTITLEMENTS: Sources/\$PROJECT_NAME/Supporting Files/\$PROJECT_NAME.entitlements
+        INFOPLIST_FILE: Sources/$PROJECT_NAME/Supporting Files/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/$PROJECT_NAME/Supporting Files/$PROJECT_NAME.entitlements
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         SWIFT_VERSION: "5.9"
         DEVELOPMENT_TEAM: ""
@@ -192,7 +192,7 @@ fi
 
 echo ""
 echo "Next steps:"
-echo "  1. Open \$PROJECT_NAME.xcodeproj in Xcode"
+echo "  1. Open $PROJECT_NAME.xcodeproj in Xcode"
 echo "  2. Configure your Team ID for code signing"
 echo "  3. Build and run (Cmd+R)"
 echo ""

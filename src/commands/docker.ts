@@ -8,7 +8,6 @@ import {
   RalphConfig,
   McpServerConfig,
   SkillConfig,
-  AsciinemaConfig,
 } from "../utils/config.js";
 import { promptConfirm } from "../utils/prompt.js";
 import { getLanguagesJson, getCliProvidersJson } from "../templates/prompts.js";
@@ -586,7 +585,7 @@ claude \\
   --output-format stream-json \\
   --verbose \\
   --print \\
-  "\$@" 2>&1 \\
+  "$@" 2>&1 \\
 | grep --line-buffered '^{' \\
 | eval $TEE_CMD \\
 | jq --unbuffered -rj "$JQ_FILTER"
