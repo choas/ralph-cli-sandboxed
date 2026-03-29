@@ -5,6 +5,7 @@ import { getRalphDir, getPrdFiles } from "../utils/config.js";
 import { convert as prdConvert } from "./prd-convert.js";
 import { DEFAULT_PRD_YAML } from "../templates/prompts.js";
 import YAML from "yaml";
+import { robustYamlParse } from "../utils/prd-validator.js";
 
 interface PrdEntry {
   category: string;
@@ -42,7 +43,7 @@ function parsePrdFile(path: string): PrdEntry[] {
   try {
     let result: PrdEntry[] | null;
     if (ext === ".yaml" || ext === ".yml") {
-      result = YAML.parse(content);
+      result = robustYamlParse(content) as PrdEntry[] | null;
     } else {
       result = JSON.parse(content);
     }
@@ -263,13 +264,33 @@ export function prdStatus(headOnly: boolean = false): void {
     console.log(`    ${cat}: ${stats.pass}/${stats.total}`);
   });
 
+  // By branch (only if any entries have a branch)
+  const hasBranches = prd.some((e) => e.branch);
+  if (hasBranches) {
+    const byBranch: Record<string, { pass: number; total: number }> = {};
+    prd.forEach((entry) => {
+      const key = entry.branch || "(no branch)";
+      if (!byBranch[key]) {
+        byBranch[key] = { pass: 0, total: 0 };
+      }
+      byBranch[key].total++;
+      if (entry.passes) byBranch[key].pass++;
+    });
+
+    console.log("\n  By branch:");
+    Object.entries(byBranch).forEach(([br, stats]) => {
+      console.log(`    ${br}: ${stats.pass}/${stats.total}`);
+    });
+  }
+
   if (passing === total) {
     console.log("\n  \x1b[32m\u2713 All requirements complete!\x1b[0m");
   } else if (!headOnly) {
     const remaining = prd.filter((e) => !e.passes);
     console.log(`\n  Remaining (${remaining.length}):`);
     remaining.forEach((entry) => {
-      console.log(`    - [${entry.category}] ${entry.description}`);
+      const branchTag = entry.branch ? ` \x1b[36m(${entry.branch})\x1b[0m` : "";
+      console.log(`    - [${entry.category}] ${entry.description}${branchTag}`);
     });
   }
 }

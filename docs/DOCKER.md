@@ -18,8 +18,8 @@ ralph docker run
 | `ralph docker init` | Generate/regenerate Docker configuration files |
 | `ralph docker build` | Build the Docker image |
 | `ralph docker run` | Run ralph inside the container (auto-builds if needed) |
-| `ralph docker shell` | Open an interactive shell in the container |
-| `ralph docker status` | Show container and image status |
+| `ralph docker clean` | Remove Docker image and associated resources |
+| `ralph docker help` | Show help message |
 
 ## Generated Files
 
@@ -29,7 +29,8 @@ After running `ralph init` or `ralph docker init`, you'll find:
 .ralph/docker/
 ├── Dockerfile           # Container image definition
 ├── docker-compose.yml   # Container orchestration
-└── firewall.sh          # Network sandbox rules
+├── init-firewall.sh     # Network sandbox rules
+└── .dockerignore        # Build exclusions
 ```
 
 ## Features
@@ -79,6 +80,20 @@ Then regenerate: `ralph docker init`
   }
 }
 ```
+
+### Environment File
+
+Mount a `.env` file into the container and inject its variables as real environment variables. This means code can access them via `os.environ` (Python), `process.env` (Node.js), etc. — no dotenv library required. The file is also mounted read-only at `/workspace/.env` for tools that read it directly.
+
+```json
+{
+  "docker": {
+    "envFile": ".env"
+  }
+}
+```
+
+The path is relative to the project root. Make sure to add your `.env` file to `.gitignore` to avoid committing secrets.
 
 ### Git Configuration
 
@@ -206,7 +221,7 @@ sudo chown -R $(id -u):$(id -g) .ralph/
 
 The firewall script restricts outbound connections. If you need additional access:
 
-1. Edit `.ralph/docker/firewall.sh`
+1. Edit `.ralph/docker/init-firewall.sh`
 2. Add your required domains/IPs
 3. Rebuild: `ralph docker build`
 

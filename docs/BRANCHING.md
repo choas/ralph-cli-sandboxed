@@ -177,17 +177,17 @@ The branch state is cleaned up from config after the group completes.
 
 ### `ralph branch list`
 
-Shows all branches referenced in `prd.yaml` with status:
+Shows all branches referenced in the PRD with status:
 
 ```
 Branches:
 
-  * feat/auth     2/3 complete  [worktree: /worktrees/cool-prj_feat-auth]
-    feat/ui       0/1 complete  [no worktree]
-    (no branch)   1/2 complete
-
-  * = currently active
+  ○ feat/auth  2/3 [worktree] ◀ active
+  ○ feat/ui  0/1
+  ○ (no branch)  1/2
 ```
+
+Each branch shows a pass/total count, a `[worktree]` indicator if the worktree directory exists on disk, and `◀ active` if it's the branch currently being worked on.
 
 ### `ralph branch merge <name>`
 
@@ -199,33 +199,25 @@ ralph branch merge feat/auth
 
 1. Asks for confirmation
 2. Merges `feat/auth` into the base branch (in `/workspace`)
-3. Removes the worktree with `git worktree remove`
-4. Cleans up the worktree directory from the host
+3. Removes the worktree with `git worktree remove` (if it exists)
 
 If there are merge conflicts, ralph aborts the merge, lists the conflicting files, and suggests resolving manually or creating a PRD item for the AI to resolve.
 
 ### `ralph branch pr <name>`
 
-Creates a new PRD item that instructs the AI to open a pull request:
+Creates a GitHub pull request for the branch using the `gh` CLI:
 
 ```bash
 ralph branch pr feat/auth
 ```
 
-Appends to `prd.yaml`:
+1. Verifies `gh` is installed and authenticated
+2. Pushes the branch to the remote if it has no upstream tracking
+3. Generates a PR body with PRD item checklist and commit log
+4. Asks for confirmation
+5. Creates the PR via `gh pr create`
 
-```yaml
-- category: integration
-  description: Create a pull request from feat/auth into main
-  branch: feat/auth
-  steps:
-    - Push feat/auth to the remote repository
-    - Create a pull request from feat/auth into main using `gh pr create`
-    - Include a summary of changes in the PR description
-  passes: false
-```
-
-This lets the AI create the PR in the next `ralph run`, or the user can create it manually.
+Requires the [GitHub CLI](https://cli.github.com/) (`gh`) to be installed and authenticated.
 
 ### `ralph branch delete <name>`
 
@@ -245,17 +237,18 @@ ralph branch delete feat/old-feature
 When `ralph branch merge` detects conflicts:
 
 ```
-Merge conflict detected for feat/auth → main
+Merge conflict detected!
 
 Conflicting files:
-  - src/components/App.tsx
-  - src/utils/config.ts
+  src/components/App.tsx
+  src/utils/config.ts
 
-The merge has been aborted (no changes made).
+Merge aborted.
 
-Options:
-  1. Resolve manually: git merge feat/auth (in /workspace)
-  2. Create a PRD item: ralph branch pr feat/auth
+To resolve:
+  1. Resolve conflicts manually and merge again
+  2. Or add a PRD item to resolve the conflicts:
+     ralph prd add  # describe the conflict resolution needed
 ```
 
 Conflicts are a normal part of branching. They occur when both the branch and the base branch modify the same lines. Ralph never force-merges — it always aborts cleanly and lets the user decide.

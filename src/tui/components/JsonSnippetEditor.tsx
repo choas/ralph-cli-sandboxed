@@ -319,7 +319,7 @@ function highlightJson(
   if (hasMore) {
     elements.push(
       <Box key="more">
-        <Text dimColor> ... ({lines.length - maxLines} more lines)</Text>
+        <Text dimColor> ... ({lines.length - scrollOffset - maxLines} more lines)</Text>
       </Box>,
     );
   }
@@ -348,8 +348,8 @@ export function JsonSnippetEditor({
   const [editText, setEditText] = useState(initialJson);
   const [parseError, setParseError] = useState<JsonParseError | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [scrollOffset, setScrollOffset] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   // Validate JSON as user types
   useEffect(() => {

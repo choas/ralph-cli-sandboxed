@@ -39,7 +39,7 @@ tasks:    # <-- This wrapper causes issues
     description: ...
 ```
 
-> **Note:** Ralph will attempt to auto-unwrap common wrapper structures like `{tasks: [...]}`, `{items: [...]}`, or `{features: [...]}`, but it's best to use the correct format from the start.
+> **Note:** Ralph will attempt to auto-unwrap common wrapper structures like `{tasks: [...]}`, `{items: [...]}`, `{features: [...]}`, `{entries: [...]}`, `{prd: [...]}`, `{requirements: [...]}`, `{todo: [...]}`, or `{checklist: [...]}`, but it's best to use the correct format from the start.
 
 ### Required Fields
 
@@ -47,7 +47,7 @@ Each PRD item must have these fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `category` | string | One of: setup, feature, bugfix, refactor, docs, test, release, config, ui, integration |
+| `category` | string | One of: ui, feature, bugfix, setup, development, testing, docs |
 | `description` | string | What to implement (imperative verb + specific action) |
 | `steps` | string[] | Concrete actions to complete the task |
 | `passes` | boolean | **Must be `false` for new items** - Ralph sets to `true` when completed |
@@ -144,16 +144,13 @@ If a task takes 2 minutes without thinking, combine with related work.
 
 | Category | When to Use |
 |----------|-------------|
-| `setup` | Project initialization, tooling, dependencies |
+| `ui` | User interface changes, frontend components |
 | `feature` | New functionality for users |
 | `bugfix` | Fixing broken behavior |
-| `refactor` | Code improvements, no behavior change |
+| `setup` | Project initialization, tooling, dependencies |
+| `development` | Code improvements, refactoring, configuration |
+| `testing` | Test coverage (unit, integration, e2e) |
 | `docs` | Documentation (README, guides, comments) |
-| `test` | Test coverage (unit, integration, e2e) |
-| `release` | Version bumps, changelogs, packaging |
-| `config` | Configuration files, settings |
-| `ui` | User interface changes, frontend components |
-| `integration` | Connecting components, wiring, orchestration |
 
 ## Branch Field (Optional)
 
@@ -197,7 +194,7 @@ PRD items can include an optional `branch` field to group related work into git 
 ralph branch list              # Show all branches and their status
 ralph branch merge <name>      # Merge a completed branch into main
 ralph branch delete <name>     # Delete a branch and its worktree
-ralph branch pr <name>         # Create a PRD item to open a PR
+ralph branch pr <name>         # Create a GitHub PR from the branch
 ```
 
 ### When to Use Branches
@@ -406,13 +403,14 @@ Convert the following document into a Ralph prd.yaml file.
 
 Rules:
 1. Each sub-task or atomic feature = one PRD item
-2. Use categories: setup, feature, bugfix, refactor, docs, test, release, config, ui, integration
+2. Use categories: ui, feature, bugfix, setup, development, testing, docs
 3. Descriptions: imperative verb + specific what + context
 4. Steps: 2-4 concrete actions + verification step
 5. Reference source document sections instead of copying code
 6. Order items by logical execution sequence
 7. ALWAYS set "passes: false" for all items (this marks them as incomplete/to-do)
 8. CRITICAL: Output ONLY a top-level YAML array - do NOT wrap in an object like {project: ..., tasks: [...]}
+9. YAML quoting: If a step or description contains curly braces, brackets, or colons inside double quotes, wrap the ENTIRE value in single quotes, e.g. - 'Add "server: { port: 9999 }" to config'
 
 Output format (YAML array - no wrapper object):
 - category: ...
@@ -443,7 +441,7 @@ Convert the following document into a Ralph prd.json file.
 
 Rules:
 1. Each sub-task or atomic feature = one PRD item
-2. Use categories: setup, feature, bugfix, refactor, docs, test, release, config, ui, integration
+2. Use categories: ui, feature, bugfix, setup, development, testing, docs
 3. Descriptions: imperative verb + specific what + context
 4. Steps: 2-4 concrete actions + verification step
 5. Reference source document sections instead of copying code
@@ -488,6 +486,21 @@ After generating prd.yaml, verify:
 - [ ] References to source docs are accurate
 - [ ] No duplicate or overlapping items
 
+## Don't Forget the README
+
+Every project should include a PRD item for generating a `README.md` that describes the project, setup instructions, and how to run it. Add this near the end of your PRD so the AI can reference the completed codebase:
+
+```yaml
+- category: docs
+  description: Create README.md with project overview, setup instructions, and usage guide
+  steps:
+    - Write a README.md that describes what the project does and its key features
+    - Add setup/installation instructions (dependencies, environment variables, etc.)
+    - Document how to run the project (build, test, and start commands)
+    - Include any configuration options or examples
+  passes: false
+```
+
 ## Tips for Large Documents
 
 1. **Process in phases** - Convert one section at a time
@@ -502,6 +515,7 @@ After generating prd.yaml, verify:
 |---------|---------|-----|
 | Wrapping array in object | `{tasks: [...]}` not valid | Use top-level array, no wrapper |
 | Multi-line strings in YAML | Parsing errors | Keep step text on one line or quote it |
+| Special chars in values (`{ } : [ ]`) | YAML parsing errors | Wrap the value in single quotes: `'Add "server: { port: 9999 }" to config'` |
 | Copy-pasting code into steps | PRD file too large, hard to read | Reference source document |
 | Vague descriptions | AI doesn't know what to do | Be specific about what and where |
 | Missing verification | No way to confirm completion | Add test/build/check step |

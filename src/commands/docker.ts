@@ -1,5 +1,5 @@
 import { existsSync, writeFileSync, readFileSync, mkdirSync, chmodSync, openSync } from "fs";
-import { join, basename } from "path";
+import { join, basename, normalize } from "path";
 import { spawn, ChildProcess } from "child_process";
 import { createHash } from "crypto";
 import {
@@ -26,6 +26,7 @@ function computeConfigHash(config: RalphConfig): string {
     cliProvider: config.cliProvider,
     docker: config.docker,
     claude: config.claude,
+    cliModel: config.cli?.model,
   };
   const content = JSON.stringify(relevantConfig, null, 2);
   return createHash("sha256").update(content).digest("hex").substring(0, 16);
@@ -96,9 +97,17 @@ function generateDockerfile(
   javaVersion?: number,
   cliProvider?: string,
   dockerConfig?: RalphConfig["docker"],
+  cliModel?: string,
 ): string {
   const languageSnippet = getLanguageSnippet(language, javaVersion);
   const cliSnippet = getCliProviderSnippet(cliProvider);
+
+  // Ollama model pull: when provider is ollama and a model is configured,
+  // start the server briefly and pull the model during the Docker build
+  let ollamaModelPull = "";
+  if (cliProvider === "ollama" && cliModel) {
+    ollamaModelPull = `\n# Pull Ollama model during build\nRUN ollama serve & sleep 2 && ollama pull ${cliModel}\n`;
+  }
 
   // Build custom packages section
   let customPackages = "";
@@ -238,16 +247,17 @@ if [ -z "$RALPH_BANNER_SHOWN" ]; then
   echo "\\033[38;2;253;216;53m██╔══██╗██╔══██║██║     ██╔═══╝ ██╔══██║    ██║     ██║     ██║\\033[0m"
   echo "\\033[38;2;251;192;45m██║  ██║██║  ██║███████╗██║     ██║  ██║    ╚██████╗███████╗██║\\033[0m"
   echo "\\033[38;2;249;168;37m╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝     ╚═════╝╚══════╝╚═╝\\033[0m"
-  RALPH_VERSION=$(ralph --version 2>/dev/null | head -1 || echo "unknown")
-  echo "\\033[38;5;248mv$RALPH_VERSION\\033[0m"
+  RALPH_VERSION=$(ralph --version 2>/dev/null | awk '{print $NF}' || echo "unknown")
+  echo "\\033[38;5;248m$RALPH_VERSION\\033[0m"
   echo ""
 fi
 RALPH_BANNER
 
 ${cliSnippet}
-
+${ollamaModelPull}
 # Install ralph-cli-sandboxed from npm registry
 RUN npm install -g ralph-cli-sandboxed
+RUN ralph logo
 ${languageSnippet}
 # Setup sudo only for firewall script (no general sudo for security)
 RUN echo "node ALL=(ALL) NOPASSWD: /usr/local/bin/init-firewall.sh" >> /etc/sudoers.d/node-firewall
@@ -405,6 +415,26 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig["do
     baseVolumes.push(`      - ${dockerConfig.worktreesPath}:/worktrees`);
   }
 
+  // Mount env file if configured (read-only)
+  // Validate envFile to prevent path traversal outside the project root
+  let sanitizedEnvFile: string | undefined;
+  if (dockerConfig?.envFile) {
+    const normalized = normalize(dockerConfig.envFile);
+    if (
+      normalized.startsWith("/") ||
+      normalized.startsWith("..") ||
+      normalized.includes("/../") ||
+      normalized.includes("\\")
+    ) {
+      throw new Error(
+        `Invalid envFile path "${dockerConfig.envFile}": must be a relative path within the project root (no "..", absolute paths, or backslashes).`,
+      );
+    }
+    sanitizedEnvFile = normalized;
+    baseVolumes.push("      # Mount env file into container");
+    baseVolumes.push(`      - ../../${sanitizedEnvFile}:/workspace/${sanitizedEnvFile}:ro`);
+  }
+
   if (dockerConfig?.volumes && dockerConfig.volumes.length > 0) {
     const customVolumeLines = dockerConfig.volumes.map((vol) => `      - ${vol}`);
     baseVolumes.push(...customVolumeLines);
@@ -480,7 +510,7 @@ services:
       dockerfile: Dockerfile
 ${portsSection}    volumes:
 ${volumesSection}
-${environmentSection}    working_dir: /workspace
+${environmentSection}${sanitizedEnvFile ? `    env_file:\n      - ../../${sanitizedEnvFile}\n` : ""}    working_dir: /workspace
     stdin_open: true
     tty: true
     cap_add:
@@ -593,6 +623,173 @@ function generateSkillFile(skill: SkillConfig): string {
   return lines.join("\n");
 }
 
+// Generate dangerous_patterns.txt content
+// Each line is a grep-compatible pattern that will be matched against Bash commands.
+// Lines starting with # are comments. Empty lines are ignored.
+function generateDangerousPatterns(): string {
+  return `# Dangerous command patterns for Claude Code hooks
+# Each line is a grep -E pattern matched against Bash commands.
+# Lines starting with # are comments. Empty lines are ignored.
+# Add your own patterns below to extend the blocklist.
+
+# Destructive git operations
+git clean -fd
+git checkout \\.
+git reset --hard
+git push.*--force
+git push.*-f
+git branch -D
+
+# Destructive file operations
+rm -rf /
+rm -rf \\*
+rm -rf \\.
+mkfs\\.
+dd if=.*of=/dev/
+
+# Database destruction
+DROP TABLE
+DROP DATABASE
+TRUNCATE TABLE
+
+# System-level destructive commands
+:(){ :|:& };:
+chmod -R 777 /
+chown -R.*:/
+`;
+}
+
+// Generate block-dangerous-commands.sh hook script
+function generateBlockDangerousCommandsHook(): string {
+  return `#!/bin/bash
+# Claude Code PreToolUse hook: blocks dangerous Bash commands
+# Generated by ralph-cli
+#
+# This script reads dangerous patterns from dangerous_patterns.txt
+# and blocks any Bash command that matches a pattern.
+
+set -e
+
+# Read the command from hook JSON input on stdin
+INPUT=$(cat)
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+
+if [ -z "$COMMAND" ]; then
+  exit 0
+fi
+
+# Locate the dangerous_patterns.txt file next to this script
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PATTERNS_FILE="$SCRIPT_DIR/dangerous_patterns.txt"
+
+if [ ! -f "$PATTERNS_FILE" ]; then
+  exit 0
+fi
+
+# Build grep pattern from file (skip comments and empty lines)
+PATTERNS=$(grep -v '^#' "$PATTERNS_FILE" | grep -v '^$' || true)
+
+if [ -z "$PATTERNS" ]; then
+  exit 0
+fi
+
+# Check if command matches any dangerous pattern
+MATCHED_PATTERN=$(echo "$PATTERNS" | while IFS= read -r pattern; do
+  if echo "$COMMAND" | grep -qE "$pattern"; then
+    echo "$pattern"
+    break
+  fi
+done)
+
+if [ -n "$MATCHED_PATTERN" ]; then
+  # Output JSON to deny the command
+  jq -n --arg reason "Blocked by safety hook: command matches dangerous pattern ($MATCHED_PATTERN)" '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: $reason
+    }
+  }'
+else
+  exit 0
+fi
+`;
+}
+
+// Generate block-npm-commands.sh hook script for Deno projects
+function generateBlockNpmCommandsHook(): string {
+  return `#!/bin/bash
+# Claude Code PreToolUse hook: blocks npm/npx/yarn/pnpm commands in Deno projects
+# Generated by ralph-cli
+#
+# This project uses Deno. npm/npx/yarn/pnpm should not be used for
+# package management or script execution. Use deno commands instead.
+
+set -e
+
+# Read the command from hook JSON input on stdin
+INPUT=$(cat)
+COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+
+if [ -z "$COMMAND" ]; then
+  exit 0
+fi
+
+# Match package-manager invocations at shell-command boundaries.
+# Examples matched: npm test, cd app && pnpm install
+# Examples ignored: grep "npm test" README.md
+if echo "$COMMAND" | grep -qE '(^|[;&|][&|]?[[:space:]]*)(npm|npx|yarn|pnpm)([[:space:]]|$)'; then
+  jq -n --arg reason "Blocked: This is a Deno project. Use 'deno' commands instead of npm/npx/yarn/pnpm. Examples: 'deno task' instead of 'npm run', 'deno test' instead of 'npm test', 'deno add' or import maps instead of 'npm install'." '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: $reason
+    }
+  }'
+else
+  exit 0
+fi
+`;
+}
+
+// Generate .claude/settings.json with hooks configuration
+function generateClaudeSettings(language?: string): string {
+  const hooks: Array<{
+    matcher: string;
+    hooks: Array<{ type: string; command: string }>;
+  }> = [
+    {
+      matcher: "Bash",
+      hooks: [
+        {
+          type: "command",
+          command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/block-dangerous-commands.sh',
+        },
+      ],
+    },
+  ];
+
+  // Add Deno-specific hook to block npm commands
+  if (language === "deno") {
+    hooks.push({
+      matcher: "Bash",
+      hooks: [
+        {
+          type: "command",
+          command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/block-npm-commands.sh',
+        },
+      ],
+    });
+  }
+
+  const settings = {
+    hooks: {
+      PreToolUse: hooks,
+    },
+  };
+  return JSON.stringify(settings, null, 2) + "\n";
+}
+
 async function generateFiles(
   ralphDir: string,
   language: string,
@@ -602,6 +799,7 @@ async function generateFiles(
   cliProvider?: string,
   dockerConfig?: RalphConfig["docker"],
   claudeConfig?: RalphConfig["claude"],
+  cliModel?: string,
 ): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
 
@@ -611,13 +809,17 @@ async function generateFiles(
     console.log(`Created ${DOCKER_DIR}/`);
   }
 
+  // Merge custom firewall domains with language-specific domains
   const customDomains = dockerConfig?.firewall?.allowedDomains || [];
+  const languagesJson = getLanguagesJson();
+  const langFirewallDomains = languagesJson.languages[language]?.docker?.firewallDomains || [];
+  const allFirewallDomains = [...new Set([...customDomains, ...langFirewallDomains])];
   const files: { name: string; content: string }[] = [
     {
       name: "Dockerfile",
-      content: generateDockerfile(language, javaVersion, cliProvider, dockerConfig),
+      content: generateDockerfile(language, javaVersion, cliProvider, dockerConfig, cliModel),
     },
-    { name: "init-firewall.sh", content: generateFirewallScript(customDomains) },
+    { name: "init-firewall.sh", content: generateFirewallScript(allFirewallDomains) },
     { name: "docker-compose.yml", content: generateDockerCompose(imageName, dockerConfig) },
     { name: ".dockerignore", content: DOCKERIGNORE },
   ];
@@ -695,6 +897,85 @@ async function generateFiles(
     }
   }
 
+  // Generate Claude Hooks for blocking dangerous commands
+  const hooksDir = join(projectRoot, ".claude", "hooks");
+  if (!existsSync(hooksDir)) {
+    mkdirSync(hooksDir, { recursive: true });
+    console.log("Created .claude/hooks/");
+  }
+
+  // Generate dangerous_patterns.txt (extendable list of blocked command patterns)
+  const patternsPath = join(hooksDir, "dangerous_patterns.txt");
+  if (existsSync(patternsPath) && !force) {
+    const overwrite = await promptConfirm(
+      ".claude/hooks/dangerous_patterns.txt already exists. Overwrite?",
+    );
+    if (overwrite) {
+      writeFileSync(patternsPath, generateDangerousPatterns());
+      console.log("Created .claude/hooks/dangerous_patterns.txt");
+    } else {
+      console.log("Skipped .claude/hooks/dangerous_patterns.txt");
+    }
+  } else {
+    writeFileSync(patternsPath, generateDangerousPatterns());
+    console.log("Created .claude/hooks/dangerous_patterns.txt");
+  }
+
+  // Generate block-dangerous-commands.sh hook script
+  const hookScriptPath = join(hooksDir, "block-dangerous-commands.sh");
+  if (existsSync(hookScriptPath) && !force) {
+    const overwrite = await promptConfirm(
+      ".claude/hooks/block-dangerous-commands.sh already exists. Overwrite?",
+    );
+    if (overwrite) {
+      writeFileSync(hookScriptPath, generateBlockDangerousCommandsHook());
+      chmodSync(hookScriptPath, 0o755);
+      console.log("Created .claude/hooks/block-dangerous-commands.sh");
+    } else {
+      console.log("Skipped .claude/hooks/block-dangerous-commands.sh");
+    }
+  } else {
+    writeFileSync(hookScriptPath, generateBlockDangerousCommandsHook());
+    chmodSync(hookScriptPath, 0o755);
+    console.log("Created .claude/hooks/block-dangerous-commands.sh");
+  }
+
+  // Generate Deno-specific hook to block npm commands
+  if (language === "deno") {
+    const npmHookPath = join(hooksDir, "block-npm-commands.sh");
+    if (existsSync(npmHookPath) && !force) {
+      const overwrite = await promptConfirm(
+        ".claude/hooks/block-npm-commands.sh already exists. Overwrite?",
+      );
+      if (overwrite) {
+        writeFileSync(npmHookPath, generateBlockNpmCommandsHook());
+        chmodSync(npmHookPath, 0o755);
+        console.log("Created .claude/hooks/block-npm-commands.sh");
+      } else {
+        console.log("Skipped .claude/hooks/block-npm-commands.sh");
+      }
+    } else {
+      writeFileSync(npmHookPath, generateBlockNpmCommandsHook());
+      chmodSync(npmHookPath, 0o755);
+      console.log("Created .claude/hooks/block-npm-commands.sh");
+    }
+  }
+
+  // Generate .claude/settings.json with hooks configuration
+  const settingsPath = join(projectRoot, ".claude", "settings.json");
+  if (existsSync(settingsPath) && !force) {
+    const overwrite = await promptConfirm(".claude/settings.json already exists. Overwrite?");
+    if (overwrite) {
+      writeFileSync(settingsPath, generateClaudeSettings(language));
+      console.log("Created .claude/settings.json");
+    } else {
+      console.log("Skipped .claude/settings.json");
+    }
+  } else {
+    writeFileSync(settingsPath, generateClaudeSettings(language));
+    console.log("Created .claude/settings.json");
+  }
+
   // Save config hash for change detection
   const configForHash: RalphConfig = {
     language,
@@ -704,6 +985,7 @@ async function generateFiles(
     cliProvider,
     docker: dockerConfig,
     claude: claudeConfig,
+    cli: cliModel ? { command: "", model: cliModel } : undefined,
   };
   const hash = computeConfigHash(configForHash);
   saveConfigHash(dockerDir, hash);
@@ -738,6 +1020,7 @@ async function buildImage(ralphDir: string): Promise<void> {
         config.cliProvider,
         config.docker,
         config.claude,
+        config.cli?.model,
       );
       console.log("");
     }
@@ -913,6 +1196,7 @@ async function runContainer(
       cliProvider,
       docker: dockerConfig,
       claude: claudeConfig,
+      cli: fullConfig?.cli?.model ? { command: "", model: fullConfig.cli.model } : undefined,
     };
     if (hasConfigChanged(ralphDir, configForHash)) {
       const regenerate = await promptConfirm(
@@ -928,6 +1212,7 @@ async function runContainer(
           cliProvider,
           dockerConfig,
           claudeConfig,
+          fullConfig?.cli?.model,
         );
         console.log("");
       }
@@ -947,6 +1232,7 @@ async function runContainer(
         cliProvider,
         dockerConfig,
         claudeConfig,
+        fullConfig?.cli?.model,
       );
       console.log("");
     }
@@ -1283,6 +1569,7 @@ export async function dockerInit(silent: boolean = false): Promise<void> {
     config.cliProvider,
     config.docker,
     config.claude,
+    config.cli?.model,
   );
 
   if (!silent) {
@@ -1324,6 +1611,12 @@ FILES GENERATED:
   ├── init-firewall.sh      Sandbox firewall script
   ├── docker-compose.yml    Container orchestration
   └── .dockerignore         Build exclusions
+
+  .claude/
+  ├── settings.json         Hooks configuration
+  └── hooks/
+      ├── block-dangerous-commands.sh  PreToolUse hook script
+      └── dangerous_patterns.txt       Extendable blocklist of patterns
 
 AUTHENTICATION:
   Pro/Max users: Your ~/.claude credentials are mounted automatically.
@@ -1427,6 +1720,7 @@ INSTALLING PACKAGES (works with Docker & Podman):
         config.cliProvider,
         config.docker,
         config.claude,
+        config.cli?.model,
       );
 
       console.log(`

@@ -20,7 +20,9 @@ When running inside a container, ralph automatically passes the appropriate auto
 | AMP | `--dangerously-allow-all` | ✅ Supported |
 | Aider | `--yes-always` | ✅ Supported |
 | Goose | (none needed) | ✅ Supported |
-| OpenCode | `--yolo` | ❌ Not yet implemented |
+| OpenCode | (none) | ❌ Not yet implemented |
+| Ollama | (none needed) | ✅ Supported |
+| Custom | (none) | ⚙️ User-configured |
 
 For providers without autonomous mode support, you may need to manually approve actions during execution.
 
@@ -64,7 +66,7 @@ For Claude Code users with Pro/Max subscriptions, the `~/.claude` directory is m
 
 ```yaml
 volumes:
-  - ~/.claude:/home/node/.claude:ro
+  - ~/.claude:/home/node/.claude
 ```
 
 This allows the AI agent to use your existing OAuth credentials without exposing API keys.

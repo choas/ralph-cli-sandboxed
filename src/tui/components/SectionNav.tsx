@@ -23,6 +23,21 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
     fields: ["language", "checkCommand", "testCommand", "imageName", "technologies", "javaVersion"],
   },
   {
+    id: "cli",
+    label: "CLI",
+    icon: "⌨",
+    fields: [
+      "cliProvider",
+      "cli.command",
+      "cli.args",
+      "cli.model",
+      "cli.yoloArgs",
+      "cli.promptArgs",
+      "cli.modelArgs",
+      "cli.fileArgs",
+    ],
+  },
+  {
     id: "docker",
     label: "Docker",
     icon: "🐳",

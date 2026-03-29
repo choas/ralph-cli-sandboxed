@@ -20,6 +20,7 @@ COMMANDS:
   docker <sub>      Manage Docker sandbox environment
   daemon <sub>      Host daemon for sandbox-to-host communication
   notify [msg]      Send notification to host from sandbox
+  ask <preset> msg  Run a responder preset from the CLI
   action [name]     Execute host actions from config.json
   chat <sub>        Chat client integration (Telegram, etc.)
   slack <sub>       Slack app setup and management
@@ -92,7 +93,7 @@ BRANCH SUBCOMMANDS:
   branch list           List all branches and their status
   branch merge <name>   Merge a branch worktree into the base branch
   branch delete <name>  Delete a branch and remove its worktree
-  branch pr <name>      Create a PRD item to open a PR for a branch
+  branch pr <name>      Create a pull request for a branch using gh CLI
 
 PROGRESS SUBCOMMANDS:
   progress summarize    Add a PRD entry to summarize and compact progress.txt
@@ -101,6 +102,12 @@ NOTIFY OPTIONS:
   [message]              Message to send as notification
   --action, -a <name>    Execute specific daemon action (default: notify)
   --debug, -d            Show debug output
+
+ASK OPTIONS:
+  <preset>               Name of a built-in preset or config responder
+  <message...>           Message to send to the responder
+  --list, -l             List available presets and configured responders
+  --help, -h             Show ask help message
 
 ACTION OPTIONS:
   [name]                 Name of the action to execute
@@ -144,12 +151,15 @@ EXAMPLES:
   ralph chat start           # Start Telegram chat daemon
   ralph chat test 123456     # Test chat connection
   ralph slack setup          # Create new Slack app for this project
+  ralph ask --list             # List available responder presets
+  ralph ask qa "What does the config loader do?"  # Ask a question
+  ralph ask reviewer diff      # Review current git diff
   ralph action --list        # List available host actions
   ralph action build         # Execute 'build' action on host
   ralph branch list              # List all branches and their PRD status
   ralph branch merge feat/login  # Merge feat/login branch into base branch
   ralph branch delete feat/old   # Delete branch and its worktree
-  ralph branch pr feat/login     # Add PRD item to create PR for feat/login
+  ralph branch pr feat/login     # Create a GitHub PR for feat/login
   ralph progress summarize   # Add PRD entry to summarize progress.txt
 
 CONFIGURATION:

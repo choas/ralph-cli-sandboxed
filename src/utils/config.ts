@@ -8,6 +8,7 @@ export interface CliConfig {
   yoloArgs?: string[];
   promptArgs?: string[];
   modelArgs?: string[];
+  model?: string; // Default model name to use (e.g., "claude-sonnet-4-20250514"). Overridden by --model flag.
   fileArgs?: string[]; // Args for including files (e.g., ["--read"] for Aider). If not set, uses @file syntax in prompt.
 }
 
@@ -222,6 +223,7 @@ export interface RalphConfig {
     autoStart?: boolean; // Automatically restart container when Docker/Podman starts
     restartCount?: number; // Max restart attempts on failure (uses on-failure policy). 0 = no restart, >0 = max retries
     worktreesPath?: string; // Host-side path for git worktree storage, mounted at /worktrees in the container
+    envFile?: string; // Path to .env file (relative to project root) to mount and inject into container
   };
   claude?: {
     mcpServers?: Record<string, McpServerConfig>;

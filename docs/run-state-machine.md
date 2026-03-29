@@ -27,13 +27,21 @@ flowchart TD
     subgraph Analysis ["4. Result Analysis"]
         ExitCheck{Exit Code == 0?}
 
-        ExitCheck -- "No" --> FailurePath[Increment Failure Counter]
-        FailurePath --> CriticalCheck{Failures >= 3?}
+        ExitCheck -- "No" --> FailurePath[Track Failure]
+        FailurePath --> SameCode{Same Exit Code\nas Last Failure?}
+        SameCode -- "Yes" --> IncrementFailures[Increment Consecutive\nFailure Counter]
+        SameCode -- "No" --> ResetToOne[Reset Counter to 1]
+        IncrementFailures --> CriticalCheck{Consecutive\nFailures >= 3?}
+        ResetToOne --> CriticalCheck
         CriticalCheck -- "Yes" --> Abort([Abort: Too Many Errors])
-        CriticalCheck -- "No" --> SignalCheck
+        CriticalCheck -- "No" --> ProgressCheck
 
         ExitCheck -- "Yes" --> SuccessPath[Reset Failure Counter]
-        SuccessPath --> SignalCheck
+        SuccessPath --> ProgressCheck
+
+        ProgressCheck{All Mode:\nProgress Made?}
+        ProgressCheck -- "Yes / Not All Mode" --> SignalCheck
+        ProgressCheck -- "No progress\n3 iterations" --> StallAbort([Abort: No Progress])
 
         SignalCheck{COMPLETE Signal?}
         SignalCheck -- "Yes" --> CompleteModeCheck
@@ -73,5 +81,6 @@ flowchart TD
     style Analysis fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     style Completion fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style Abort fill:#ffebee,stroke:#c62828,color:#c62828
+    style StallAbort fill:#ffebee,stroke:#c62828,color:#c62828
     style End fill:#e8f5e9,stroke:#2e7d32,color:#2e7d32
 ```

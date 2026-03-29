@@ -240,10 +240,10 @@ LLM responders automatically detect file paths mentioned in messages and include
 The responder will automatically read the file, extract ~20 lines around line 50, and include it in the LLM context.
 
 **Limits:**
-- Max 50KB total file content per message
-- Max 30KB per individual file
+- Max 15KB total file content per message
+- Max 8KB per individual file
 - Files larger than 100KB are skipped
-- 50+ file extensions supported (ts, js, py, go, rs, java, etc.)
+- 42 file extensions supported (ts, js, py, go, rs, java, etc.)
 
 #### Git Diff Keywords
 

@@ -47,23 +47,61 @@ ralph-cli-sandboxed/
 ├── src/
 │   ├── index.ts              # CLI entry point
 │   ├── commands/             # Command implementations
+│   │   ├── action.ts         # ralph action
+│   │   ├── branch.ts         # ralph branch (list, merge, delete, pr)
+│   │   ├── chat.ts           # ralph chat
+│   │   ├── config.tsx        # ralph config (TUI launcher)
+│   │   ├── daemon.ts         # ralph daemon
+│   │   ├── docker.ts         # ralph docker
+│   │   ├── fix-config.ts     # ralph fix-config
+│   │   ├── fix-prd.ts        # ralph fix-prd
+│   │   ├── help.ts           # ralph help
 │   │   ├── init.ts           # ralph init
-│   │   ├── run.ts            # ralph run
+│   │   ├── listen.ts         # ralph listen
+│   │   ├── logo.ts           # ralph logo
+│   │   ├── notify.ts         # ralph notify
 │   │   ├── once.ts           # ralph once
 │   │   ├── prd.ts            # PRD management commands
-│   │   ├── docker.ts         # Docker commands
+│   │   ├── prd-convert.ts    # PRD YAML-to-JSON conversion
+│   │   ├── progress.ts       # ralph progress
 │   │   ├── prompt.ts         # ralph prompt
-│   │   ├── fix-prd.ts        # ralph fix-prd
-│   │   └── help.ts           # ralph help
+│   │   ├── run.ts            # ralph run
+│   │   └── slack.ts          # ralph slack
+│   ├── providers/            # Chat platform providers
+│   │   ├── discord.ts        # Discord bot provider
+│   │   ├── slack.ts          # Slack bot provider
+│   │   └── telegram.ts       # Telegram bot provider
+│   ├── responders/           # Chat responder implementations
+│   │   ├── claude-code-responder.ts
+│   │   ├── cli-responder.ts
+│   │   └── llm-responder.ts
+│   ├── tui/                  # Terminal UI (config editor)
+│   │   ├── ConfigEditor.tsx  # Main config editor component
+│   │   ├── components/       # UI components
+│   │   ├── hooks/            # React hooks
+│   │   └── utils/            # TUI utilities
 │   ├── utils/
+│   │   ├── chat-client.ts    # Chat client interface
 │   │   ├── config.ts         # Configuration loading
+│   │   ├── daemon-actions.ts # Daemon action handling
+│   │   ├── daemon-client.ts  # Daemon client interface
+│   │   ├── llm-client.ts     # LLM API client
+│   │   ├── message-queue.ts  # Message queue management
+│   │   ├── notification.ts   # Notification utilities
 │   │   ├── prd-validator.ts  # PRD validation and recovery
-│   │   └── prompt.ts         # Interactive prompts
+│   │   ├── prompt.ts         # Interactive prompts
+│   │   ├── responder-logger.ts # Responder logging
+│   │   ├── responder-presets.ts # Responder preset loading
+│   │   ├── responder.ts      # Base responder logic
+│   │   └── stream-json.ts    # JSON streaming utilities
 │   ├── templates/
+│   │   ├── macos-scripts.ts  # macOS/Swift script templates
 │   │   └── prompts.ts        # Prompt template generation
 │   └── config/
-│       ├── languages.json    # Language configurations
-│       └── cli-providers.json # CLI provider configurations
+│       ├── cli-providers.json    # CLI provider configurations
+│       ├── languages.json        # Language configurations
+│       ├── responder-presets.json # Chat responder presets
+│       └── skills.json           # Skill definitions
 ├── docs/                     # Documentation
 ├── dist/                     # Compiled output (generated)
 └── package.json
