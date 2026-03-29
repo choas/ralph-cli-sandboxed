@@ -36,7 +36,7 @@ export async function ask(args: string[]): Promise<void> {
   }
 
   // Resolve responder config: config responders first, then built-in presets
-  const { responderConfig, source } = resolveResponder(name);
+  const { responderConfig } = resolveResponder(name);
 
   if (!responderConfig) {
     console.error(`Error: Unknown responder "${name}".`);
@@ -46,10 +46,6 @@ export async function ask(args: string[]): Promise<void> {
 
   // Override maxLength for CLI (no truncation)
   const config: ResponderConfig = { ...responderConfig, maxLength: CLI_MAX_LENGTH };
-
-  if (source === "config") {
-    // Config responders may need ralph config for LLM providers
-  }
 
   // Execute based on type
   const result = await executeResponder(config, message);
