@@ -13,8 +13,10 @@ import { DEFAULT_PRD_YAML } from "./templates/prompts.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+type Category = (typeof CATEGORIES)[number];
+
 interface PrdEntry {
-  category: string;
+  category: Category;
   description: string;
   steps: string[];
   passes: boolean;
@@ -83,17 +85,26 @@ function savePrd(entries: PrdEntry[]): void {
   const path = getPrdPath();
   const ext = extname(path).toLowerCase();
 
-  if (ext === ".yaml" || ext === ".yml") {
-    writeFileSync(path, YAML.stringify(entries));
-  } else {
-    writeFileSync(path, JSON.stringify(entries, null, 2) + "\n");
+  try {
+    if (ext === ".yaml" || ext === ".yml") {
+      writeFileSync(path, YAML.stringify(entries));
+    } else {
+      writeFileSync(path, JSON.stringify(entries, null, 2) + "\n");
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to save PRD file at ${path}: ${msg}`);
   }
 }
 
 function getVersion(): string {
-  const packagePath = join(__dirname, "..", "package.json");
-  const packageJson = JSON.parse(readFileSync(packagePath, "utf-8"));
-  return packageJson.version;
+  try {
+    const packagePath = join(__dirname, "..", "package.json");
+    const packageJson = JSON.parse(readFileSync(packagePath, "utf-8"));
+    return packageJson.version;
+  } catch {
+    return "unknown";
+  }
 }
 
 /**
