@@ -27,7 +27,15 @@ interface ExtractedItem {
   passes: boolean;
 }
 
-export const VALID_CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"] as const;
+export const VALID_CATEGORIES = [
+  "ui",
+  "feature",
+  "bugfix",
+  "setup",
+  "development",
+  "testing",
+  "docs",
+] as const;
 
 /**
  * Validates that a PRD structure is correct.
@@ -58,7 +66,7 @@ export function validatePrd(content: unknown): ValidationResult {
     // Check required fields
     if (typeof entry.category !== "string") {
       errors.push(`${prefix} missing or invalid 'category' field`);
-    } else if (!VALID_CATEGORIES.includes(entry.category)) {
+    } else if (!(VALID_CATEGORIES as readonly string[]).includes(entry.category)) {
       errors.push(`${prefix} invalid category '${entry.category}'`);
     }
 
@@ -343,7 +351,7 @@ function attemptArrayRecovery(items: unknown[]): PrdEntry[] | null {
     for (const field of categoryFields) {
       if (typeof obj[field] === "string") {
         const value = obj[field] as string;
-        if (VALID_CATEGORIES.includes(value)) {
+        if ((VALID_CATEGORIES as readonly string[]).includes(value)) {
           entry.category = value;
           break;
         }
