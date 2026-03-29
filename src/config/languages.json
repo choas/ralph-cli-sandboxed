@@ -376,7 +376,8 @@
       "checkCommand": "deno check **/*.ts",
       "testCommand": "deno test",
       "docker": {
-        "install": "# Install Deno\nRUN curl -fsSL https://deno.land/install.sh | sh\nENV DENO_INSTALL=\"/root/.deno\"\nENV PATH=\"${DENO_INSTALL}/bin:${PATH}\""
+        "install": "# Install Deno (as node user so it installs to /home/node/.deno)\nRUN su - node -c 'curl -fsSL https://deno.land/install.sh | sh'\nENV DENO_INSTALL=\"/home/node/.deno\"\nENV PATH=\"${DENO_INSTALL}/bin:${PATH}\"",
+        "firewallDomains": ["deno.land", "jsr.io", "esm.sh"]
       },
       "technologies": [
         { "name": "Fresh", "description": "Next-gen web framework for Deno" },
