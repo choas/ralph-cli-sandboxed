@@ -5,7 +5,7 @@
  * ensuring each Ralph instance has its own dedicated Slack app.
  */
 
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, writeFileSync } from "fs";
 import { join } from "path";
 import { getRalphDir, loadConfig, RalphConfig } from "../utils/config.js";
 import { promptInput, promptConfirm } from "../utils/prompt.js";

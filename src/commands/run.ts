@@ -17,7 +17,6 @@ import {
   getCliConfig,
   CliConfig,
   requireContainer,
-  getPrdFiles,
   saveBranchState,
   loadBranchState,
   clearBranchState,
@@ -34,7 +33,7 @@ import {
   PrdEntry,
 } from "../utils/prd-validator.js";
 import { getStreamJsonParser, StreamJsonParser } from "../utils/stream-json.js";
-import { sendNotificationWithDaemonEvents, triggerDaemonEvents } from "../utils/notification.js";
+import { sendNotificationWithDaemonEvents } from "../utils/notification.js";
 
 /**
  * Stream JSON configuration for clean output display
@@ -1105,8 +1104,6 @@ export async function run(args: string[]): Promise<void> {
 
       let iterExitCode = 0;
       let iterOutput = "";
-      let iterSterr = "";
-      let iterSyncTotal = 0;
 
       // Get the base branch for branch state tracking
       let baseBranch = "main";
@@ -1181,8 +1178,6 @@ export async function run(args: string[]): Promise<void> {
 
           iterExitCode = result.exitCode;
           iterOutput = result.output;
-          iterSterr = result.stderr;
-          iterSyncTotal += result.syncResult.count;
         }
       } else if (targetBranch !== "" && !worktreesAvailable) {
         // Branch items found but worktrees not available — warn and process no-branch items instead
@@ -1236,8 +1231,6 @@ export async function run(args: string[]): Promise<void> {
 
           iterExitCode = result.exitCode;
           iterOutput = result.output;
-          iterSterr = result.stderr;
-          iterSyncTotal += result.syncResult.count;
         }
       }
 

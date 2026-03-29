@@ -49,8 +49,8 @@ PROJECT_NAME="\${1:-${projectName}}"
 SCRIPT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-echo "Generating Xcode project: \$PROJECT_NAME"
-echo "Project root: \$PROJECT_ROOT"
+echo "Generating Xcode project: $PROJECT_NAME"
+echo "Project root: $PROJECT_ROOT"
 echo ""
 
 cd "$PROJECT_ROOT"
@@ -63,7 +63,7 @@ if [ ! -f "Package.swift" ]; then
 fi
 
 # Create Supporting Files directory for Info.plist and entitlements
-SUPPORT_DIR="$PROJECT_ROOT/Sources/\$PROJECT_NAME/Supporting Files"
+SUPPORT_DIR="$PROJECT_ROOT/Sources/$PROJECT_NAME/Supporting Files"
 mkdir -p "$SUPPORT_DIR"
 
 # Generate Info.plist if it doesn't exist
@@ -106,7 +106,7 @@ PLIST_EOF
 fi
 
 # Generate entitlements file if it doesn't exist
-ENTITLEMENTS="$SUPPORT_DIR/\$PROJECT_NAME.entitlements"
+ENTITLEMENTS="$SUPPORT_DIR/$PROJECT_NAME.entitlements"
 if [ ! -f "$ENTITLEMENTS" ]; then
   echo "Creating entitlements file..."
   cat > "$ENTITLEMENTS" << 'ENTITLEMENTS_EOF'
@@ -136,7 +136,7 @@ if command -v xcodegen &> /dev/null; then
   if [ ! -f "$PROJECT_YML" ]; then
     echo "Creating project.yml for xcodegen..."
     cat > "$PROJECT_YML" << YAML_EOF
-name: \$PROJECT_NAME
+name: $PROJECT_NAME
 options:
   bundleIdPrefix: com.example
   deploymentTarget:
@@ -145,18 +145,18 @@ options:
   generateEmptyDirectories: true
 
 targets:
-  \$PROJECT_NAME:
+  $PROJECT_NAME:
     type: application
     platform: macOS
     sources:
-      - path: Sources/\$PROJECT_NAME
+      - path: Sources/$PROJECT_NAME
         excludes:
           - "**/*.entitlements"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.\$PROJECT_NAME
-        INFOPLIST_FILE: Sources/\$PROJECT_NAME/Supporting Files/Info.plist
-        CODE_SIGN_ENTITLEMENTS: Sources/\$PROJECT_NAME/Supporting Files/\$PROJECT_NAME.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.$PROJECT_NAME
+        INFOPLIST_FILE: Sources/$PROJECT_NAME/Supporting Files/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/$PROJECT_NAME/Supporting Files/$PROJECT_NAME.entitlements
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         SWIFT_VERSION: "5.9"
         DEVELOPMENT_TEAM: ""
@@ -192,7 +192,7 @@ fi
 
 echo ""
 echo "Next steps:"
-echo "  1. Open \$PROJECT_NAME.xcodeproj in Xcode"
+echo "  1. Open $PROJECT_NAME.xcodeproj in Xcode"
 echo "  2. Configure your Team ID for code signing"
 echo "  3. Build and run (Cmd+R)"
 echo ""
@@ -398,7 +398,7 @@ app_identifier "${bundleId}"
  *
  * @param projectName - Name of the Xcode project/app
  */
-export function generateFastlaneReadmeSection(projectName: string = "App"): string {
+export function generateFastlaneReadmeSection(_projectName: string = "App"): string {
   return `## Fastlane Deployment
 
 This project includes [Fastlane](https://fastlane.tools/) configuration for automated builds and deployments.

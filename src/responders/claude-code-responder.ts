@@ -193,6 +193,7 @@ export async function executeClaudeCodeResponder(
  */
 function formatClaudeCodeOutput(output: string): string {
   // Remove ANSI escape codes
+  // oxlint-disable-next-line no-control-regex
   let cleaned = output.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, "");
 
   // Remove carriage returns (used for progress overwriting)

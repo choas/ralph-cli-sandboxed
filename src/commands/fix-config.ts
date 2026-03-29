@@ -213,57 +213,6 @@ function extractSectionFromCorrupt(content: string, section: ConfigSection): unk
 }
 
 /**
- * Attempts to recover valid sections from a corrupt config.
- */
-function recoverSections(
-  corruptContent: string,
-  parsedPartial: Record<string, unknown> | null,
-): RecoveryResult {
-  const defaultConfig = getDefaultConfig();
-  const recoveredConfig: Record<string, unknown> = {};
-  const result: RecoveryResult = {
-    recovered: [],
-    reset: [],
-    errors: [],
-  };
-
-  for (const section of CONFIG_SECTIONS) {
-    let value: unknown = undefined;
-    let source = "default";
-
-    // First, try to get from parsed partial (if JSON was partially valid)
-    if (parsedPartial && section in parsedPartial) {
-      value = parsedPartial[section];
-      source = "parsed";
-    }
-
-    // If not found or invalid, try regex extraction for simple string fields
-    if (
-      (value === undefined || !validateSection(section, value)) &&
-      typeof corruptContent === "string"
-    ) {
-      const extracted = extractSectionFromCorrupt(corruptContent, section);
-      if (extracted !== undefined && validateSection(section, extracted)) {
-        value = extracted;
-        source = "extracted";
-      }
-    }
-
-    // Validate the value
-    if (validateSection(section, value)) {
-      recoveredConfig[section] = value;
-      result.recovered.push(section);
-    } else {
-      // Use default value
-      recoveredConfig[section] = (defaultConfig as unknown as Record<string, unknown>)[section];
-      result.reset.push(section);
-    }
-  }
-
-  return result;
-}
-
-/**
  * Creates a backup of the config file.
  */
 function createBackup(configPath: string): string {

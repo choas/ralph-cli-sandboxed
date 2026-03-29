@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import { useConfig } from "./hooks/useConfig.js";
 import { useTerminalSize } from "./hooks/useTerminalSize.js";
-import { SectionNav, CONFIG_SECTIONS } from "./components/SectionNav.js";
+import { SectionNav } from "./components/SectionNav.js";
 import { EditorPanel, getValueAtPath, inferFieldType } from "./components/EditorPanel.js";
 import { StringEditor } from "./components/StringEditor.js";
 import { BooleanToggle } from "./components/BooleanToggle.js";
