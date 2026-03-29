@@ -584,7 +584,7 @@ export function getLLMProviderBaseUrl(provider: LLMProviderConfig): string {
 export function getLLMProviders(config: RalphConfig): LLMProvidersConfig {
   return {
     ...DEFAULT_LLM_PROVIDERS,
-    ...config.llmProviders,
+    ...(config.llmProviders ?? {}),
   };
 }
 
