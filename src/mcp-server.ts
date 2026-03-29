@@ -69,17 +69,6 @@ function errorResponse(code: string, message: string) {
 const PRD_FILE_JSON = "prd.json";
 
 /**
- * Returns the path to the primary PRD file (MCP-safe version).
- */
-function getPrdPath(): string {
-  const prdFiles = getPrdFiles();
-  if (prdFiles.primary) {
-    return prdFiles.primary;
-  }
-  return join(getRalphDir(), PRD_FILE_JSON);
-}
-
-/**
  * Saves PRD entries to disk, auto-detecting format from file extension.
  */
 function savePrd(entries: PrdEntry[]): void {
