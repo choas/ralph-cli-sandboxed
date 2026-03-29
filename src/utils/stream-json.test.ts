@@ -808,8 +808,9 @@ describe("CodexStreamParser", () => {
       type: "item.completed",
       item: { type: "reasoning", text: "I think we should..." },
     });
-    expect(parser.parseStreamJsonLine(line)).toContain("Thinking");
-    expect(parser.parseStreamJsonLine(line)).toContain("I think we should...");
+    const result = parser.parseStreamJsonLine(line);
+    expect(result).toContain("Thinking");
+    expect(result).toContain("I think we should...");
   });
 
   it("handles item.completed with generic text", () => {
