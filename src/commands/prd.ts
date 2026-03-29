@@ -218,7 +218,9 @@ export function prdList(category?: string, passesFilter?: boolean): void {
   filteredPrd.forEach(({ entry, originalIndex }) => {
     const statusEmoji = entry.passes ? "✅" : "○";
     const branchTag = entry.branch ? ` \x1b[36m(${entry.branch})\x1b[0m` : "";
-    console.log(`  ${originalIndex + 1}. ${statusEmoji} [${entry.category}] ${entry.description}${branchTag}`);
+    console.log(
+      `  ${originalIndex + 1}. ${statusEmoji} [${entry.category}] ${entry.description}${branchTag}`,
+    );
     entry.steps.forEach((step, j) => {
       console.log(`       ${j + 1}. ${step}`);
     });
@@ -470,8 +472,12 @@ export async function prdReset(): Promise<void> {
   });
   savePrd(prd);
 
-  console.log(`Reset ${alreadyPassing} ${alreadyPassing === 1 ? "entry" : "entries"} to incomplete.`);
-  console.log(`All ${prd.length} PRD ${prd.length === 1 ? "entry is" : "entries are"} now passes=false.`);
+  console.log(
+    `Reset ${alreadyPassing} ${alreadyPassing === 1 ? "entry" : "entries"} to incomplete.`,
+  );
+  console.log(
+    `All ${prd.length} PRD ${prd.length === 1 ? "entry is" : "entries are"} now passes=false.`,
+  );
 }
 
 export function parseListArgs(args: string[]): { category?: string; passesFilter?: boolean } {

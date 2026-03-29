@@ -343,7 +343,6 @@ export function JsonSnippetEditor({
   const [editText, setEditText] = useState(initialJson);
   const [parseError, setParseError] = useState<JsonParseError | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [scrollOffset, setScrollOffset] = useState(0);
   const [copied, setCopied] = useState(false);
 
   // Validate JSON as user types

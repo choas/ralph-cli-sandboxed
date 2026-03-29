@@ -71,14 +71,6 @@ async function loadDiscordModules(): Promise<boolean> {
 }
 
 /**
- * Discord ActionRow with buttons.
- */
-interface DiscordActionRow {
-  type: 1;
-  components: DiscordButton[];
-}
-
-/**
  * Discord button component.
  */
 interface DiscordButton {

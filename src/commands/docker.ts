@@ -713,7 +713,7 @@ function generateClaudeSettings(): string {
           hooks: [
             {
               type: "command",
-              command: "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-dangerous-commands.sh",
+              command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/block-dangerous-commands.sh',
             },
           ],
         },

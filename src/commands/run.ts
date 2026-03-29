@@ -1,5 +1,13 @@
 import { spawn, execSync } from "child_process";
-import { existsSync, readFileSync, writeFileSync, unlinkSync, appendFileSync, mkdirSync, copyFileSync } from "fs";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+  appendFileSync,
+  mkdirSync,
+  copyFileSync,
+} from "fs";
 import { extname, join } from "path";
 import {
   checkFilesExist,
@@ -104,7 +112,9 @@ function ensureWorktree(branch: string, worktreesBase: string): string {
   const worktreePath = join(worktreesBase, dirName);
 
   if (existsSync(worktreePath)) {
-    console.log(`\x1b[90m[ralph] Reusing worktree for branch "${branch}" at ${worktreePath}\x1b[0m`);
+    console.log(
+      `\x1b[90m[ralph] Reusing worktree for branch "${branch}" at ${worktreePath}\x1b[0m`,
+    );
     return worktreePath;
   }
 
@@ -690,7 +700,11 @@ function validateAndRecoverPrd(
     mergeResult.warnings.forEach((w) => console.log(`  ${w}`));
   }
 
-  return { recovered: true, itemsUpdated: mergeResult.itemsUpdated, newItemsPreserved: newItems.length };
+  return {
+    recovered: true,
+    itemsUpdated: mergeResult.itemsUpdated,
+    newItemsPreserved: newItems.length,
+  };
 }
 
 /**
@@ -982,7 +996,9 @@ export async function run(args: string[]): Promise<void> {
     if (targetDir !== workspaceCwd) {
       process.chdir(targetDir);
       if (branchLabel) {
-        console.log(`\x1b[90m[ralph] Working in worktree: ${targetDir} (branch: ${branchLabel})\x1b[0m`);
+        console.log(
+          `\x1b[90m[ralph] Working in worktree: ${targetDir} (branch: ${branchLabel})\x1b[0m`,
+        );
       }
     }
 
@@ -1114,7 +1130,13 @@ export async function run(args: string[]): Promise<void> {
 
           while (true) {
             await sleep(POLL_INTERVAL_MS);
-            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, paths.dir, category, branchFilterActive, branchFilter);
+            const { hasIncomplete: newItems } = createFilteredPrd(
+              paths.prd,
+              paths.dir,
+              category,
+              branchFilterActive,
+              branchFilter,
+            );
             if (newItems) {
               console.log("\nNew incomplete item(s) detected! Resuming...");
               break;
@@ -1152,8 +1174,6 @@ export async function run(args: string[]): Promise<void> {
 
       let iterExitCode = 0;
       let iterOutput = "";
-      let iterSterr = "";
-      let iterSyncTotal = 0;
 
       // Get the base branch for branch state tracking
       let baseBranch = "main";
@@ -1204,7 +1224,9 @@ export async function run(args: string[]): Promise<void> {
           // Resumed branch has no remaining items — clear state and fall through
           clearBranchState();
         } else {
-          console.log(`\n\x1b[36m--- Branch group: ${targetBranch} (${branchItems.length} item(s)) ---\x1b[0m`);
+          console.log(
+            `\n\x1b[36m--- Branch group: ${targetBranch} (${branchItems.length} item(s)) ---\x1b[0m`,
+          );
 
           // Save active branch state to config for resume after interruption
           saveBranchState(baseBranch, targetBranch);
@@ -1214,7 +1236,9 @@ export async function run(args: string[]): Promise<void> {
           try {
             worktreePath = ensureWorktree(targetBranch, worktreesBase);
           } catch (err) {
-            console.error(`\x1b[31mError creating worktree for "${targetBranch}": ${err instanceof Error ? err.message : err}\x1b[0m`);
+            console.error(
+              `\x1b[31mError creating worktree for "${targetBranch}": ${err instanceof Error ? err.message : err}\x1b[0m`,
+            );
             clearBranchState();
             continue;
           }
@@ -1242,8 +1266,6 @@ export async function run(args: string[]): Promise<void> {
 
           iterExitCode = result.exitCode;
           iterOutput = result.output;
-          iterSterr = result.stderr;
-          iterSyncTotal += result.syncResult.count;
         }
       } else if (targetBranch !== "" && !worktreesAvailable) {
         // Branch items found but worktrees not available — warn and process no-branch items instead
@@ -1268,16 +1290,28 @@ export async function run(args: string[]): Promise<void> {
       }
 
       // Process no-branch items in /workspace (when target is no-branch, or branch was skipped)
-      if (targetBranch === "" || (!worktreesAvailable && targetBranch !== "") || (!hasCommits && targetBranch !== "")) {
+      if (
+        targetBranch === "" ||
+        (!worktreesAvailable && targetBranch !== "") ||
+        (!hasCommits && targetBranch !== "")
+      ) {
         const noBranchItems = branchGroups.get("") || [];
         if (noBranchItems.length > 0) {
           const hasBranches = [...branchGroups.keys()].some((key) => key !== "");
           if (hasBranches) {
-            console.log(`\n\x1b[36m--- No-branch items (${noBranchItems.length} item(s)) ---\x1b[0m`);
+            console.log(
+              `\n\x1b[36m--- No-branch items (${noBranchItems.length} item(s)) ---\x1b[0m`,
+            );
           }
 
           // Create filtered PRD for no-branch items only (or all items if no branches exist)
-          const { tempPath } = createFilteredPrd(paths.prd, paths.dir, category, branchFilterActive, branchFilter);
+          const { tempPath } = createFilteredPrd(
+            paths.prd,
+            paths.dir,
+            category,
+            branchFilterActive,
+            branchFilter,
+          );
           filteredPrdPath = tempPath;
 
           // If there are branch groups, rewrite prd-tasks.json to only include no-branch items
@@ -1286,18 +1320,11 @@ export async function run(args: string[]): Promise<void> {
             writeFileSync(filteredPrdPath, JSON.stringify(expandedNoBranch, null, 2));
           }
 
-          const result = await runIterationInDir(
-            paths,
-            filteredPrdPath,
-            validPrd,
-            workspaceCwd,
-          );
+          const result = await runIterationInDir(paths, filteredPrdPath, validPrd, workspaceCwd);
           filteredPrdPath = null;
 
           iterExitCode = result.exitCode;
           iterOutput = result.output;
-          iterSterr = result.stderr;
-          iterSyncTotal += result.syncResult.count;
         }
       }
 
@@ -1401,7 +1428,13 @@ export async function run(args: string[]): Promise<void> {
 
           while (true) {
             await sleep(POLL_INTERVAL_MS);
-            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, paths.dir, category, branchFilterActive, branchFilter);
+            const { hasIncomplete: newItems } = createFilteredPrd(
+              paths.prd,
+              paths.dir,
+              category,
+              branchFilterActive,
+              branchFilter,
+            );
             if (newItems) {
               console.log("\nNew incomplete item(s) detected! Resuming...");
               break;

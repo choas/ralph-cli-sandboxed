@@ -1,8 +1,5 @@
 import { loadConfig, ResponderConfig } from "../utils/config.js";
-import {
-  loadResponderPresets,
-  presetToResponderConfig,
-} from "../utils/responder-presets.js";
+import { loadResponderPresets, presetToResponderConfig } from "../utils/responder-presets.js";
 import { executeLLMResponder } from "../responders/llm-responder.js";
 import { executeClaudeCodeResponder } from "../responders/claude-code-responder.js";
 import { executeCLIResponder } from "../responders/cli-responder.js";
@@ -65,9 +62,10 @@ export async function ask(args: string[]): Promise<void> {
   console.log(result.response);
 }
 
-function resolveResponder(
-  name: string,
-): { responderConfig: ResponderConfig | null; source: "config" | "preset" } {
+function resolveResponder(name: string): {
+  responderConfig: ResponderConfig | null;
+  source: "config" | "preset";
+} {
   // 1. Check config responders first (user overrides)
   try {
     const ralphConfig = loadConfig();
@@ -142,7 +140,8 @@ function listPresets(): void {
 }
 
 function showHelp(): void {
-  console.log(`
+  console.log(
+    `
 ralph ask - Run a responder preset from the CLI
 
 USAGE:
@@ -168,5 +167,6 @@ EXAMPLES:
   ralph ask explain src/utils/config.ts
   ralph ask code "Add a --verbose flag to the run command"
   ralph ask --list
-`.trimEnd());
+`.trimEnd(),
+  );
 }
