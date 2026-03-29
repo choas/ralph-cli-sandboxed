@@ -136,10 +136,7 @@ export function logResponderCallToConsole(entry: ResponderLogEntry): void {
   console.log(`[responder] Log file: ${getLogFilePath()}`);
 }
 
-/**
- * Create a log entry and optionally log to console.
- */
-export function createResponderLog(options: {
+export interface CreateResponderLogOptions {
   responderName?: string;
   responderType?: string;
   trigger?: string;
@@ -152,7 +149,12 @@ export function createResponderLog(options: {
   message: string;
   systemPrompt?: string;
   debug?: boolean;
-}): void {
+}
+
+/**
+ * Create a log entry and optionally log to console.
+ */
+export function createResponderLog(options: CreateResponderLogOptions): void {
   const entry: ResponderLogEntry = {
     timestamp: new Date().toISOString(),
     responderName: options.responderName,

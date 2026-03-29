@@ -1,0 +1,457 @@
+#!/usr/bin/env node
+
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "fs";
+import { dirname, extname, join } from "path";
+import { fileURLToPath } from "url";
+import { z } from "zod";
+import YAML from "yaml";
+import { getRalphDir, getPrdFiles } from "./utils/config.js";
+import { DEFAULT_PRD_YAML } from "./templates/prompts.js";
+import { VALID_CATEGORIES } from "./utils/prd-validator.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const CATEGORIES = VALID_CATEGORIES;
+
+type Category = (typeof CATEGORIES)[number];
+
+interface PrdEntry {
+  category: Category;
+  description: string;
+  steps: string[];
+  passes: boolean;
+  branch?: string;
+}
+
+// Structured error codes for MCP tool error responses
+const ErrorCode = {
+  PRD_NOT_FOUND: "PRD_NOT_FOUND",
+  PRD_PARSE_ERROR: "PRD_PARSE_ERROR",
+  PRD_WRITE_ERROR: "PRD_WRITE_ERROR",
+  INVALID_INDEX: "INVALID_INDEX",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+} as const;
+
+function classifyError(err: unknown): { code: string; message: string } {
+  const message = err instanceof Error ? err.message : String(err);
+
+  if (message.includes("No PRD file found") || message.includes("ENOENT")) {
+    return { code: ErrorCode.PRD_NOT_FOUND, message };
+  }
+  if (
+    message.includes("does not contain an array") ||
+    message.includes("JSON") ||
+    message.includes("YAML")
+  ) {
+    return { code: ErrorCode.PRD_PARSE_ERROR, message };
+  }
+  if (message.includes("EACCES") || message.includes("EPERM")) {
+    return { code: ErrorCode.PRD_WRITE_ERROR, message };
+  }
+  return { code: ErrorCode.INTERNAL_ERROR, message };
+}
+
+function errorResponse(code: string, message: string) {
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: JSON.stringify({ code, message }),
+      },
+    ],
+    isError: true,
+  };
+}
+
+const PRD_FILE_JSON = "prd.json";
+
+/**
+ * Saves PRD entries to disk, auto-detecting format from file extension.
+ */
+function savePrd(entries: PrdEntry[]): void {
+  const prdFiles = getPrdFiles();
+  const path = prdFiles.primary ?? join(getRalphDir(), PRD_FILE_JSON);
+  const ext = extname(path).toLowerCase();
+
+  try {
+    if (ext === ".yaml" || ext === ".yml") {
+      writeFileSync(path, YAML.stringify(entries));
+    } else {
+      writeFileSync(path, JSON.stringify(entries, null, 2) + "\n");
+    }
+
+    // One-time migration: if a secondary PRD file exists, remove it now that
+    // the merged entries have been written to the primary file.
+    if (prdFiles.secondary && existsSync(prdFiles.secondary)) {
+      unlinkSync(prdFiles.secondary);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to save PRD file at ${path}: ${msg}`);
+  }
+}
+
+function getVersion(): string {
+  try {
+    const packagePath = join(__dirname, "..", "package.json");
+    const packageJson = JSON.parse(readFileSync(packagePath, "utf-8"));
+    return packageJson.version ?? "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+/**
+ * Parses a PRD file based on its extension (MCP-safe version that throws instead of process.exit).
+ */
+function parsePrdFile(path: string): PrdEntry[] {
+  const content = readFileSync(path, "utf-8");
+  const ext = extname(path).toLowerCase();
+
+  let result: unknown;
+  if (ext === ".yaml" || ext === ".yml") {
+    result = YAML.parse(content);
+  } else {
+    result = JSON.parse(content);
+  }
+
+  if (result == null) return [];
+  if (!Array.isArray(result)) {
+    throw new Error(`${path} does not contain an array`);
+  }
+
+  return result.map((entry: unknown, index: number) => {
+    if (typeof entry !== "object" || entry === null) {
+      throw new Error(`${path}[${index}]: entry must be an object`);
+    }
+    const obj = entry as Record<string, unknown>;
+
+    if (typeof obj.category !== "string" || !CATEGORIES.includes(obj.category as Category)) {
+      throw new Error(
+        `${path}[${index}]: missing or invalid "category" (expected one of: ${CATEGORIES.join(", ")})`,
+      );
+    }
+    if (typeof obj.description !== "string" || obj.description.trim().length === 0) {
+      throw new Error(`${path}[${index}]: missing or invalid "description" (expected string)`);
+    }
+    if (!Array.isArray(obj.steps) || !obj.steps.every((s: unknown) => typeof s === "string")) {
+      throw new Error(`${path}[${index}]: missing or invalid "steps" (expected string array)`);
+    }
+    if (typeof obj.passes !== "boolean") {
+      throw new Error(`${path}[${index}]: missing or invalid "passes" (expected boolean)`);
+    }
+    if (obj.branch !== undefined && typeof obj.branch !== "string") {
+      throw new Error(`${path}[${index}]: invalid "branch" (expected string)`);
+    }
+
+    return {
+      category: obj.category as Category,
+      description: obj.description,
+      steps: obj.steps as string[],
+      passes: obj.passes,
+      ...(obj.branch !== undefined && { branch: obj.branch as string }),
+    };
+  });
+}
+
+/**
+ * Loads PRD entries (MCP-safe version that throws instead of process.exit).
+ */
+function loadPrd(): PrdEntry[] {
+  const prdFiles = getPrdFiles();
+
+  if (prdFiles.none) {
+    const ralphDir = getRalphDir();
+    const prdPath = join(ralphDir, "prd.yaml");
+    try {
+      if (!existsSync(ralphDir)) {
+        mkdirSync(ralphDir, { recursive: true });
+      }
+      writeFileSync(prdPath, DEFAULT_PRD_YAML);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to save PRD file at ${prdPath}: ${msg}`);
+    }
+    return parsePrdFile(prdPath);
+  }
+
+  if (!prdFiles.primary) {
+    throw new Error("No PRD file found. Run `ralph init` to create one.");
+  }
+
+  const primary = parsePrdFile(prdFiles.primary);
+
+  if (prdFiles.both && prdFiles.secondary) {
+    const secondary = parsePrdFile(prdFiles.secondary);
+    return [...primary, ...secondary];
+  }
+
+  return primary;
+}
+
+const server = new McpServer({
+  name: "ralph-mcp",
+  version: getVersion(),
+});
+
+// ralph_prd_list tool
+server.tool(
+  "ralph_prd_list",
+  "List PRD entries with optional category and status filters",
+  {
+    category: z.enum(CATEGORIES).optional().describe("Filter by category"),
+    status: z
+      .enum(["all", "passing", "failing"])
+      .optional()
+      .describe("Filter by status: all (default), passing, or failing"),
+  },
+  async ({ category, status }) => {
+    try {
+      const prd = loadPrd();
+
+      let filtered = prd.map((entry, i) => ({ ...entry, index: i + 1 }));
+
+      if (category) {
+        filtered = filtered.filter((entry) => entry.category === category);
+      }
+
+      if (status === "passing") {
+        filtered = filtered.filter((entry) => entry.passes);
+      } else if (status === "failing") {
+        filtered = filtered.filter((entry) => !entry.passes);
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(filtered, null, 2),
+          },
+        ],
+      };
+    } catch (err) {
+      const { code, message } = classifyError(err);
+      return errorResponse(code, message);
+    }
+  },
+);
+
+// ralph_prd_add tool
+server.tool(
+  "ralph_prd_add",
+  "Add a new PRD entry with category, description, and verification steps",
+  {
+    category: z.enum(CATEGORIES).describe("Category for the new entry"),
+    description: z.string().min(1).describe("Description of the requirement"),
+    steps: z
+      .array(z.string().min(1))
+      .min(1)
+      .describe("Verification steps to check if requirement is met"),
+    branch: z.string().optional().describe("Git branch associated with this entry"),
+  },
+  async ({ category, description, steps, branch }) => {
+    try {
+      const entry: PrdEntry = {
+        category,
+        description,
+        steps,
+        passes: false,
+      };
+      if (branch) {
+        entry.branch = branch;
+      }
+
+      const prd = loadPrd();
+      prd.push(entry);
+      savePrd(prd);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                message: `Added entry #${prd.length}: "${description}"`,
+                entry: { ...entry, index: prd.length },
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (err) {
+      const { code, message } = classifyError(err);
+      return errorResponse(code, message);
+    }
+  },
+);
+
+// ralph_prd_status tool
+server.tool(
+  "ralph_prd_status",
+  "Get PRD completion status with counts, percentage, per-category breakdown, and remaining items",
+  {},
+  async () => {
+    try {
+      const prd = loadPrd();
+
+      if (prd.length === 0) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                { passing: 0, total: 0, percentage: 0, categories: {}, remaining: [] },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      }
+
+      const passing = prd.filter((e) => e.passes).length;
+      const total = prd.length;
+      const percentage = Math.round((passing / total) * 100);
+
+      const categories: Record<string, { passing: number; total: number }> = {};
+      prd.forEach((entry) => {
+        if (!categories[entry.category]) {
+          categories[entry.category] = { passing: 0, total: 0 };
+        }
+        categories[entry.category].total++;
+        if (entry.passes) categories[entry.category].passing++;
+      });
+
+      const remaining = prd.reduce<{ index: number; category: string; description: string }[]>(
+        (acc, entry, i) => {
+          if (!entry.passes) {
+            acc.push({ index: i + 1, category: entry.category, description: entry.description });
+          }
+          return acc;
+        },
+        [],
+      );
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify({ passing, total, percentage, categories, remaining }, null, 2),
+          },
+        ],
+      };
+    } catch (err) {
+      const { code, message } = classifyError(err);
+      return errorResponse(code, message);
+    }
+  },
+);
+
+// ralph_prd_toggle tool
+server.tool(
+  "ralph_prd_toggle",
+  "Toggle completion status (passes) for PRD entries by 1-based index",
+  {
+    indices: z
+      .array(z.number().int().min(1))
+      .min(1)
+      .describe("1-based indices of PRD entries to toggle"),
+  },
+  async ({ indices }) => {
+    try {
+      const prd = loadPrd();
+
+      // Validate all indices are in range
+      for (const index of indices) {
+        if (index > prd.length) {
+          return errorResponse(
+            ErrorCode.INVALID_INDEX,
+            `Invalid entry number: ${index}. Must be 1-${prd.length}`,
+          );
+        }
+      }
+
+      // Deduplicate and sort
+      const uniqueIndices = [...new Set(indices)].sort((a, b) => a - b);
+
+      const toggled = uniqueIndices.map((index) => {
+        const entry = prd[index - 1];
+        entry.passes = !entry.passes;
+        return {
+          index,
+          description: entry.description,
+          passes: entry.passes,
+        };
+      });
+
+      savePrd(prd);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              { message: `Toggled ${toggled.length} entry/entries`, toggled },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (err) {
+      const { code, message } = classifyError(err);
+      return errorResponse(code, message);
+    }
+  },
+);
+
+function isConnectionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("EPIPE") ||
+    message.includes("ECONNRESET") ||
+    message.includes("ECONNREFUSED") ||
+    message.includes("ERR_USE_AFTER_CLOSE") ||
+    message.includes("write after end") ||
+    message.includes("This socket has been ended") ||
+    message.includes("transport") ||
+    message.includes("broken pipe")
+  );
+}
+
+async function main() {
+  try {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+  } catch (error) {
+    if (isConnectionError(error)) {
+      console.error("MCP connection error: transport closed or unavailable.");
+      process.exit(0);
+    }
+    console.error("Server error:", error);
+    process.exit(1);
+  }
+}
+
+process.on("uncaughtException", (error) => {
+  if (isConnectionError(error)) {
+    process.exit(0);
+  }
+  console.error("Uncaught exception:", error);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  if (isConnectionError(reason)) {
+    process.exit(0);
+  }
+  console.error("Unhandled rejection at:", promise, "reason:", reason);
+  process.exit(1);
+});
+
+main();

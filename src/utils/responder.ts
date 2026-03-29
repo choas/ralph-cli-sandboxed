@@ -135,10 +135,7 @@ export class ResponderMatcher {
         // Extract args: everything after the trigger
         const triggerIndex = match.index! + match[0].indexOf(match[1]);
         const afterTrigger = message.slice(triggerIndex + match[1].length);
-        const args = afterTrigger
-          .replace(/^[:]\s*/, "")
-          .replace(/^\s+/, "")
-          .trim();
+        const args = this.extractArgsAfterTrigger(afterTrigger, 0);
 
         return { name: responderName, responder, args };
       }
