@@ -518,9 +518,10 @@ ralph docker run
 
 Features:
 - Based on [Claude Code devcontainer](https://github.com/anthropics/claude-code/tree/main/.devcontainer)
-- Network sandboxing (firewall allows only GitHub, npm, Anthropic API)
+- Network sandboxing (firewall allows only GitHub, npm, Anthropic API, plus language-specific domains — e.g., `deno.land`, `jsr.io`, `esm.sh` for Deno projects)
 - Your `~/.claude` credentials mounted automatically (Pro/Max OAuth)
 - Language-specific tooling pre-installed
+- Language-specific Claude Code hooks (e.g., Deno projects auto-install a `PreToolUse` hook that blocks `npm`/`npx`/`yarn`/`pnpm` commands)
 
 See [docs/DOCKER.md](docs/DOCKER.md) for detailed Docker configuration, customization, and troubleshooting.
 
