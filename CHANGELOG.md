@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.7.1] - 2026-04-02
+
+### Added
+- MCP server with stdio transport and tools: `ralph_prd_list`, `ralph_prd_add`, `ralph_prd_status`, `ralph_prd_toggle`
+- MCP server documentation
+- Deno runtime support with npm blocking hook and firewall domains
+- Dirigent Settings Agent for npm audit
+
+### Fixed
+- RCE vulnerability when Ralph opens a file
+- npm audit security fixes
+- Npm hook regex and various code correctness fixes
+- Multiple code review findings verified and resolved
+
+### Changed
+- Upgraded @anthropic-ai/sdk to 0.82.0
+- Removed unused dependencies (`@inkjs/ui`, `readline`)
+- Code quality improvements: formatting, linting, error handling
+
 ## [0.7.0] - 2026-03-29
 
 ### Changed
