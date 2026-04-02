@@ -66,8 +66,16 @@ export async function executeClaudeCodeResponder(
     let lastProgressSent = 0;
     let progressTimer: NodeJS.Timeout | null = null;
 
+    // Build effective prompt: prepend systemPrompt if configured
+    let effectivePrompt = prompt;
+    if (responderConfig.systemPrompt) {
+      effectivePrompt = prompt
+        ? `${responderConfig.systemPrompt}\n\nUser request: ${prompt}`
+        : responderConfig.systemPrompt;
+    }
+
     // Build the command arguments
-    const args = ["-p", prompt, "--dangerously-skip-permissions", "--print"];
+    const args = ["-p", effectivePrompt, "--dangerously-skip-permissions", "--print"];
 
     // Spawn claude process
     let proc: ChildProcess;
