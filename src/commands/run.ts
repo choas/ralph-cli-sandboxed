@@ -1,4 +1,4 @@
-import { spawn, execSync } from "child_process";
+import { spawn, execSync, execFileSync } from "child_process";
 import {
   existsSync,
   readFileSync,
@@ -119,10 +119,15 @@ function ensureWorktree(branch: string, worktreesBase: string): string {
 
   console.log(`\x1b[90m[ralph] Creating worktree for branch "${branch}" at ${worktreePath}\x1b[0m`);
 
+  // Validate branch name to prevent command injection
+  if (!/^[a-zA-Z0-9_\-./]+$/.test(branch)) {
+    throw new Error(`Invalid branch name "${branch}": contains disallowed characters`);
+  }
+
   // Check if the branch already exists
   let branchExists = false;
   try {
-    execSync(`git rev-parse --verify "${branch}"`, { stdio: "pipe" });
+    execFileSync("git", ["rev-parse", "--verify", branch], { stdio: "pipe" });
     branchExists = true;
   } catch {
     // Branch doesn't exist yet
@@ -130,10 +135,10 @@ function ensureWorktree(branch: string, worktreesBase: string): string {
 
   try {
     if (branchExists) {
-      execSync(`git worktree add "${worktreePath}" "${branch}"`, { stdio: "pipe" });
+      execFileSync("git", ["worktree", "add", worktreePath, branch], { stdio: "pipe" });
     } else {
       // Create new branch from current HEAD
-      execSync(`git worktree add -b "${branch}" "${worktreePath}"`, { stdio: "pipe" });
+      execFileSync("git", ["worktree", "add", "-b", branch, worktreePath], { stdio: "pipe" });
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

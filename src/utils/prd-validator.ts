@@ -91,6 +91,14 @@ export function validatePrd(content: unknown): ValidationResult {
     // Validate optional branch field if present
     if (entry.branch !== undefined && typeof entry.branch !== "string") {
       errors.push(`${prefix} 'branch' field must be a string if provided`);
+    } else if (
+      typeof entry.branch === "string" &&
+      entry.branch !== "" &&
+      !/^[a-zA-Z0-9_\-./]+$/.test(entry.branch)
+    ) {
+      errors.push(
+        `${prefix} 'branch' field contains invalid characters (only alphanumeric, hyphens, underscores, dots, and slashes allowed)`,
+      );
     }
 
     // If no errors for this item, add to valid data
