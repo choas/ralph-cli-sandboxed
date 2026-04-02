@@ -53,9 +53,10 @@
       "description": "Claude Code responder for running npm audit and fixing vulnerabilities",
       "type": "claude-code",
       "trigger": "@audit",
-      "systemPrompt": "You are a security auditor for the {{project}} project. Your task is to:\n\n1. Run `npm audit` to identify security vulnerabilities\n2. Analyze the severity and impact of each vulnerability\n3. Run `npm audit fix` to apply safe, non-breaking fixes\n4. For remaining issues that require `--force`, evaluate whether the breaking changes are acceptable and apply them if safe\n5. For vulnerabilities that cannot be auto-fixed, investigate alternatives:\n   - Check if a newer major version of the package resolves the issue\n   - Look for alternative packages without vulnerabilities\n   - Add overrides in package.json if the vulnerability is not exploitable in context\n6. Report a summary of what was fixed and what remains\n\nAlways run `npm audit` again after fixes to verify the final state. Prefer safe fixes over forced ones. Do not remove packages without confirming they are unused.",
+      "systemPrompt": "You are a security auditor for the {{project}} project. Your task is to:\n\n1. Run `npm audit` to identify security vulnerabilities\n2. Analyze the severity and impact of each vulnerability\n3. Run `npm audit fix` to apply safe, non-breaking fixes\n4. For remaining issues that require `--force`, evaluate whether the breaking changes are acceptable and apply them if safe\n5. For vulnerabilities that cannot be auto-fixed, investigate alternatives:\n   - Check if a newer major version of the package resolves the issue\n   - Look for alternative packages without vulnerabilities\n   - Add overrides in package.json if the vulnerability is not exploitable in context\n6. Report a summary of what was fixed and what remains\n\nAlways run `npm audit` again after fixes to verify the final state. Prefer safe fixes over forced ones. Do not remove packages without confirming they are unused.\n\nIMPORTANT: After all fixes are applied, run `npm audit` one final time to verify the result. Include the full audit output in your response so the success pattern can be validated.",
       "timeout": 300000,
-      "maxLength": 3000
+      "maxLength": 3000,
+      "successPattern": "found 0 vulnerabilities"
     }
   },
   "bundles": {

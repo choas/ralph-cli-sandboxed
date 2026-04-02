@@ -158,6 +158,23 @@ export async function executeClaudeCodeResponder(
       if (code === 0 || code === null) {
         // Success - format and truncate output
         const output = formatClaudeCodeOutput(stdout);
+
+        // Check successPattern if configured - output must match for run to succeed
+        if (responderConfig.successPattern) {
+          const pattern = new RegExp(responderConfig.successPattern, "i");
+          if (!pattern.test(output)) {
+            const { text, truncated, originalLength } = truncateResponse(output, maxLength);
+            resolve({
+              success: false,
+              response: text,
+              error: `Output did not match required success pattern: ${responderConfig.successPattern}`,
+              truncated,
+              originalLength: truncated ? originalLength : undefined,
+            });
+            return;
+          }
+        }
+
         const { text, truncated, originalLength } = truncateResponse(output, maxLength);
 
         resolve({

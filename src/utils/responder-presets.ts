@@ -22,6 +22,7 @@ export interface ResponderPreset {
   command?: string;
   timeout?: number;
   maxLength?: number;
+  successPattern?: string;
 }
 
 /**
@@ -120,6 +121,7 @@ export function presetToResponderConfig(preset: ResponderPreset): ResponderConfi
   if (preset.command) config.command = preset.command;
   if (preset.timeout) config.timeout = preset.timeout;
   if (preset.maxLength) config.maxLength = preset.maxLength;
+  if (preset.successPattern) config.successPattern = preset.successPattern;
 
   return config;
 }

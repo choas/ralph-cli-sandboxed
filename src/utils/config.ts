@@ -159,6 +159,7 @@ export interface ResponderConfig {
   command?: string; // CLI command (for type: 'cli'). Supports {{message}} placeholder.
   timeout?: number; // Timeout in milliseconds (default: 300000 for claude-code, 60000 for others)
   maxLength?: number; // Max response length to send back to chat (default: 2000)
+  successPattern?: string; // Regex pattern that must match output for the run to be considered successful
 }
 
 /**
