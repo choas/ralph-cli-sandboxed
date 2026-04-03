@@ -1,10 +1,11 @@
 {
   "name": "ralph-cli-sandboxed",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "AI-driven development automation CLI for Claude Code",
   "type": "module",
   "bin": {
     "ralph": "dist/index.js",
+    "ralph-cli-sandboxed": "dist/index.js",
     "ralph-mcp": "dist/mcp-server.js"
   },
   "main": "./dist/index.js",
