@@ -816,7 +816,9 @@ export async function run(args: string[]): Promise<void> {
         const instrPath = join(process.cwd(), providerCfg.instructionFile);
         const content = generateInstructionFileContent(skills, providerKey);
         writeFileSync(instrPath, content);
-        console.log(`Updated ${providerCfg.instructionFile} (${skills.length} skill${skills.length === 1 ? "" : "s"})`);
+        console.log(
+          `Updated ${providerCfg.instructionFile} (${skills.length} skill${skills.length === 1 ? "" : "s"})`,
+        );
       }
     }
   }
