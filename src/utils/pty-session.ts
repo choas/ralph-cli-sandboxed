@@ -207,8 +207,11 @@ async function loadNodePty(): Promise<NodePtyModule> {
   if (cachedPty) return cachedPty;
   try {
     // Dynamic import keeps node-pty optional: ralph-cli still works
-    // for users who never spawn a PTY session.
-    const mod = (await import("node-pty")) as unknown as NodePtyModule;
+    // for users who never spawn a PTY session. The indirection through
+    // a string variable suppresses TypeScript's module resolution so the
+    // package can stay an optional dep.
+    const moduleName = "node-pty";
+    const mod = (await import(moduleName)) as unknown as NodePtyModule;
     cachedPty = mod;
     return mod;
   } catch (err) {
