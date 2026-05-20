@@ -7,12 +7,7 @@
       "defaultArgs": [],
       "yoloArgs": ["--dangerously-skip-permissions"],
       "promptArgs": ["-p"],
-      "streamJsonArgs": [
-        "--output-format",
-        "stream-json",
-        "--verbose",
-        "--print"
-      ],
+      "streamJsonArgs": ["--output-format", "stream-json", "--verbose", "--print"],
       "docker": {
         "install": "# Install Claude Code CLI (as node user so it installs to /home/node/.local/bin)\nRUN su - node -c 'curl -fsSL https://claude.ai/install.sh | bash' \\\n    && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> /home/node/.zshrc"
       },
@@ -100,11 +95,7 @@
         "install": "# Install OpenCode (as node user)\nRUN su - node -c 'curl -fsSL https://opencode.ai/install | bash' \\\n    && echo 'export PATH=\"$HOME/.opencode/bin:$PATH\"' >> /home/node/.zshrc",
         "note": "Check 'opencode --help' for available flags"
       },
-      "envVars": [
-        "ANTHROPIC_API_KEY",
-        "OPENAI_API_KEY",
-        "GOOGLE_GENERATIVE_AI_API_KEY"
-      ],
+      "envVars": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
       "credentialMount": null,
       "instructionFile": "AGENTS.md",
       "modelConfig": {
@@ -137,13 +128,7 @@
       "command": "goose",
       "defaultArgs": [],
       "yoloArgs": [],
-      "promptArgs": [
-        "run",
-        "--no-session",
-        "--with-builtin",
-        "developer",
-        "--text"
-      ],
+      "promptArgs": ["run", "--no-session", "--with-builtin", "developer", "--text"],
       "streamJsonArgs": ["--output-format", "stream-json"],
       "docker": {
         "install": "# Install Goose CLI (as node user)\nRUN su - node -c 'curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash' \\\n    && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> /home/node/.zshrc \\\n    && echo 'export GOOSE_MODE=auto' >> /home/node/.zshrc",

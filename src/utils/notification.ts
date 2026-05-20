@@ -1,10 +1,5 @@
 import { spawn } from "child_process";
-import {
-  isRunningInContainer,
-  DaemonEventType,
-  DaemonConfig,
-  ChatConfig,
-} from "./config.js";
+import { isRunningInContainer, DaemonEventType, DaemonConfig, ChatConfig } from "./config.js";
 import {
   isDaemonAvailable,
   sendDaemonNotification,
@@ -87,9 +82,7 @@ export async function sendNotification(
         }
         return;
       } else if (debug) {
-        console.error(
-          `[notification] Daemon notification failed: ${response.error}`,
-        );
+        console.error(`[notification] Daemon notification failed: ${response.error}`);
         console.error("[notification] Falling back to direct command");
       }
     } catch (err) {
@@ -105,9 +98,7 @@ export async function sendNotification(
   // No notification if command is not configured or empty
   if (!command || command.trim() === "") {
     if (debug) {
-      console.error(
-        "[notification] No notifyCommand configured, skipping notification",
-      );
+      console.error("[notification] No notifyCommand configured, skipping notification");
     }
     return;
   }
@@ -117,9 +108,7 @@ export async function sendNotification(
   const [cmd, ...cmdArgs] = parts;
 
   if (debug) {
-    console.error(
-      `[notification] Sending: ${cmd} ${[...cmdArgs, finalMessage].join(" ")}`,
-    );
+    console.error(`[notification] Sending: ${cmd} ${[...cmdArgs, finalMessage].join(" ")}`);
   }
 
   return new Promise((resolve) => {
@@ -135,9 +124,7 @@ export async function sendNotification(
 
     proc.on("error", (err) => {
       if (debug) {
-        console.error(
-          `[notification] Failed to send notification: ${err.message}`,
-        );
+        console.error(`[notification] Failed to send notification: ${err.message}`);
       }
       // Don't reject - notification failures shouldn't break ralph
       resolve();
@@ -155,17 +142,14 @@ export async function sendNotification(
  * Useful for creating a reusable notifier within a command.
  */
 export function createNotifier(options: NotificationOptions) {
-  return (event: NotificationEvent, message?: string) =>
-    sendNotification(event, message, options);
+  return (event: NotificationEvent, message?: string) => sendNotification(event, message, options);
 }
 
 /**
  * Map NotificationEvent to DaemonEventType.
  * Some events map directly, others map to the closest equivalent.
  */
-function mapEventToDaemonEvent(
-  event: NotificationEvent,
-): DaemonEventType | null {
+function mapEventToDaemonEvent(event: NotificationEvent): DaemonEventType | null {
   switch (event) {
     case "prd_complete":
       return "ralph_complete";
@@ -204,9 +188,7 @@ export async function triggerDaemonEvents(
   const eventHandlers = daemonConfig.events[event];
   if (!eventHandlers || eventHandlers.length === 0) {
     if (debug) {
-      console.error(
-        `[daemon-events] No handlers configured for event: ${event}`,
-      );
+      console.error(`[daemon-events] No handlers configured for event: ${event}`);
     }
     return;
   }
@@ -214,9 +196,7 @@ export async function triggerDaemonEvents(
   // Check if daemon is available
   if (!isDaemonAvailable()) {
     if (debug) {
-      console.error(
-        "[daemon-events] Daemon not available, skipping event handlers",
-      );
+      console.error("[daemon-events] Daemon not available, skipping event handlers");
     }
     return;
   }
@@ -251,9 +231,7 @@ export async function triggerDaemonEvents(
         if (response.success) {
           console.error(`[daemon-events] Action ${handler.action} succeeded`);
         } else {
-          console.error(
-            `[daemon-events] Action ${handler.action} failed: ${response.error}`,
-          );
+          console.error(`[daemon-events] Action ${handler.action} failed: ${response.error}`);
         }
       }
     } catch (err) {
@@ -303,9 +281,7 @@ async function sendChatNotifications(
         if (response.success) {
           console.error("[notification] Slack notification sent successfully");
         } else {
-          console.error(
-            `[notification] Slack notification failed: ${response.error}`,
-          );
+          console.error(`[notification] Slack notification failed: ${response.error}`);
         }
       }
     } catch (err) {
@@ -318,26 +294,19 @@ async function sendChatNotifications(
   }
 
   // Check if Telegram is configured and enabled
-  const telegramEnabled =
-    chatConfig?.telegram?.botToken && chatConfig?.telegram?.enabled !== false;
+  const telegramEnabled = chatConfig?.telegram?.botToken && chatConfig?.telegram?.enabled !== false;
 
   if (telegramEnabled) {
     try {
       if (debug) {
-        console.error(
-          "[notification] Sending Telegram notification via daemon",
-        );
+        console.error("[notification] Sending Telegram notification via daemon");
       }
       const response = await sendTelegramNotification(message);
       if (debug) {
         if (response.success) {
-          console.error(
-            "[notification] Telegram notification sent successfully",
-          );
+          console.error("[notification] Telegram notification sent successfully");
         } else {
-          console.error(
-            `[notification] Telegram notification failed: ${response.error}`,
-          );
+          console.error(`[notification] Telegram notification failed: ${response.error}`);
         }
       }
     } catch (err) {
@@ -350,8 +319,7 @@ async function sendChatNotifications(
   }
 
   // Check if Discord is configured and enabled
-  const discordEnabled =
-    chatConfig?.discord?.botToken && chatConfig?.discord?.enabled !== false;
+  const discordEnabled = chatConfig?.discord?.botToken && chatConfig?.discord?.enabled !== false;
 
   if (discordEnabled) {
     try {
@@ -361,13 +329,9 @@ async function sendChatNotifications(
       const response = await sendDiscordNotification(message);
       if (debug) {
         if (response.success) {
-          console.error(
-            "[notification] Discord notification sent successfully",
-          );
+          console.error("[notification] Discord notification sent successfully");
         } else {
-          console.error(
-            `[notification] Discord notification failed: ${response.error}`,
-          );
+          console.error(`[notification] Discord notification failed: ${response.error}`);
         }
       }
     } catch (err) {

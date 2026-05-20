@@ -114,10 +114,7 @@ export interface ChatClient {
    * @param onCommand Callback for parsed commands (e.g., "abc run")
    * @param onMessage Optional callback for all messages
    */
-  connect(
-    onCommand: ChatCommandHandler,
-    onMessage?: ChatMessageHandler,
-  ): Promise<void>;
+  connect(onCommand: ChatCommandHandler, onMessage?: ChatMessageHandler): Promise<void>;
 
   /**
    * Send a text message to a specific chat.
@@ -125,11 +122,7 @@ export interface ChatClient {
    * @param text The message text
    * @param options Optional message options (e.g., inline keyboard)
    */
-  sendMessage(
-    chatId: string,
-    text: string,
-    options?: SendMessageOptions,
-  ): Promise<void>;
+  sendMessage(chatId: string, text: string, options?: SendMessageOptions): Promise<void>;
 
   /**
    * Disconnect from the chat service.
@@ -181,10 +174,7 @@ export function generateProjectId(): string {
  * - "/exec npm test" -> { command: "exec", args: ["npm", "test"] }
  * - "/add Fix the login bug" -> { command: "add", args: ["Fix", "the", "login", "bug"] }
  */
-export function parseCommand(
-  text: string,
-  message: ChatMessage,
-): ChatCommand | null {
+export function parseCommand(text: string, message: ChatMessage): ChatCommand | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
@@ -242,10 +232,7 @@ export function parseCommand(
  * would otherwise be interpreted as HTML tags and cause API errors.
  */
 export function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**

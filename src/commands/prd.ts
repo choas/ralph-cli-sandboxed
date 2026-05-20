@@ -17,15 +17,7 @@ interface PrdEntry {
 
 const PRD_FILE_JSON = "prd.json";
 const PRD_FILE_YAML = "prd.yaml";
-const CATEGORIES = [
-  "ui",
-  "feature",
-  "bugfix",
-  "setup",
-  "development",
-  "testing",
-  "docs",
-];
+const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
 
 // Track whether we've shown the migration notice in this session
 let migrationNoticeShown = false;
@@ -112,9 +104,7 @@ function loadPrd(): PrdEntry[] {
 
   // If only JSON exists, show migration notice (once per session)
   if (prdFiles.jsonOnly && !migrationNoticeShown) {
-    console.log(
-      "\x1b[33mNote: Consider migrating to YAML format with 'ralph prd convert'\x1b[0m",
-    );
+    console.log("\x1b[33mNote: Consider migrating to YAML format with 'ralph prd convert'\x1b[0m");
     console.log("");
     migrationNoticeShown = true;
   }
@@ -196,16 +186,12 @@ export function prdList(category?: string, passesFilter?: boolean): void {
 
   // Filter by category if specified
   if (category) {
-    filteredPrd = filteredPrd.filter(
-      ({ entry }) => entry.category === category,
-    );
+    filteredPrd = filteredPrd.filter(({ entry }) => entry.category === category);
   }
 
   // Filter by passes status if specified
   if (passesFilter !== undefined) {
-    filteredPrd = filteredPrd.filter(
-      ({ entry }) => entry.passes === passesFilter,
-    );
+    filteredPrd = filteredPrd.filter(({ entry }) => entry.passes === passesFilter);
   }
 
   if (filteredPrd.length === 0) {
@@ -259,11 +245,7 @@ export function prdStatus(headOnly: boolean = false): void {
   // Progress bar
   const barWidth = 30;
   const filled = Math.round((passing / total) * barWidth);
-  const bar =
-    "\x1b[32m" +
-    "\u2588".repeat(filled) +
-    "\x1b[0m" +
-    "\u2591".repeat(barWidth - filled);
+  const bar = "\x1b[32m" + "\u2588".repeat(filled) + "\x1b[0m" + "\u2591".repeat(barWidth - filled);
   console.log(`  [${bar}]\n`);
 
   // By category
@@ -456,12 +438,8 @@ export function prdClean(): void {
   const removed = originalLength - filtered.length;
   savePrd(filtered);
 
-  console.log(
-    `Removed ${removed} passing ${removed === 1 ? "entry" : "entries"}.`,
-  );
-  console.log(
-    `${filtered.length} ${filtered.length === 1 ? "entry" : "entries"} remaining.`,
-  );
+  console.log(`Removed ${removed} passing ${removed === 1 ? "entry" : "entries"}.`);
+  console.log(`${filtered.length} ${filtered.length === 1 ? "entry" : "entries"} remaining.`);
 }
 
 export async function prdReset(): Promise<void> {
@@ -571,9 +549,7 @@ export async function prd(args: string[]): Promise<void> {
       await prdConvert(args.slice(1));
       break;
     default:
-      console.error(
-        "Usage: ralph prd <add|list|status|toggle|clean|reset|convert>",
-      );
+      console.error("Usage: ralph prd <add|list|status|toggle|clean|reset|convert>");
       console.error("\nSubcommands:");
       console.error("  add                         Add a new PRD entry");
       console.error("  list [options]              List all PRD entries");
@@ -581,31 +557,19 @@ export async function prd(args: string[]): Promise<void> {
       console.error(
         "  toggle <n> ...              Toggle passes status for entry n (accepts multiple)",
       );
-      console.error(
-        "  toggle <start>-<end>        Toggle a range of entries (e.g., 1-18)",
-      );
+      console.error("  toggle <start>-<end>        Toggle a range of entries (e.g., 1-18)");
       console.error("  toggle --all                Toggle all PRD entries");
-      console.error(
-        "  clean                       Remove all passing entries from the PRD",
-      );
-      console.error(
-        "  reset                       Reset all entries to incomplete (passes=false)",
-      );
-      console.error(
-        "  convert [options]           Convert prd.json to prd.yaml format",
-      );
+      console.error("  clean                       Remove all passing entries from the PRD");
+      console.error("  reset                       Reset all entries to incomplete (passes=false)");
+      console.error("  convert [options]           Convert prd.json to prd.yaml format");
       console.error("\nList options:");
       console.error("  --category, -c <cat>        Filter by category");
       console.error("  --passes                    Show only completed items");
       console.error("  --no-passes                 Show only incomplete items");
-      console.error(
-        "  --stats                     Show statistics instead of entries",
-      );
+      console.error("  --stats                     Show statistics instead of entries");
       console.error("\nConvert options:");
       console.error("  --force, -f                 Overwrite existing files");
-      console.error(
-        "  --dry-run, -n               Preview without making changes",
-      );
+      console.error("  --dry-run, -n               Preview without making changes");
       console.error(`\nValid categories: ${CATEGORIES.join(", ")}`);
       process.exit(1);
   }

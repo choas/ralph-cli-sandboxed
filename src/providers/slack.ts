@@ -17,15 +17,8 @@ import {
   parseCommand,
 } from "../utils/chat-client.js";
 import { ResponderMatcher, ResponderMatch } from "../utils/responder.js";
-import {
-  ResponderConfig,
-  RespondersConfig,
-  loadConfig,
-} from "../utils/config.js";
-import {
-  executeLLMResponder,
-  ResponderResult,
-} from "../responders/llm-responder.js";
+import { ResponderConfig, RespondersConfig, loadConfig } from "../utils/config.js";
+import { executeLLMResponder, ResponderResult } from "../responders/llm-responder.js";
 import { executeClaudeCodeResponder } from "../responders/claude-code-responder.js";
 import { executeCLIResponder } from "../responders/cli-responder.js";
 
@@ -278,12 +271,7 @@ export class SlackChatClient implements ChatClient {
             `[slack] Continuing thread conversation with ${existingConversation.responderName}`,
           );
         }
-        return this.continueThreadConversation(
-          existingConversation,
-          threadTs,
-          message.text,
-          say,
-        );
+        return this.continueThreadConversation(existingConversation, threadTs, message.text, say);
       }
     }
 
@@ -292,9 +280,7 @@ export class SlackChatClient implements ChatClient {
     }
 
     if (this.debug) {
-      console.log(
-        `[slack] Checking responders for message: "${message.text.slice(0, 50)}..."`,
-      );
+      console.log(`[slack] Checking responders for message: "${message.text.slice(0, 50)}..."`);
     }
 
     const match = this.responderMatcher.matchResponder(message.text);
@@ -306,9 +292,7 @@ export class SlackChatClient implements ChatClient {
     }
 
     if (this.debug) {
-      console.log(
-        `[slack] Matched responder: ${match.name} (type: ${match.responder.type})`,
-      );
+      console.log(`[slack] Matched responder: ${match.name} (type: ${match.responder.type})`);
     }
 
     // For LLM responders, start a new thread conversation
@@ -339,9 +323,7 @@ export class SlackChatClient implements ChatClient {
           createdAt: new Date(),
         });
         if (this.debug) {
-          console.log(
-            `[slack] Started thread conversation for ${responseThreadTs}`,
-          );
+          console.log(`[slack] Started thread conversation for ${responseThreadTs}`);
         }
       }
     } else {
@@ -373,23 +355,16 @@ export class SlackChatClient implements ChatClient {
     }));
 
     if (this.debug) {
-      console.log(
-        `[slack] Conversation history: ${conversationHistory.length} messages`,
-      );
+      console.log(`[slack] Conversation history: ${conversationHistory.length} messages`);
     }
 
     // Execute responder with conversation history
-    const result = await executeLLMResponder(
-      userMessage,
-      conversation.responder,
-      undefined,
-      {
-        responderName: conversation.responderName,
-        trigger: conversation.responder.trigger,
-        conversationHistory,
-        debug: this.debug,
-      },
-    );
+    const result = await executeLLMResponder(userMessage, conversation.responder, undefined, {
+      responderName: conversation.responderName,
+      trigger: conversation.responder.trigger,
+      conversationHistory,
+      debug: this.debug,
+    });
 
     if (result.success) {
       await say({
@@ -455,10 +430,7 @@ export class SlackChatClient implements ChatClient {
    */
   private isChannelAllowed(channelId: string): boolean {
     // If no allowed channel IDs specified, allow all
-    if (
-      !this.settings.allowedChannelIds ||
-      this.settings.allowedChannelIds.length === 0
-    ) {
+    if (!this.settings.allowedChannelIds || this.settings.allowedChannelIds.length === 0) {
       return true;
     }
     return this.settings.allowedChannelIds.includes(channelId);
@@ -496,19 +468,11 @@ export class SlackChatClient implements ChatClient {
     // Log all incoming events when debug is enabled
     if (this.debug) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.app.use(
-        async ({
-          payload,
-          next,
-        }: {
-          payload: any;
-          next: () => Promise<void>;
-        }) => {
-          const eventType = payload?.type || payload?.event?.type || "unknown";
-          console.log(`[slack] Event received: ${eventType}`);
-          await next();
-        },
-      );
+      this.app.use(async ({ payload, next }: { payload: any; next: () => Promise<void> }) => {
+        const eventType = payload?.type || payload?.event?.type || "unknown";
+        console.log(`[slack] Event received: ${eventType}`);
+        await next();
+      });
     }
 
     // Handle app_mention events (when someone @mentions the bot)
@@ -520,14 +484,10 @@ export class SlackChatClient implements ChatClient {
         say,
       }: {
         event: any;
-        say: (
-          options: string | { text: string; thread_ts?: string },
-        ) => Promise<unknown>;
+        say: (options: string | { text: string; thread_ts?: string }) => Promise<unknown>;
       }) => {
         if (this.debug) {
-          console.log(
-            `[slack] Received app_mention in channel ${event.channel}`,
-          );
+          console.log(`[slack] Received app_mention in channel ${event.channel}`);
         }
 
         const channelId = event.channel as string;
@@ -535,9 +495,7 @@ export class SlackChatClient implements ChatClient {
         // Check if channel is allowed
         if (!this.isChannelAllowed(channelId)) {
           if (this.debug) {
-            console.log(
-              `[slack] Ignoring mention from unauthorized channel: ${channelId}`,
-            );
+            console.log(`[slack] Ignoring mention from unauthorized channel: ${channelId}`);
           }
           return;
         }
@@ -601,9 +559,7 @@ export class SlackChatClient implements ChatClient {
         say,
       }: {
         message: any;
-        say: (
-          options: string | { text: string; thread_ts?: string },
-        ) => Promise<unknown>;
+        say: (options: string | { text: string; thread_ts?: string }) => Promise<unknown>;
       }) => {
         // Debug: log raw message event before any filtering
         if (this.debug) {
@@ -626,9 +582,7 @@ export class SlackChatClient implements ChatClient {
         // Check if channel is allowed
         if (!this.isChannelAllowed(channelId)) {
           if (this.debug) {
-            console.log(
-              `[slack] Ignoring message from unauthorized channel: ${channelId}`,
-            );
+            console.log(`[slack] Ignoring message from unauthorized channel: ${channelId}`);
           }
           return;
         }
@@ -683,8 +637,7 @@ export class SlackChatClient implements ChatClient {
         }
 
         // Check if this is a continuation of an active thread conversation
-        const isActiveThread =
-          threadTs && this.threadConversations.has(threadTs);
+        const isActiveThread = threadTs && this.threadConversations.has(threadTs);
 
         // If message contains a bot mention, responders are configured, or we're in an active thread,
         // try to route through responder matching
@@ -726,16 +679,7 @@ export class SlackChatClient implements ChatClient {
     // Handle the unified /ralph command
     // Subcommands: help, status, run, stop, add, exec, action
     // Anything else is treated as a prompt for Claude
-    const knownSubcommands = [
-      "help",
-      "status",
-      "run",
-      "stop",
-      "add",
-      "exec",
-      "action",
-      "branch",
-    ];
+    const knownSubcommands = ["help", "status", "run", "stop", "add", "exec", "action", "branch"];
 
     if (this.debug) {
       console.log(`[slack] Registering command: /ralph`);
@@ -766,9 +710,7 @@ export class SlackChatClient implements ChatClient {
         // Check if channel is allowed
         if (!this.isChannelAllowed(channelId)) {
           if (this.debug) {
-            console.log(
-              `[slack] Ignoring command from unauthorized channel: ${channelId}`,
-            );
+            console.log(`[slack] Ignoring command from unauthorized channel: ${channelId}`);
           }
           return;
         }
@@ -818,9 +760,7 @@ export class SlackChatClient implements ChatClient {
             if (this.debug) {
               console.error(`[slack] Command error: ${err}`);
             }
-            await respond(
-              `Error: ${err instanceof Error ? err.message : "Unknown error"}`,
-            );
+            await respond(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
           }
         }
       },
@@ -851,9 +791,7 @@ export class SlackChatClient implements ChatClient {
         // Check if channel is allowed
         if (!this.isChannelAllowed(channelId)) {
           if (this.debug) {
-            console.log(
-              `[slack] Ignoring button action from unauthorized channel: ${channelId}`,
-            );
+            console.log(`[slack] Ignoring button action from unauthorized channel: ${channelId}`);
           }
           return;
         }
@@ -879,19 +817,14 @@ export class SlackChatClient implements ChatClient {
             if (this.debug) {
               console.error(`[slack] Button action error: ${err}`);
             }
-            await respond(
-              `Error: ${err instanceof Error ? err.message : "Unknown error"}`,
-            );
+            await respond(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
           }
         }
       },
     );
   }
 
-  async connect(
-    onCommand: ChatCommandHandler,
-    onMessage?: ChatMessageHandler,
-  ): Promise<void> {
+  async connect(onCommand: ChatCommandHandler, onMessage?: ChatMessageHandler): Promise<void> {
     if (this.connected) {
       throw new Error("Already connected");
     }
@@ -931,25 +864,17 @@ export class SlackChatClient implements ChatClient {
       this.botUserId = authResult.user_id || authResult.bot_id;
 
       // Always show connection info
-      console.log(
-        `[slack] Workspace: ${authResult.team || "unknown"} (${authResult.url || ""})`,
-      );
-      console.log(
-        `[slack] Bot user: @${authResult.user || "unknown"} (ID: ${this.botUserId})`,
-      );
+      console.log(`[slack] Workspace: ${authResult.team || "unknown"} (${authResult.url || ""})`);
+      console.log(`[slack] Bot user: @${authResult.user || "unknown"} (ID: ${this.botUserId})`);
       if (authResult.app_id) {
         console.log(`[slack] App ID: ${authResult.app_id}`);
-        console.log(
-          `[slack] Configure at: https://api.slack.com/apps/${authResult.app_id}`,
-        );
+        console.log(`[slack] Configure at: https://api.slack.com/apps/${authResult.app_id}`);
       }
 
       // Show responder info
       if (this.respondersConfig) {
         const responderNames = Object.keys(this.respondersConfig);
-        console.log(
-          `[slack] Responders: ${responderNames.join(", ") || "(none)"}`,
-        );
+        console.log(`[slack] Responders: ${responderNames.join(", ") || "(none)"}`);
       } else {
         console.log(`[slack] Responders: (none configured)`);
       }
@@ -959,9 +884,7 @@ export class SlackChatClient implements ChatClient {
       console.log(`[slack] For /ralph slash command to work:`);
       console.log(`[slack]   1. Go to Slack App settings → Slash Commands`);
       console.log(`[slack]   2. Create command: /ralph`);
-      console.log(
-        `[slack]   3. Enable "Escape channels, users, and links" option`,
-      );
+      console.log(`[slack]   3. Enable "Escape channels, users, and links" option`);
 
       this.connected = true;
     } catch (err) {
@@ -971,11 +894,7 @@ export class SlackChatClient implements ChatClient {
     }
   }
 
-  async sendMessage(
-    chatId: string,
-    text: string,
-    options?: SendMessageOptions,
-  ): Promise<void> {
+  async sendMessage(chatId: string, text: string, options?: SendMessageOptions): Promise<void> {
     if (!this.connected || !this.webClient) {
       throw new Error("Not connected");
     }
@@ -1063,9 +982,6 @@ export class SlackChatClient implements ChatClient {
 /**
  * Create a Slack chat client from settings.
  */
-export function createSlackClient(
-  settings: SlackSettings,
-  debug = false,
-): ChatClient {
+export function createSlackClient(settings: SlackSettings, debug = false): ChatClient {
   return new SlackChatClient(settings, debug);
 }

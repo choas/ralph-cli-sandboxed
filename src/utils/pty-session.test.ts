@@ -114,10 +114,7 @@ describe("trimToChatRegion", () => {
 
 describe("deltaLines", () => {
   it("returns only the new suffix", () => {
-    expect(deltaLines(["a", "b", "c"], ["a", "b", "c", "d", "e"])).toEqual([
-      "d",
-      "e",
-    ]);
+    expect(deltaLines(["a", "b", "c"], ["a", "b", "c", "d", "e"])).toEqual(["d", "e"]);
   });
 
   it("returns the divergent tail when lines change", () => {

@@ -52,9 +52,7 @@ describe("validatePrd", () => {
       },
     ]);
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("invalid category"))).toBe(
-      true,
-    );
+    expect(result.errors.some((e) => e.includes("invalid category"))).toBe(true);
   });
 
   it("rejects non-string steps", () => {
@@ -67,9 +65,7 @@ describe("validatePrd", () => {
       },
     ]);
     expect(result.valid).toBe(false);
-    expect(
-      result.errors.some((e) => e.includes("step 1 must be a string")),
-    ).toBe(true);
+    expect(result.errors.some((e) => e.includes("step 1 must be a string"))).toBe(true);
   });
 
   it("rejects non-boolean passes", () => {
@@ -114,9 +110,7 @@ describe("validatePrd", () => {
   it("rejects non-object items", () => {
     const result = validatePrd(["not an object"]);
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("must be an object"))).toBe(
-      true,
-    );
+    expect(result.errors.some((e) => e.includes("must be an object"))).toBe(true);
   });
 
   it("rejects empty description", () => {
@@ -140,15 +134,7 @@ describe("validatePrd", () => {
   });
 
   it("accepts all valid category values", () => {
-    const categories = [
-      "ui",
-      "feature",
-      "bugfix",
-      "setup",
-      "development",
-      "testing",
-      "docs",
-    ];
+    const categories = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
     for (const category of categories) {
       const result = validatePrd([
         {
@@ -210,9 +196,7 @@ describe("validatePrd", () => {
   it("rejects null items in array", () => {
     const result = validatePrd([null]);
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("must be an object"))).toBe(
-      true,
-    );
+    expect(result.errors.some((e) => e.includes("must be an object"))).toBe(true);
   });
 
   it("rejects number items in array", () => {
@@ -239,9 +223,7 @@ describe("validatePrd", () => {
   });
 
   it("rejects missing category entirely", () => {
-    const result = validatePrd([
-      { description: "test", steps: ["step"], passes: false },
-    ]);
+    const result = validatePrd([{ description: "test", steps: ["step"], passes: false }]);
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes("category"))).toBe(true);
   });
@@ -297,9 +279,7 @@ describe("validatePrd", () => {
       },
     ]);
     expect(result.valid).toBe(false);
-    expect(
-      result.errors.some((e) => e.includes("step 2 must be a string")),
-    ).toBe(true);
+    expect(result.errors.some((e) => e.includes("step 2 must be a string"))).toBe(true);
   });
 
   it("allows items with passes: true", () => {
@@ -414,10 +394,7 @@ describe("extractPassingItems", () => {
   });
 
   it("skips items without description", () => {
-    const items = extractPassingItems([
-      { passes: true },
-      { description: "Valid", passes: true },
-    ]);
+    const items = extractPassingItems([{ passes: true }, { description: "Valid", passes: true }]);
     expect(items).toHaveLength(1);
     expect(items[0].description).toBe("Valid");
   });
@@ -499,9 +476,7 @@ describe("extractPassingItems", () => {
   });
 
   it("handles 'feature' as alternative description field", () => {
-    const items = extractPassingItems([
-      { feature: "My feature", passes: true },
-    ]);
+    const items = extractPassingItems([{ feature: "My feature", passes: true }]);
     expect(items).toHaveLength(1);
     expect(items[0].description).toBe("My feature");
   });
@@ -519,49 +494,37 @@ describe("extractPassingItems", () => {
   });
 
   it("handles 'finished' as alternative passes field", () => {
-    const items = extractPassingItems([
-      { description: "test", finished: true },
-    ]);
+    const items = extractPassingItems([{ description: "test", finished: true }]);
     expect(items).toHaveLength(1);
     expect(items[0].passes).toBe(true);
   });
 
   it("handles string status 'true'", () => {
-    const items = extractPassingItems([
-      { description: "test", passes: "true" },
-    ]);
+    const items = extractPassingItems([{ description: "test", passes: "true" }]);
     expect(items).toHaveLength(1);
     expect(items[0].passes).toBe(true);
   });
 
   it("handles string status 'pass'", () => {
-    const items = extractPassingItems([
-      { description: "test", status: "pass" },
-    ]);
+    const items = extractPassingItems([{ description: "test", status: "pass" }]);
     expect(items).toHaveLength(1);
     expect(items[0].passes).toBe(true);
   });
 
   it("handles string status 'passed'", () => {
-    const items = extractPassingItems([
-      { description: "test", status: "passed" },
-    ]);
+    const items = extractPassingItems([{ description: "test", status: "passed" }]);
     expect(items).toHaveLength(1);
     expect(items[0].passes).toBe(true);
   });
 
   it("handles string status 'done'", () => {
-    const items = extractPassingItems([
-      { description: "test", status: "done" },
-    ]);
+    const items = extractPassingItems([{ description: "test", status: "done" }]);
     expect(items).toHaveLength(1);
     expect(items[0].passes).toBe(true);
   });
 
   it("handles string status 'finished'", () => {
-    const items = extractPassingItems([
-      { description: "test", status: "finished" },
-    ]);
+    const items = extractPassingItems([{ description: "test", status: "finished" }]);
     expect(items).toHaveLength(1);
     expect(items[0].passes).toBe(true);
   });
@@ -656,9 +619,7 @@ describe("smartMerge", () => {
   });
 
   it("warns on unmatched items", () => {
-    const corrupted = [
-      { description: "Completely unrelated xyz abc", passes: true },
-    ];
+    const corrupted = [{ description: "Completely unrelated xyz abc", passes: true }];
     const result = smartMerge(original, corrupted);
     expect(result.itemsUpdated).toBe(0);
     expect(result.warnings.length).toBeGreaterThan(0);
@@ -743,9 +704,7 @@ describe("smartMerge", () => {
   });
 
   it("matches when corrupted description contains original description", () => {
-    const corrupted = [
-      { description: "We need to Add login page soon", passes: true },
-    ];
+    const corrupted = [{ description: "We need to Add login page soon", passes: true }];
     const result = smartMerge(original, corrupted);
     expect(result.itemsUpdated).toBe(1);
   });
@@ -937,9 +896,7 @@ describe("attemptRecovery", () => {
 
   it("recovers from 'requirements' wrapper", () => {
     const corrupted = {
-      requirements: [
-        { category: "feature", description: "A requirement", passes: false },
-      ],
+      requirements: [{ category: "feature", description: "A requirement", passes: false }],
     };
     const result = attemptRecovery(corrupted);
     expect(result).toHaveLength(1);
@@ -961,9 +918,7 @@ describe("attemptRecovery", () => {
   });
 
   it("uses 'title' as alternative for description", () => {
-    const corrupted = [
-      { category: "feature", title: "My title", passes: false },
-    ];
+    const corrupted = [{ category: "feature", title: "My title", passes: false }];
     const result = attemptRecovery(corrupted);
     expect(result).toHaveLength(1);
     expect(result![0].description).toBe("My title");
@@ -1012,45 +967,35 @@ describe("attemptRecovery", () => {
   });
 
   it("handles string passes value 'fail'", () => {
-    const corrupted = [
-      { category: "feature", description: "Test", status: "fail" },
-    ];
+    const corrupted = [{ category: "feature", description: "Test", status: "fail" }];
     const result = attemptRecovery(corrupted);
     expect(result).not.toBeNull();
     expect(result![0].passes).toBe(false);
   });
 
   it("handles string passes value 'failed'", () => {
-    const corrupted = [
-      { category: "feature", description: "Test", status: "failed" },
-    ];
+    const corrupted = [{ category: "feature", description: "Test", status: "failed" }];
     const result = attemptRecovery(corrupted);
     expect(result).not.toBeNull();
     expect(result![0].passes).toBe(false);
   });
 
   it("handles string passes value 'pending'", () => {
-    const corrupted = [
-      { category: "feature", description: "Test", status: "pending" },
-    ];
+    const corrupted = [{ category: "feature", description: "Test", status: "pending" }];
     const result = attemptRecovery(corrupted);
     expect(result).not.toBeNull();
     expect(result![0].passes).toBe(false);
   });
 
   it("handles string passes value 'incomplete'", () => {
-    const corrupted = [
-      { category: "feature", description: "Test", status: "incomplete" },
-    ];
+    const corrupted = [{ category: "feature", description: "Test", status: "incomplete" }];
     const result = attemptRecovery(corrupted);
     expect(result).not.toBeNull();
     expect(result![0].passes).toBe(false);
   });
 
   it("defaults passes to false when status field is unrecognized string", () => {
-    const corrupted = [
-      { category: "feature", description: "Test", status: "in-progress" },
-    ];
+    const corrupted = [{ category: "feature", description: "Test", status: "in-progress" }];
     const result = attemptRecovery(corrupted);
     expect(result).not.toBeNull();
     expect(result![0].passes).toBe(false);
@@ -1097,9 +1042,7 @@ describe("attemptRecovery", () => {
   });
 
   it("skips invalid category values and returns null", () => {
-    const corrupted = [
-      { category: "invalid", description: "Test", passes: false },
-    ];
+    const corrupted = [{ category: "invalid", description: "Test", passes: false }];
     const result = attemptRecovery(corrupted);
     // 'invalid' is not in VALID_CATEGORIES, so category won't be set -> null
     expect(result).toBeNull();
@@ -1261,9 +1204,7 @@ nested:
 describe("expandFileReferences", () => {
   it("returns empty string for non-string input", () => {
     expect(expandFileReferences(null as unknown as string, "/base")).toBe("");
-    expect(expandFileReferences(undefined as unknown as string, "/base")).toBe(
-      "",
-    );
+    expect(expandFileReferences(undefined as unknown as string, "/base")).toBe("");
   });
 
   it("returns text unchanged when no references", () => {
@@ -1271,10 +1212,7 @@ describe("expandFileReferences", () => {
   });
 
   it("replaces missing file references with error message", () => {
-    const result = expandFileReferences(
-      "Load @{/nonexistent/file.txt} here",
-      "/base",
-    );
+    const result = expandFileReferences("Load @{/nonexistent/file.txt} here", "/base");
     expect(result).toContain("[File not found:");
   });
 
@@ -1307,10 +1245,7 @@ describe("expandFileReferences", () => {
   });
 
   it("preserves surrounding text around file references", () => {
-    const result = expandFileReferences(
-      "Before @{/nonexistent.txt} After",
-      "/base",
-    );
+    const result = expandFileReferences("Before @{/nonexistent.txt} After", "/base");
     expect(result).toMatch(/^Before .* After$/);
   });
 

@@ -154,10 +154,7 @@ export function ScrollableContainer({
         {/* Down scroll indicator */}
         {showScrollIndicators && hasOverflow && (
           <Box justifyContent="flex-end">
-            <Text
-              color={canScrollDown ? "cyan" : "gray"}
-              dimColor={!canScrollDown}
-            >
+            <Text color={canScrollDown ? "cyan" : "gray"} dimColor={!canScrollDown}>
               {canScrollDown ? "▼ more" : ""}
             </Text>
           </Box>

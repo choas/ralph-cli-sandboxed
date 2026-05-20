@@ -42,10 +42,7 @@ const PROGRESS_INTERVAL = 5000;
  * Replaces {{message}} placeholder in command string with the actual message.
  * Escapes the message to prevent shell injection.
  */
-export function replaceMessagePlaceholder(
-  command: string,
-  message: string,
-): string {
+export function replaceMessagePlaceholder(command: string, message: string): string {
   // Escape single quotes in the message for safe shell interpolation
   const escapedMessage = message.replace(/'/g, "'\\''");
   return command.replace(/\{\{message\}\}/g, escapedMessage);
@@ -125,10 +122,8 @@ export async function executeCLIResponder(
   responderConfig: ResponderConfig,
   options?: CLIResponderOptions,
 ): Promise<ResponderResult> {
-  const timeout =
-    options?.timeout ?? responderConfig.timeout ?? DEFAULT_TIMEOUT;
-  const maxLength =
-    options?.maxLength ?? responderConfig.maxLength ?? DEFAULT_MAX_LENGTH;
+  const timeout = options?.timeout ?? responderConfig.timeout ?? DEFAULT_TIMEOUT;
+  const maxLength = options?.maxLength ?? responderConfig.maxLength ?? DEFAULT_MAX_LENGTH;
   const cwd = options?.cwd ?? process.cwd();
   const onProgress = options?.onProgress;
   const additionalEnv = options?.env ?? {};
@@ -222,12 +217,9 @@ export async function executeCLIResponder(
         if (now - lastProgressSent >= PROGRESS_INTERVAL && stdout.length > 0) {
           // Send a progress indicator
           const lines = stdout.split("\n");
-          const lastLine =
-            lines[lines.length - 1] || lines[lines.length - 2] || "";
+          const lastLine = lines[lines.length - 1] || lines[lines.length - 2] || "";
           const truncatedLine =
-            lastLine.length > 100
-              ? lastLine.substring(0, 100) + "..."
-              : lastLine;
+            lastLine.length > 100 ? lastLine.substring(0, 100) + "..." : lastLine;
           onProgress(`⏳ Running... ${truncatedLine}`);
           lastProgressSent = now;
         }
@@ -256,10 +248,7 @@ export async function executeCLIResponder(
       if (code === 0 || code === null) {
         // Success - format and truncate output
         const output = formatCLIOutput(stdout, stderr);
-        const { text, truncated, originalLength } = truncateResponse(
-          output,
-          maxLength,
-        );
+        const { text, truncated, originalLength } = truncateResponse(output, maxLength);
 
         resolve({
           success: true,
@@ -271,10 +260,7 @@ export async function executeCLIResponder(
         // Failure - include stderr in error message
         const errorMsg = stderr.trim() || `Command exited with code ${code}`;
         const output = formatCLIOutput(stdout, "");
-        const { text, truncated, originalLength } = truncateResponse(
-          output,
-          maxLength,
-        );
+        const { text, truncated, originalLength } = truncateResponse(output, maxLength);
 
         resolve({
           success: false,
@@ -345,14 +331,8 @@ function formatCLIOutput(stdout: string, stderr: string): string {
  */
 export function createCLIResponder(
   responderConfig: ResponderConfig,
-): (
-  message: string,
-  options?: CLIResponderOptions,
-) => Promise<ResponderResult> {
-  return async (
-    message: string,
-    options?: CLIResponderOptions,
-  ): Promise<ResponderResult> => {
+): (message: string, options?: CLIResponderOptions) => Promise<ResponderResult> {
+  return async (message: string, options?: CLIResponderOptions): Promise<ResponderResult> => {
     return executeCLIResponder(message, responderConfig, options);
   };
 }
@@ -363,9 +343,7 @@ export function createCLIResponder(
  * @param responderConfig The responder configuration to validate
  * @returns An error message if invalid, or null if valid
  */
-export function validateCLIResponder(
-  responderConfig: ResponderConfig,
-): string | null {
+export function validateCLIResponder(responderConfig: ResponderConfig): string | null {
   if (responderConfig.type !== "cli") {
     return `Responder type is "${responderConfig.type}", expected "cli"`;
   }

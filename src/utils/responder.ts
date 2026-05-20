@@ -180,10 +180,7 @@ export class ResponderMatcher {
   /**
    * Extract the remaining message after a trigger, handling common separators.
    */
-  private extractArgsAfterTrigger(
-    message: string,
-    triggerLength: number,
-  ): string {
+  private extractArgsAfterTrigger(message: string, triggerLength: number): string {
     let remaining = message.slice(triggerLength);
 
     // Remove leading separator if present (: or whitespace)

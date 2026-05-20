@@ -79,14 +79,10 @@ describe("ClaudeStreamParser", () => {
 
   it("parses file operations", () => {
     expect(
-      parser.parseStreamJsonLine(
-        JSON.stringify({ type: "file_edit", path: "src/main.ts" }),
-      ),
+      parser.parseStreamJsonLine(JSON.stringify({ type: "file_edit", path: "src/main.ts" })),
     ).toContain("src/main.ts");
     expect(
-      parser.parseStreamJsonLine(
-        JSON.stringify({ type: "file_read", path: "README.md" }),
-      ),
+      parser.parseStreamJsonLine(JSON.stringify({ type: "file_read", path: "README.md" })),
     ).toContain("README.md");
   });
 
@@ -108,12 +104,8 @@ describe("ClaudeStreamParser", () => {
   });
 
   it("handles message lifecycle events", () => {
-    expect(
-      parser.parseStreamJsonLine(JSON.stringify({ type: "message_start" })),
-    ).toBe("\n");
-    expect(
-      parser.parseStreamJsonLine(JSON.stringify({ type: "message_stop" })),
-    ).toBe("\n");
+    expect(parser.parseStreamJsonLine(JSON.stringify({ type: "message_start" }))).toBe("\n");
+    expect(parser.parseStreamJsonLine(JSON.stringify({ type: "message_stop" }))).toBe("\n");
     expect(
       parser.parseStreamJsonLine(
         JSON.stringify({
@@ -130,15 +122,11 @@ describe("ClaudeStreamParser", () => {
   });
 
   it("falls back to text/content/message fields", () => {
+    expect(parser.parseStreamJsonLine(JSON.stringify({ type: "unknown", text: "fallback" }))).toBe(
+      "fallback",
+    );
     expect(
-      parser.parseStreamJsonLine(
-        JSON.stringify({ type: "unknown", text: "fallback" }),
-      ),
-    ).toBe("fallback");
-    expect(
-      parser.parseStreamJsonLine(
-        JSON.stringify({ type: "unknown", content: "fallback2" }),
-      ),
+      parser.parseStreamJsonLine(JSON.stringify({ type: "unknown", content: "fallback2" })),
     ).toBe("fallback2");
   });
 
@@ -347,9 +335,7 @@ describe("GeminiStreamParser", () => {
   it("parses model role messages", () => {
     const line = JSON.stringify({
       type: "messages",
-      messages: [
-        { role: "model", content: [{ type: "text", text: "Model says" }] },
-      ],
+      messages: [{ role: "model", content: [{ type: "text", text: "Model says" }] }],
     });
     expect(parser.parseStreamJsonLine(line)).toBe("Model says");
   });
@@ -1033,9 +1019,7 @@ describe("AiderStreamParser", () => {
   });
 
   it("returns raw line for non-JSON input", () => {
-    expect(parser.parseStreamJsonLine("plain text output")).toBe(
-      "plain text output",
-    );
+    expect(parser.parseStreamJsonLine("plain text output")).toBe("plain text output");
   });
 
   // --- new edge case tests ---
@@ -1270,9 +1254,7 @@ describe("getStreamJsonParser", () => {
   });
 
   it("returns OpenCodeStreamParser for 'opencode'", () => {
-    expect(getStreamJsonParser("opencode")).toBeInstanceOf(
-      OpenCodeStreamParser,
-    );
+    expect(getStreamJsonParser("opencode")).toBeInstanceOf(OpenCodeStreamParser);
   });
 
   it("returns CodexStreamParser for 'codex'", () => {

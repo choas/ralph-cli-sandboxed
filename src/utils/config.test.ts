@@ -418,9 +418,7 @@ describe("getLLMProviderBaseUrl", () => {
       model: "gpt-4o",
       baseUrl: "https://my-proxy.example.com/v1",
     };
-    expect(getLLMProviderBaseUrl(provider)).toBe(
-      "https://my-proxy.example.com/v1",
-    );
+    expect(getLLMProviderBaseUrl(provider)).toBe("https://my-proxy.example.com/v1");
   });
 
   it("explicit baseUrl overrides default for ollama", () => {

@@ -7,15 +7,7 @@ import { getValueAtPath } from "./EditorPanel.js";
 /**
  * Token types for JSON syntax highlighting.
  */
-type TokenType =
-  | "key"
-  | "string"
-  | "number"
-  | "boolean"
-  | "null"
-  | "bracket"
-  | "colon"
-  | "comma";
+type TokenType = "key" | "string" | "number" | "boolean" | "null" | "bracket" | "colon" | "comma";
 
 /**
  * A token in the highlighted JSON output.
@@ -164,11 +156,7 @@ function highlightJson(jsonString: string): HighlightedLine[] {
 /**
  * Render a single highlighted line.
  */
-function HighlightedLineComponent({
-  line,
-}: {
-  line: HighlightedLine;
-}): React.ReactElement {
+function HighlightedLineComponent({ line }: { line: HighlightedLine }): React.ReactElement {
   return (
     <Box>
       {/* Indentation */}
@@ -271,13 +259,7 @@ export function Preview({
 
   if (!config || !sectionData || Object.keys(sectionData).length === 0) {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="gray"
-        paddingX={1}
-        width={40}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} width={40}>
         <Box marginBottom={1}>
           <Text bold color="yellow">
             JSON Preview
@@ -289,13 +271,7 @@ export function Preview({
   }
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="single"
-      borderColor="gray"
-      paddingX={1}
-      width={40}
-    >
+    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} width={40}>
       {/* Header */}
       <Box marginBottom={1} justifyContent="space-between">
         <Text bold color="yellow">
@@ -310,10 +286,7 @@ export function Preview({
           <HighlightedLineComponent key={index} line={line} />
         ))}
         {isOverflowing && (
-          <Text dimColor>
-            {" "}
-            ... ({highlightedLines.length - maxHeight + 1} more lines)
-          </Text>
+          <Text dimColor> ... ({highlightedLines.length - maxHeight + 1} more lines)</Text>
         )}
       </Box>
 

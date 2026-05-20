@@ -1,10 +1,6 @@
 import { existsSync } from "fs";
 import { isRunningInContainer } from "./config.js";
-import {
-  getMessagesPath,
-  sendMessage,
-  waitForResponse,
-} from "./message-queue.js";
+import { getMessagesPath, sendMessage, waitForResponse } from "./message-queue.js";
 
 // Re-export types for backwards compatibility
 export interface DaemonRequest {
@@ -96,9 +92,7 @@ export async function pingDaemon(): Promise<boolean> {
  *
  * @param message The notification message
  */
-export async function sendDaemonNotification(
-  message: string,
-): Promise<DaemonResponse> {
+export async function sendDaemonNotification(message: string): Promise<DaemonResponse> {
   return sendDaemonRequest("notify", [message]);
 }
 
@@ -108,9 +102,7 @@ export async function sendDaemonNotification(
  *
  * @param message The notification message
  */
-export async function sendSlackNotification(
-  message: string,
-): Promise<DaemonResponse> {
+export async function sendSlackNotification(message: string): Promise<DaemonResponse> {
   return sendDaemonRequest("slack_notify", [message]);
 }
 
@@ -120,9 +112,7 @@ export async function sendSlackNotification(
  *
  * @param message The notification message
  */
-export async function sendTelegramNotification(
-  message: string,
-): Promise<DaemonResponse> {
+export async function sendTelegramNotification(message: string): Promise<DaemonResponse> {
   return sendDaemonRequest("telegram_notify", [message]);
 }
 
@@ -132,8 +122,6 @@ export async function sendTelegramNotification(
  *
  * @param message The notification message
  */
-export async function sendDiscordNotification(
-  message: string,
-): Promise<DaemonResponse> {
+export async function sendDiscordNotification(message: string): Promise<DaemonResponse> {
   return sendDaemonRequest("discord_notify", [message]);
 }

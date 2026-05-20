@@ -1,10 +1,4 @@
-import {
-  existsSync,
-  writeFileSync,
-  mkdirSync,
-  copyFileSync,
-  chmodSync,
-} from "fs";
+import { existsSync, writeFileSync, mkdirSync, copyFileSync, chmodSync } from "fs";
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
 import {
@@ -64,9 +58,7 @@ export async function init(args: string[]): Promise<void> {
   // Check for existing .ralph directory
   if (existsSync(ralphDir)) {
     if (!useDefaults) {
-      const reinit = await promptConfirm(
-        ".ralph/ directory already exists. Re-initialize?",
-      );
+      const reinit = await promptConfirm(".ralph/ directory already exists. Re-initialize?");
       if (!reinit) {
         console.log("Aborted.");
         return;
@@ -125,12 +117,8 @@ export async function init(args: string[]): Promise<void> {
     // Handle custom CLI provider
     if (selectedCliProviderKey === "custom") {
       const customCommand = await promptInput("\nEnter your CLI command: ");
-      const customArgsInput = await promptInput(
-        "Enter default arguments (space-separated): ",
-      );
-      const customArgs = customArgsInput.trim()
-        ? customArgsInput.trim().split(/\s+/)
-        : [];
+      const customArgsInput = await promptInput("Enter default arguments (space-separated): ");
+      const customArgs = customArgsInput.trim() ? customArgsInput.trim().split(/\s+/) : [];
       const customYoloArgsInput = await promptInput(
         "Enter yolo/auto-approve arguments (space-separated): ",
       );
@@ -154,17 +142,12 @@ export async function init(args: string[]): Promise<void> {
       cliConfig = {
         command: selectedProvider.command,
         args: selectedProvider.defaultArgs,
-        yoloArgs:
-          selectedProvider.yoloArgs.length > 0
-            ? selectedProvider.yoloArgs
-            : undefined,
+        yoloArgs: selectedProvider.yoloArgs.length > 0 ? selectedProvider.yoloArgs : undefined,
         promptArgs: selectedProvider.promptArgs ?? [],
       };
     }
 
-    console.log(
-      `\nSelected CLI provider: ${CLI_PROVIDERS[selectedCliProviderKey].name}`,
-    );
+    console.log(`\nSelected CLI provider: ${CLI_PROVIDERS[selectedCliProviderKey].name}`);
 
     // Optional: specify default model
     const modelInput = await promptInput(
@@ -192,9 +175,7 @@ export async function init(args: string[]): Promise<void> {
 
     // Step 3: Select technology stack if available (third)
     if (config.technologies && config.technologies.length > 0) {
-      const techOptions = config.technologies.map(
-        (t) => `${t.name} - ${t.description}`,
-      );
+      const techOptions = config.technologies.map((t) => `${t.name} - ${t.description}`);
       const techNames = config.technologies.map((t) => t.name);
 
       selectedTechnologies = await promptMultiSelectWithArrows(
@@ -209,9 +190,7 @@ export async function init(args: string[]): Promise<void> {
       });
 
       if (selectedTechnologies.length > 0) {
-        console.log(
-          `\nSelected technologies: ${selectedTechnologies.join(", ")}`,
-        );
+        console.log(`\nSelected technologies: ${selectedTechnologies.join(", ")}`);
       } else {
         console.log("\nNo technologies selected.");
       }
@@ -220,9 +199,7 @@ export async function init(args: string[]): Promise<void> {
     // Step 4: Select skills if available for this language
     const availableSkills = getSkillsForLanguage(selectedKey);
     if (availableSkills.length > 0) {
-      const skillOptions = availableSkills.map(
-        (s) => `${s.name} - ${s.description}`,
-      );
+      const skillOptions = availableSkills.map((s) => `${s.name} - ${s.description}`);
 
       const selectedSkillNames = await promptMultiSelectWithArrows(
         "Select AI coding rules/skills to enable (optional):",
@@ -242,9 +219,7 @@ export async function init(args: string[]): Promise<void> {
       });
 
       if (selectedSkills.length > 0) {
-        console.log(
-          `\nSelected skills: ${selectedSkills.map((s) => s.name).join(", ")}`,
-        );
+        console.log(`\nSelected skills: ${selectedSkills.map((s) => s.name).join(", ")}`);
       } else {
         console.log("\nNo skills selected.");
       }
@@ -293,14 +268,10 @@ export async function init(args: string[]): Promise<void> {
 
         if (presetIds.length > 0) {
           selectedResponders = presetsToRespondersConfig(presetIds);
-          console.log(
-            `\nConfigured responders: ${Object.keys(selectedResponders).join(", ")}`,
-          );
+          console.log(`\nConfigured responders: ${Object.keys(selectedResponders).join(", ")}`);
         }
       } else {
-        console.log(
-          "\nSkipping responders - you can configure them later in config.json",
-        );
+        console.log("\nSkipping responders - you can configure them later in config.json");
       }
     }
 
@@ -309,11 +280,8 @@ export async function init(args: string[]): Promise<void> {
     testCommand = config.testCommand;
 
     if (selectedKey === "none") {
-      checkCommand =
-        (await promptInput("\nEnter your type/build check command: ")) ||
-        checkCommand;
-      testCommand =
-        (await promptInput("Enter your test command: ")) || testCommand;
+      checkCommand = (await promptInput("\nEnter your type/build check command: ")) || checkCommand;
+      testCommand = (await promptInput("Enter your test command: ")) || testCommand;
     }
   }
 
@@ -330,16 +298,14 @@ export async function init(args: string[]): Promise<void> {
   const imageName = `ralph-${projectName}`;
 
   // Generate macOS development actions for Swift + SwiftUI projects
-  const macOsActions: Record<string, { command: string; description: string }> =
-    {};
+  const macOsActions: Record<string, { command: string; description: string }> = {};
   if (selectedKey === "swift" && hasSwiftUI(selectedTechnologies)) {
     macOsActions.gen_xcode = {
       command: "./scripts/gen_xcode.sh",
       description: "Generate Xcode project from Swift package",
     };
     macOsActions.build = {
-      command:
-        "xcodebuild -project *.xcodeproj -scheme * -configuration Debug build",
+      command: "xcodebuild -project *.xcodeproj -scheme * -configuration Debug build",
       description: "Build the Xcode project in Debug mode",
     };
     macOsActions.test = {
@@ -483,9 +449,7 @@ export async function init(args: string[]): Promise<void> {
     }
   } else {
     writeFileSync(promptPath, prompt + "\n");
-    console.log(
-      `${existsSync(promptPath) ? "Updated" : "Created"} ${RALPH_DIR}/${PROMPT_FILE}`,
-    );
+    console.log(`${existsSync(promptPath) ? "Updated" : "Created"} ${RALPH_DIR}/${PROMPT_FILE}`);
   }
 
   // Create PRD if not exists (check for both yaml and json)
@@ -547,9 +511,7 @@ docker/.config-hash
       basename(cwd)
         .replace(/[^a-zA-Z0-9]+/g, " ")
         .split(" ")
-        .map(
-          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
-        )
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join("") || "App";
 
     if (!existsSync(genXcodePath)) {
@@ -587,10 +549,7 @@ docker/.config-hash
       }
 
       if (!existsSync(readmePath)) {
-        writeFileSync(
-          readmePath,
-          generateFastlaneReadmeSection(swiftProjectName),
-        );
+        writeFileSync(readmePath, generateFastlaneReadmeSection(swiftProjectName));
         console.log("Created scripts/fastlane/README.md");
       } else {
         console.log("Skipped scripts/fastlane/README.md (already exists)");
@@ -617,9 +576,7 @@ docker/.config-hash
   console.log("\nRalph initialized successfully!");
   console.log("\nNext steps:");
   console.log("  1. Edit .ralph/prd.yaml to add your project requirements");
-  console.log(
-    "  2. Run 'ralph docker run' to start (auto-builds image on first run)",
-  );
+  console.log("  2. Run 'ralph docker run' to start (auto-builds image on first run)");
   console.log("\nSee .ralph/HOW-TO-WRITE-PRDs.md for guidance on writing PRDs");
   console.log("To regenerate Docker files: ralph docker init");
 }

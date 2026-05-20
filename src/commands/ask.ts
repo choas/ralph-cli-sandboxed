@@ -1,8 +1,5 @@
 import { loadConfig, ResponderConfig } from "../utils/config.js";
-import {
-  loadResponderPresets,
-  presetToResponderConfig,
-} from "../utils/responder-presets.js";
+import { loadResponderPresets, presetToResponderConfig } from "../utils/responder-presets.js";
 import { executeLLMResponder } from "../responders/llm-responder.js";
 import { executeClaudeCodeResponder } from "../responders/claude-code-responder.js";
 import { executeCLIResponder } from "../responders/cli-responder.js";
@@ -126,9 +123,7 @@ function listPresets(): void {
 
   console.log("Built-in presets:");
   for (const [id, preset] of Object.entries(presetsConfig.presets)) {
-    console.log(
-      `  ${id.padEnd(12)} ${preset.type.padEnd(14)} ${preset.description}`,
-    );
+    console.log(`  ${id.padEnd(12)} ${preset.type.padEnd(14)} ${preset.description}`);
   }
 
   // Show config responders if available
@@ -138,9 +133,7 @@ function listPresets(): void {
     if (responders && Object.keys(responders).length > 0) {
       console.log("\nConfigured responders:");
       for (const [name, cfg] of Object.entries(responders)) {
-        console.log(
-          `  ${name.padEnd(12)} ${cfg.type.padEnd(14)} (from config.json)`,
-        );
+        console.log(`  ${name.padEnd(12)} ${cfg.type.padEnd(14)} (from config.json)`);
       }
     }
   } catch {

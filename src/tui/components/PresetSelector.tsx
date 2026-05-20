@@ -32,10 +32,7 @@ export function PresetSelector({
   isFocused = true,
 }: PresetSelectorProps): React.ReactElement {
   const presets = useMemo(() => getPresetsForSection(sectionId), [sectionId]);
-  const activePresetId = useMemo(
-    () => detectActivePreset(config, sectionId),
-    [config, sectionId],
-  );
+  const activePresetId = useMemo(() => detectActivePreset(config, sectionId), [config, sectionId]);
 
   // Include "Skip" option at the end
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -83,12 +80,7 @@ export function PresetSelector({
   const sectionTitle = sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="single"
-      borderColor="cyan"
-      paddingX={1}
-    >
+    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
       {/* Header */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
@@ -99,8 +91,7 @@ export function PresetSelector({
       {/* Description */}
       <Box marginBottom={1}>
         <Text dimColor>
-          Select a preset to auto-fill common settings, or skip to configure
-          manually.
+          Select a preset to auto-fill common settings, or skip to configure manually.
         </Text>
       </Box>
 
@@ -113,9 +104,7 @@ export function PresetSelector({
           <Box key={preset.id} flexDirection="column">
             <Box>
               {/* Selection indicator */}
-              <Text color={isHighlighted ? "cyan" : undefined}>
-                {isHighlighted ? "▸ " : "  "}
-              </Text>
+              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
               {/* Preset name */}
               <Text
                 bold={isHighlighted}

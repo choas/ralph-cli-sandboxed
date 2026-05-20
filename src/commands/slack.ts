@@ -155,9 +155,7 @@ async function createSlackApp(
       signingSecret: data.credentials!.signing_secret,
     };
   } catch (err) {
-    console.error(
-      `\nNetwork error: ${err instanceof Error ? err.message : "Unknown error"}`,
-    );
+    console.error(`\nNetwork error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return null;
   }
 }
@@ -167,48 +165,32 @@ async function createSlackApp(
  */
 async function setupSlack(): Promise<void> {
   console.log("\n=== Ralph Slack Setup ===\n");
-  console.log(
-    "This wizard will create a new Slack app for your Ralph instance.",
-  );
-  console.log(
-    "Each Ralph instance needs its own Slack app to avoid message routing issues.\n",
-  );
+  console.log("This wizard will create a new Slack app for your Ralph instance.");
+  console.log("Each Ralph instance needs its own Slack app to avoid message routing issues.\n");
 
   // Check if config exists
   const ralphDir = getRalphDir();
   const configPath = join(ralphDir, "config.json");
 
   if (!existsSync(configPath)) {
-    console.error(
-      "Error: .ralph/config.json not found. Run 'ralph init' first.",
-    );
+    console.error("Error: .ralph/config.json not found. Run 'ralph init' first.");
     process.exit(1);
   }
 
   // Step 1: Get configuration token
   console.log("Step 1: Configuration Token\n");
-  console.log(
-    "You need a Slack configuration token to create apps programmatically.",
-  );
-  console.log(
-    "This token is tied to your Slack account (not per-app) - you can reuse it.",
-  );
+  console.log("You need a Slack configuration token to create apps programmatically.");
+  console.log("This token is tied to your Slack account (not per-app) - you can reuse it.");
   console.log("\nGet one at: https://api.slack.com/apps");
   console.log("  → Scroll down to 'Your App Configuration Tokens'");
   console.log("  → Click 'Generate Token' and select your workspace");
   console.log("  → Copy the 'Access Token' (not the Refresh Token)\n");
 
-  const configToken = await promptInput(
-    "Paste your configuration token (xoxe-...): ",
-  );
+  const configToken = await promptInput("Paste your configuration token (xoxe-...): ");
 
   if (!configToken.startsWith("xoxe")) {
-    console.error(
-      "\nInvalid token format. Configuration tokens start with 'xoxe'.",
-    );
-    console.error(
-      "Note: This is different from bot tokens (xoxb-) or app tokens (xapp-).",
-    );
+    console.error("\nInvalid token format. Configuration tokens start with 'xoxe'.");
+    console.error("Note: This is different from bot tokens (xoxb-) or app tokens (xapp-).");
     process.exit(1);
   }
 
@@ -236,9 +218,7 @@ async function setupSlack(): Promise<void> {
   const appResult = await createSlackApp(configToken, appName);
 
   if (!appResult) {
-    console.error(
-      "\nFailed to create Slack app. Please check your token and try again.",
-    );
+    console.error("\nFailed to create Slack app. Please check your token and try again.");
     process.exit(1);
   }
 
@@ -248,9 +228,7 @@ async function setupSlack(): Promise<void> {
   // Step 4: Install the app
   console.log("\nStep 4: Install the App to Your Workspace\n");
   console.log("Open this URL in your browser to install the app:");
-  console.log(
-    `\n  https://api.slack.com/apps/${appResult.appId}/install-on-team\n`,
-  );
+  console.log(`\n  https://api.slack.com/apps/${appResult.appId}/install-on-team\n`);
   console.log("Click 'Install to Workspace' and authorize the app.");
 
   await promptInput("Press Enter after you've installed the app...");
@@ -272,9 +250,7 @@ async function setupSlack(): Promise<void> {
   console.log("\nStep 6: App-Level Token for Socket Mode\n");
   console.log("Socket Mode requires an app-level token. Generate one at:");
   console.log(`  https://api.slack.com/apps/${appResult.appId}/general`);
-  console.log(
-    "\nScroll to 'App-Level Tokens' and click 'Generate Token and Scopes'.",
-  );
+  console.log("\nScroll to 'App-Level Tokens' and click 'Generate Token and Scopes'.");
   console.log("  → Name it something like 'socket-mode'");
   console.log("  → Add the scope: connections:write");
   console.log("  → Click 'Generate'\n");
@@ -293,9 +269,7 @@ async function setupSlack(): Promise<void> {
     "To get a channel ID: right-click the channel → 'View channel details' → scroll down.\n",
   );
 
-  const channelId = await promptInput(
-    "Channel ID to restrict to (leave empty for all): ",
-  );
+  const channelId = await promptInput("Channel ID to restrict to (leave empty for all): ");
 
   // Step 8: Save configuration
   console.log("\nStep 8: Saving Configuration...\n");
@@ -329,10 +303,7 @@ async function setupSlack(): Promise<void> {
 
     try {
       // Dynamic import to avoid issues if @slack/web-api isn't installed
-      const dynamicImport = new Function(
-        "specifier",
-        "return import(specifier)",
-      );
+      const dynamicImport = new Function("specifier", "return import(specifier)");
       const { WebClient } = await dynamicImport("@slack/web-api");
       const client = new WebClient(botToken);
 
@@ -377,32 +348,19 @@ function showStatus(): void {
 
     if (!slack) {
       console.log("Status: Not configured");
-      console.log(
-        "\nRun 'ralph slack setup' to configure Slack integration.\n",
-      );
+      console.log("\nRun 'ralph slack setup' to configure Slack integration.\n");
       return;
     }
 
     console.log(`Provider: ${config.chat?.provider || "not set"}`);
     console.log(`Enabled: ${slack.enabled !== false ? "Yes" : "No"}`);
-    console.log(
-      `Bot Token: ${slack.botToken ? maskToken(slack.botToken) : "not set"}`,
-    );
-    console.log(
-      `App Token: ${slack.appToken ? maskToken(slack.appToken) : "not set"}`,
-    );
-    console.log(
-      `Signing Secret: ${slack.signingSecret ? "••••••••" : "not set"}`,
-    );
-    console.log(
-      `Allowed Channels: ${slack.allowedChannelIds?.join(", ") || "all"}`,
-    );
+    console.log(`Bot Token: ${slack.botToken ? maskToken(slack.botToken) : "not set"}`);
+    console.log(`App Token: ${slack.appToken ? maskToken(slack.appToken) : "not set"}`);
+    console.log(`Signing Secret: ${slack.signingSecret ? "••••••••" : "not set"}`);
+    console.log(`Allowed Channels: ${slack.allowedChannelIds?.join(", ") || "all"}`);
     console.log();
   } catch (err) {
-    console.error(
-      "Error loading config:",
-      err instanceof Error ? err.message : "Unknown error",
-    );
+    console.error("Error loading config:", err instanceof Error ? err.message : "Unknown error");
     process.exit(1);
   }
 }

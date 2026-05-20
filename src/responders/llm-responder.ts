@@ -3,18 +3,8 @@
  * Used by chat clients to respond to messages matched by the responder matcher.
  */
 
-import {
-  ResponderConfig,
-  getLLMProviders,
-  loadConfig,
-  RalphConfig,
-} from "../utils/config.js";
-import {
-  createLLMClient,
-  LLMClient,
-  Message,
-  ChatOptions,
-} from "../utils/llm-client.js";
+import { ResponderConfig, getLLMProviders, loadConfig, RalphConfig } from "../utils/config.js";
+import { createLLMClient, LLMClient, Message, ChatOptions } from "../utils/llm-client.js";
 import { createResponderLog } from "../utils/responder-logger.js";
 import { basename, resolve } from "path";
 import { execSync } from "child_process";
@@ -79,10 +69,7 @@ const DEFAULT_TIMEOUT = 60000;
 /**
  * Replaces {{project}} placeholder in system prompt with actual project name.
  */
-export function applyProjectPlaceholder(
-  systemPrompt: string,
-  projectName: string,
-): string {
+export function applyProjectPlaceholder(systemPrompt: string, projectName: string): string {
   return systemPrompt.replace(/\{\{project\}\}/g, projectName);
 }
 
@@ -418,9 +405,7 @@ export function formatFileContext(fileResult: FileDetectionResult): string {
 
   for (const file of fileResult.filesRead) {
     const truncatedNote = file.truncated ? " (truncated)" : "";
-    const lineNote = file.lineNumber
-      ? ` (focus on line ${file.lineNumber})`
-      : "";
+    const lineNote = file.lineNumber ? ` (focus on line ${file.lineNumber})` : "";
 
     // Detect language for syntax highlighting
     const ext = file.path.split(".").pop() || "";
@@ -456,8 +441,7 @@ export function formatFileContext(fileResult: FileDetectionResult): string {
         (line, i) => `${String(start + i + 1).padStart(4, " ")} | ${line}`,
       );
       parts.push(numberedLines.join("\n"));
-      if (start > 0)
-        parts[parts.length - 1] = "...\n" + parts[parts.length - 1];
+      if (start > 0) parts[parts.length - 1] = "...\n" + parts[parts.length - 1];
       if (end < lines.length) parts[parts.length - 1] += "\n...";
     } else {
       parts.push(file.content);
@@ -596,10 +580,7 @@ export async function executeLLMResponder(
     // Prepare messages (use processed message which may include git diff content)
     // Include conversation history if provided for multi-turn chat
     const messages: Message[] = [];
-    if (
-      options?.conversationHistory &&
-      options.conversationHistory.length > 0
-    ) {
+    if (options?.conversationHistory && options.conversationHistory.length > 0) {
       for (const msg of options.conversationHistory) {
         messages.push({ role: msg.role, content: msg.content });
       }
@@ -645,10 +626,7 @@ export async function executeLLMResponder(
 
     // Truncate response if needed
     const maxLength = responderConfig.maxLength ?? DEFAULT_MAX_LENGTH;
-    const { text, truncated, originalLength } = truncateResponse(
-      response,
-      maxLength,
-    );
+    const { text, truncated, originalLength } = truncateResponse(response, maxLength);
 
     return {
       success: true,
@@ -677,10 +655,7 @@ export async function executeLLMResponder(
 export function createLLMResponder(
   responderConfig: ResponderConfig,
   config: RalphConfig,
-): (
-  message: string,
-  options?: LLMResponderOptions,
-) => Promise<ResponderResult> {
+): (message: string, options?: LLMResponderOptions) => Promise<ResponderResult> {
   // Pre-load provider and client
   const providers = getLLMProviders(config);
   const providerName = responderConfig.provider ?? "anthropic";
@@ -700,10 +675,7 @@ export function createLLMResponder(
     }
   }
 
-  return async (
-    message: string,
-    options?: LLMResponderOptions,
-  ): Promise<ResponderResult> => {
+  return async (message: string, options?: LLMResponderOptions): Promise<ResponderResult> => {
     // Return cached error if client creation failed
     if (clientError || !client) {
       return {
@@ -739,10 +711,7 @@ export function createLLMResponder(
         response = await Promise.race([
           responsePromise,
           new Promise<never>((_, reject) =>
-            setTimeout(
-              () => reject(new Error("LLM request timed out")),
-              timeout,
-            ),
+            setTimeout(() => reject(new Error("LLM request timed out")), timeout),
           ),
         ]);
       } catch (err) {
@@ -756,10 +725,7 @@ export function createLLMResponder(
 
       // Truncate response if needed
       const maxLength = responderConfig.maxLength ?? DEFAULT_MAX_LENGTH;
-      const { text, truncated, originalLength } = truncateResponse(
-        response,
-        maxLength,
-      );
+      const { text, truncated, originalLength } = truncateResponse(response, maxLength);
 
       return {
         success: true,

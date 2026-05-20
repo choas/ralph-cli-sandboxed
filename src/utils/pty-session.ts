@@ -112,9 +112,7 @@ export function isSpinnerOrStatus(line: string): boolean {
   // Whitespace / box-drawing only
   let allWhitespaceOrDash = true;
   for (const ch of line) {
-    if (
-      !(ch === " " || ch === "\t" || ch === "\n" || ch === " " || ch === "─")
-    ) {
+    if (!(ch === " " || ch === "\t" || ch === "\n" || ch === " " || ch === "─")) {
       allWhitespaceOrDash = false;
       break;
     }
@@ -391,8 +389,7 @@ export class PtySession {
       const buffered = this.buffer.shift();
       if (buffered) {
         yield buffered;
-        if (buffered.type === "lib_done" || buffered.type === "lib_error")
-          return;
+        if (buffered.type === "lib_done" || buffered.type === "lib_error") return;
         continue;
       }
       if (this.closed) return;
@@ -466,9 +463,7 @@ export class PtySession {
     if (this.accumulated.length > 30_000) {
       const cut = this.accumulated.indexOf("\n", 20_000);
       this.accumulated =
-        cut >= 0
-          ? this.accumulated.slice(cut + 1)
-          : this.accumulated.slice(20_000);
+        cut >= 0 ? this.accumulated.slice(cut + 1) : this.accumulated.slice(20_000);
     }
 
     const cleanedChunk = stripAnsi(raw);
@@ -493,14 +488,10 @@ export class PtySession {
     let currentConfirmation: string | null = null;
     if (
       normalized.includes("1.Yes") &&
-      (normalized.includes("trustthisfolder") ||
-        normalized.includes("projectyoucreated"))
+      (normalized.includes("trustthisfolder") || normalized.includes("projectyoucreated"))
     ) {
       currentConfirmation = "Trust folder dialog";
-    } else if (
-      normalized.includes("1.Yes") &&
-      normalized.includes("Doyouwantto")
-    ) {
+    } else if (normalized.includes("1.Yes") && normalized.includes("Doyouwantto")) {
       currentConfirmation = "Tool confirmation dialog";
     }
     if (currentConfirmation !== this.activeConfirmation) {
@@ -527,8 +518,7 @@ export class PtySession {
     }
 
     const newLines = deltaLines(this.prevChatLines, chat).filter(
-      (l) =>
-        !isSpinnerOrStatus(l) && (l.trim() === "" || !this.emittedLines.has(l)),
+      (l) => !isSpinnerOrStatus(l) && (l.trim() === "" || !this.emittedLines.has(l)),
     );
 
     if (newLines.length > 0) {

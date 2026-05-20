@@ -136,17 +136,12 @@ export const NOTIFICATION_PRESETS: ConfigPreset[] = [
 /**
  * All available presets grouped by category.
  */
-export const ALL_PRESETS: ConfigPreset[] = [
-  ...CHAT_PRESETS,
-  ...NOTIFICATION_PRESETS,
-];
+export const ALL_PRESETS: ConfigPreset[] = [...CHAT_PRESETS, ...NOTIFICATION_PRESETS];
 
 /**
  * Get presets for a specific category.
  */
-export function getPresetsForCategory(
-  category: "chat" | "notifications",
-): ConfigPreset[] {
+export function getPresetsForCategory(category: "chat" | "notifications"): ConfigPreset[] {
   return ALL_PRESETS.filter((preset) => preset.category === category);
 }
 
@@ -176,10 +171,7 @@ export function sectionHasPresets(sectionId: string): boolean {
  * Apply a preset to a config object (immutably).
  * Returns a new config with the preset fields applied.
  */
-export function applyPreset(
-  config: RalphConfig,
-  preset: ConfigPreset,
-): RalphConfig {
+export function applyPreset(config: RalphConfig, preset: ConfigPreset): RalphConfig {
   const result = JSON.parse(JSON.stringify(config)) as RalphConfig;
 
   for (const [path, value] of Object.entries(preset.fields)) {
@@ -192,11 +184,7 @@ export function applyPreset(
 /**
  * Set a value at a dot-notation path in an object (mutates the object).
  */
-function setValueAtPath(
-  obj: Record<string, unknown>,
-  path: string,
-  value: unknown,
-): void {
+function setValueAtPath(obj: Record<string, unknown>, path: string, value: unknown): void {
   const parts = path.split(".");
   let current: Record<string, unknown> = obj;
 
@@ -216,10 +204,7 @@ function setValueAtPath(
  * Detect if a preset is currently active based on config values.
  * Returns the preset ID if detected, or null if no preset matches.
  */
-export function detectActivePreset(
-  config: RalphConfig,
-  sectionId: string,
-): string | null {
+export function detectActivePreset(config: RalphConfig, sectionId: string): string | null {
   const presets = getPresetsForSection(sectionId);
 
   for (const preset of presets) {

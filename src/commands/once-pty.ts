@@ -25,11 +25,7 @@ import {
 } from "../utils/config.js";
 import { resolvePromptVariables } from "../templates/prompts.js";
 import { sendNotificationWithDaemonEvents } from "../utils/notification.js";
-import {
-  ClaudeCode,
-  type Event,
-  type PtySession,
-} from "../utils/pty-session.js";
+import { ClaudeCode, type Event, type PtySession } from "../utils/pty-session.js";
 
 interface RunOnceViaPtyOptions {
   debug: boolean;
@@ -127,17 +123,9 @@ export async function runOnceViaPty(opts: RunOnceViaPtyOptions): Promise<void> {
   }
 
   if (output.includes("<promise>COMPLETE</promise>")) {
-    await sendNotificationWithDaemonEvents(
-      "prd_complete",
-      undefined,
-      notifyOptions,
-    );
+    await sendNotificationWithDaemonEvents("prd_complete", undefined, notifyOptions);
   } else {
-    await sendNotificationWithDaemonEvents(
-      "iteration_complete",
-      undefined,
-      notifyOptions,
-    );
+    await sendNotificationWithDaemonEvents("iteration_complete", undefined, notifyOptions);
   }
 
   function handleEvent(evt: Event) {

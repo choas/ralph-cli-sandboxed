@@ -57,10 +57,7 @@ describe("Claude PTY integration", () => {
             if (!promptSent) {
               promptSent = true;
               lastActivity = Date.now();
-              setTimeout(
-                () => session.sendLine("Hello, what model are we using?"),
-                200,
-              );
+              setTimeout(() => session.sendLine("Hello, what model are we using?"), 200);
             }
             return;
           case "tui_screen":

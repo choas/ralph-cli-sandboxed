@@ -37,9 +37,7 @@ function parsePrdFile(path: string): PrdEntry[] {
     }
     return result ?? [];
   } catch {
-    console.error(
-      `Error parsing ${path}. Run 'ralph fix-prd' to attempt automatic repair.`,
-    );
+    console.error(`Error parsing ${path}. Run 'ralph fix-prd' to attempt automatic repair.`);
     process.exit(1);
   }
 }
@@ -119,9 +117,7 @@ export async function progress(args: string[]): Promise<void> {
     default:
       console.error("Usage: ralph progress <summarize>");
       console.error("\nSubcommands:");
-      console.error(
-        "  summarize    Add a PRD entry to summarize and compact progress.txt",
-      );
+      console.error("  summarize    Add a PRD entry to summarize and compact progress.txt");
       process.exit(1);
   }
 }

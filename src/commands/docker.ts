@@ -1,11 +1,4 @@
-import {
-  existsSync,
-  writeFileSync,
-  readFileSync,
-  mkdirSync,
-  chmodSync,
-  openSync,
-} from "fs";
+import { existsSync, writeFileSync, readFileSync, mkdirSync, chmodSync, openSync } from "fs";
 import { join, basename, normalize } from "path";
 import { spawn, ChildProcess } from "child_process";
 import { createHash } from "crypto";
@@ -79,10 +72,7 @@ function getLanguageSnippet(language: string, javaVersion?: number): string {
   if (langConfig.docker.versionConfigurable && javaVersion) {
     snippet = snippet.replace(/\$\{version\}/g, String(javaVersion));
   } else if (langConfig.docker.version) {
-    snippet = snippet.replace(
-      /\$\{version\}/g,
-      String(langConfig.docker.version),
-    );
+    snippet = snippet.replace(/\$\{version\}/g, String(langConfig.docker.version));
   }
 
   return "\n" + snippet + "\n";
@@ -122,19 +112,13 @@ function generateDockerfile(
   // Build custom packages section
   let customPackages = "";
   if (dockerConfig?.packages && dockerConfig.packages.length > 0) {
-    customPackages =
-      dockerConfig.packages.map((pkg) => `    ${pkg} \\`).join("\n") + "\n";
+    customPackages = dockerConfig.packages.map((pkg) => `    ${pkg} \\`).join("\n") + "\n";
   }
 
   // Build root build commands section
   let rootBuildCommands = "";
-  if (
-    dockerConfig?.buildCommands?.root &&
-    dockerConfig.buildCommands.root.length > 0
-  ) {
-    const commands = dockerConfig.buildCommands.root
-      .map((cmd) => `RUN ${cmd}`)
-      .join("\n");
+  if (dockerConfig?.buildCommands?.root && dockerConfig.buildCommands.root.length > 0) {
+    const commands = dockerConfig.buildCommands.root.map((cmd) => `RUN ${cmd}`).join("\n");
     rootBuildCommands = `
 # Custom build commands (root)
 ${commands}
@@ -143,13 +127,8 @@ ${commands}
 
   // Build node build commands section
   let nodeBuildCommands = "";
-  if (
-    dockerConfig?.buildCommands?.node &&
-    dockerConfig.buildCommands.node.length > 0
-  ) {
-    const commands = dockerConfig.buildCommands.node
-      .map((cmd) => `RUN ${cmd}`)
-      .join("\n");
+  if (dockerConfig?.buildCommands?.node && dockerConfig.buildCommands.node.length > 0) {
+    const commands = dockerConfig.buildCommands.node.map((cmd) => `RUN ${cmd}`).join("\n");
     nodeBuildCommands = `
 # Custom build commands (node user)
 ${commands}
@@ -159,14 +138,10 @@ ${commands}
   // Build git config section — always set init.defaultBranch, plus identity if configured
   const gitCommands: string[] = [`git config --global init.defaultBranch main`];
   if (dockerConfig?.git?.name) {
-    gitCommands.push(
-      `git config --global user.name "${dockerConfig.git.name}"`,
-    );
+    gitCommands.push(`git config --global user.name "${dockerConfig.git.name}"`);
   }
   if (dockerConfig?.git?.email) {
-    gitCommands.push(
-      `git config --global user.email "${dockerConfig.git.email}"`,
-    );
+    gitCommands.push(`git config --global user.email "${dockerConfig.git.email}"`);
   }
   const gitConfigSection = `
 # Configure git defaults
@@ -417,16 +392,11 @@ echo "Allowed: ${allowedList}"
 `;
 }
 
-function generateDockerCompose(
-  imageName: string,
-  dockerConfig?: RalphConfig["docker"],
-): string {
+function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig["docker"]): string {
   // Build ports section if configured
   let portsSection = "";
   if (dockerConfig?.ports && dockerConfig.ports.length > 0) {
-    const portLines = dockerConfig.ports
-      .map((port) => `      - "${port}"`)
-      .join("\n");
+    const portLines = dockerConfig.ports.map((port) => `      - "${port}"`).join("\n");
     portsSection = `    ports:\n${portLines}\n`;
   }
 
@@ -441,9 +411,7 @@ function generateDockerCompose(
 
   // Mount worktrees path if configured
   if (dockerConfig?.worktreesPath) {
-    baseVolumes.push(
-      "      # Mount host worktrees directory for git worktree storage",
-    );
+    baseVolumes.push("      # Mount host worktrees directory for git worktree storage");
     baseVolumes.push(`      - ${dockerConfig.worktreesPath}:/worktrees`);
   }
 
@@ -464,15 +432,11 @@ function generateDockerCompose(
     }
     sanitizedEnvFile = normalized;
     baseVolumes.push("      # Mount env file into container");
-    baseVolumes.push(
-      `      - ../../${sanitizedEnvFile}:/workspace/${sanitizedEnvFile}:ro`,
-    );
+    baseVolumes.push(`      - ../../${sanitizedEnvFile}:/workspace/${sanitizedEnvFile}:ro`);
   }
 
   if (dockerConfig?.volumes && dockerConfig.volumes.length > 0) {
-    const customVolumeLines = dockerConfig.volumes.map(
-      (vol) => `      - ${vol}`,
-    );
+    const customVolumeLines = dockerConfig.volumes.map((vol) => `      - ${vol}`);
     baseVolumes.push(...customVolumeLines);
   }
 
@@ -483,10 +447,7 @@ function generateDockerCompose(
   const envEntries: string[] = [];
 
   // Add user-configured environment variables
-  if (
-    dockerConfig?.environment &&
-    Object.keys(dockerConfig.environment).length > 0
-  ) {
+  if (dockerConfig?.environment && Object.keys(dockerConfig.environment).length > 0) {
     for (const [key, value] of Object.entries(dockerConfig.environment)) {
       envEntries.push(`      - ${key}=${value}`);
     }
@@ -530,10 +491,7 @@ function generateDockerCompose(
   // Build restart policy section
   // Priority: restartCount (on-failure with max retries) > autoStart (unless-stopped)
   let restartSection = "";
-  if (
-    dockerConfig?.restartCount !== undefined &&
-    dockerConfig.restartCount > 0
-  ) {
+  if (dockerConfig?.restartCount !== undefined && dockerConfig.restartCount > 0) {
     // Use on-failure policy with max retry count
     restartSection = `    restart: on-failure:${dockerConfig.restartCount}\n`;
   } else if (dockerConfig?.autoStart) {
@@ -805,8 +763,7 @@ function generateClaudeSettings(language?: string): string {
       hooks: [
         {
           type: "command",
-          command:
-            '"$CLAUDE_PROJECT_DIR"/.claude/hooks/block-dangerous-commands.sh',
+          command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/block-dangerous-commands.sh',
         },
       ],
     },
@@ -855,21 +812,12 @@ async function generateFiles(
   // Merge custom firewall domains with language-specific domains
   const customDomains = dockerConfig?.firewall?.allowedDomains || [];
   const languagesJson = getLanguagesJson();
-  const langFirewallDomains =
-    languagesJson.languages[language]?.docker?.firewallDomains || [];
-  const allFirewallDomains = [
-    ...new Set([...customDomains, ...langFirewallDomains]),
-  ];
+  const langFirewallDomains = languagesJson.languages[language]?.docker?.firewallDomains || [];
+  const allFirewallDomains = [...new Set([...customDomains, ...langFirewallDomains])];
   const files: { name: string; content: string }[] = [
     {
       name: "Dockerfile",
-      content: generateDockerfile(
-        language,
-        javaVersion,
-        cliProvider,
-        dockerConfig,
-        cliModel,
-      ),
+      content: generateDockerfile(language, javaVersion, cliProvider, dockerConfig, cliModel),
     },
     {
       name: "init-firewall.sh",
@@ -883,10 +831,7 @@ async function generateFiles(
   ];
 
   // Add stream script if streamJson is enabled
-  if (
-    dockerConfig?.asciinema?.enabled &&
-    dockerConfig.asciinema.streamJson?.enabled
-  ) {
+  if (dockerConfig?.asciinema?.enabled && dockerConfig.asciinema.streamJson?.enabled) {
     const outputDir = dockerConfig.asciinema.outputDir || ".recordings";
     const saveRawJson = dockerConfig.asciinema.streamJson.saveRawJson !== false; // default true
     files.push({
@@ -921,15 +866,10 @@ async function generateFiles(
   const projectRoot = process.cwd();
 
   // Generate .mcp.json if MCP servers are configured
-  if (
-    claudeConfig?.mcpServers &&
-    Object.keys(claudeConfig.mcpServers).length > 0
-  ) {
+  if (claudeConfig?.mcpServers && Object.keys(claudeConfig.mcpServers).length > 0) {
     const mcpJsonPath = join(projectRoot, ".mcp.json");
     if (existsSync(mcpJsonPath) && !force) {
-      const overwrite = await promptConfirm(
-        ".mcp.json already exists. Overwrite?",
-      );
+      const overwrite = await promptConfirm(".mcp.json already exists. Overwrite?");
       if (!overwrite) {
         console.log("Skipped .mcp.json");
       } else {
@@ -1033,9 +973,7 @@ async function generateFiles(
   // Generate .claude/settings.json with hooks configuration
   const settingsPath = join(projectRoot, ".claude", "settings.json");
   if (existsSync(settingsPath) && !force) {
-    const overwrite = await promptConfirm(
-      ".claude/settings.json already exists. Overwrite?",
-    );
+    const overwrite = await promptConfirm(".claude/settings.json already exists. Overwrite?");
     if (overwrite) {
       writeFileSync(settingsPath, generateClaudeSettings(language));
       console.log("Created .claude/settings.json");
@@ -1107,14 +1045,10 @@ async function buildImage(ralphDir: string): Promise<void> {
   return new Promise((resolve, reject) => {
     // Use --no-cache and --pull to ensure we always get the latest CLI versions
     // Use -p to set unique project name per ralph project
-    const proc = spawn(
-      "docker",
-      ["compose", "-p", imageName, "build", "--no-cache", "--pull"],
-      {
-        cwd: dockerDir,
-        stdio: "inherit",
-      },
-    );
+    const proc = spawn("docker", ["compose", "-p", imageName, "build", "--no-cache", "--pull"], {
+      cwd: dockerDir,
+      stdio: "inherit",
+    });
 
     proc.on("close", (code) => {
       if (code === 0) {
@@ -1211,8 +1145,7 @@ function startBackgroundServices(config: RalphConfig): () => void {
   }
 
   // Start chat if telegram is configured and not explicitly disabled
-  const telegramEnabled =
-    config.chat?.telegram?.botToken && config.chat.telegram.enabled !== false;
+  const telegramEnabled = config.chat?.telegram?.botToken && config.chat.telegram.enabled !== false;
   if (telegramEnabled) {
     const logPath = join(ralphDir, "chat.log");
     const logFd = openSync(logPath, "w");
@@ -1272,9 +1205,7 @@ async function runContainer(
       cliProvider,
       docker: dockerConfig,
       claude: claudeConfig,
-      cli: fullConfig?.cli?.model
-        ? { command: "", model: fullConfig.cli.model }
-        : undefined,
+      cli: fullConfig?.cli?.model ? { command: "", model: fullConfig.cli.model } : undefined,
     };
     if (hasConfigChanged(ralphDir, configForHash)) {
       const regenerate = await promptConfirm(
@@ -1356,9 +1287,7 @@ async function runContainer(
   if (cliConfig.modelConfig) {
     console.log("Model configuration (optional):");
     if (cliConfig.modelConfig.envVar) {
-      const note = cliConfig.modelConfig.note
-        ? ` - ${cliConfig.modelConfig.note}`
-        : "";
+      const note = cliConfig.modelConfig.note ? ` - ${cliConfig.modelConfig.note}` : "";
       console.log(`  ${cliConfig.modelConfig.envVar}${note}`);
     } else if (cliConfig.modelConfig.note) {
       console.log(`  ${cliConfig.modelConfig.note}`);
@@ -1377,14 +1306,10 @@ async function runContainer(
 
   return new Promise((resolve, reject) => {
     // Use -p to set unique project name per ralph project
-    const proc = spawn(
-      "docker",
-      ["compose", "-p", imageName, "run", "--rm", "ralph"],
-      {
-        cwd: dockerDir,
-        stdio: "inherit",
-      },
-    );
+    const proc = spawn("docker", ["compose", "-p", imageName, "run", "--rm", "ralph"], {
+      cwd: dockerDir,
+      stdio: "inherit",
+    });
 
     proc.on("close", (code) => {
       // Clean up background services
@@ -1414,14 +1339,10 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     // Stop running containers first
     // Use -p to target only this project's resources
     await new Promise<void>((resolve) => {
-      const proc = spawn(
-        "docker",
-        ["compose", "-p", imageName, "stop", "--timeout", "5"],
-        {
-          cwd: dockerDir,
-          stdio: "inherit",
-        },
-      );
+      const proc = spawn("docker", ["compose", "-p", imageName, "stop", "--timeout", "5"], {
+        cwd: dockerDir,
+        stdio: "inherit",
+      });
 
       proc.on("close", () => {
         resolve();
@@ -1472,13 +1393,9 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
   const volumePattern = imageName;
   await new Promise<void>((resolve) => {
     // List all containers (including stopped) and filter by volume name pattern
-    const proc = spawn(
-      "docker",
-      ["ps", "-aq", "--filter", `volume=${volumePattern}`],
-      {
-        stdio: ["ignore", "pipe", "ignore"],
-      },
-    );
+    const proc = spawn("docker", ["ps", "-aq", "--filter", `volume=${volumePattern}`], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
 
     let output = "";
     proc.stdout.on("data", (data) => {
@@ -1526,13 +1443,9 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
   // Clean up volumes matching our pattern
   await new Promise<void>((resolve) => {
     // List volumes matching our pattern
-    const proc = spawn(
-      "docker",
-      ["volume", "ls", "-q", "--filter", `name=${volumePattern}`],
-      {
-        stdio: ["ignore", "pipe", "ignore"],
-      },
-    );
+    const proc = spawn("docker", ["volume", "ls", "-q", "--filter", `name=${volumePattern}`], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
 
     let output = "";
     proc.stdout.on("data", (data) => {
@@ -1547,13 +1460,9 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
       if (volumeNames.length > 0) {
         // Force remove these volumes
         await new Promise<void>((innerResolve) => {
-          const rmProc = spawn(
-            "docker",
-            ["volume", "rm", "-f", ...volumeNames],
-            {
-              stdio: "inherit",
-            },
-          );
+          const rmProc = spawn("docker", ["volume", "rm", "-f", ...volumeNames], {
+            stdio: "inherit",
+          });
           rmProc.on("close", () => innerResolve());
           rmProc.on("error", () => innerResolve());
         });
@@ -1585,13 +1494,9 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
   // For Podman: clean up any orphaned pods matching this specific project
   // Use imageName to ensure we only clean this project's pods, not other ralph projects
   await new Promise<void>((resolve) => {
-    const proc = spawn(
-      "docker",
-      ["pod", "ls", "-q", "--filter", `name=${imageName}`],
-      {
-        stdio: ["ignore", "pipe", "ignore"],
-      },
-    );
+    const proc = spawn("docker", ["pod", "ls", "-q", "--filter", `name=${imageName}`], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
 
     let output = "";
     proc.stdout.on("data", (data) => {
@@ -1656,10 +1561,7 @@ export async function dockerInit(silent: boolean = false): Promise<void> {
       .replace(/[^a-z0-9-]/g, "-")}`;
 
   console.log(`\nGenerating Docker files for: ${config.language}`);
-  if (
-    (config.language === "java" || config.language === "kotlin") &&
-    config.javaVersion
-  ) {
+  if ((config.language === "java" || config.language === "kotlin") && config.javaVersion) {
     console.log(`Java version: ${config.javaVersion}`);
   }
   if (config.cliProvider && config.cliProvider !== "claude") {
@@ -1760,9 +1662,7 @@ INSTALLING PACKAGES (works with Docker & Podman):
   const ralphDir = getRalphDir();
 
   if (!existsSync(ralphDir)) {
-    console.error(
-      "Error: .ralph/ directory not found. Run 'ralph init' first.",
-    );
+    console.error("Error: .ralph/ directory not found. Run 'ralph init' first.");
     process.exit(1);
   }
 
@@ -1813,10 +1713,7 @@ INSTALLING PACKAGES (works with Docker & Podman):
           ? subArgs[0] === "-y" || subArgs[0] === "--yes"
           : subcommand === "-y" || subcommand === "--yes";
       console.log(`Generating Docker files for: ${config.language}`);
-      if (
-        (config.language === "java" || config.language === "kotlin") &&
-        config.javaVersion
-      ) {
+      if ((config.language === "java" || config.language === "kotlin") && config.javaVersion) {
         console.log(`Java version: ${config.javaVersion}`);
       }
       if (config.cliProvider && config.cliProvider !== "claude") {

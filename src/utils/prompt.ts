@@ -20,10 +20,7 @@ export function createPrompt(): {
   };
 }
 
-export async function promptSelectWithArrows(
-  message: string,
-  options: string[],
-): Promise<string> {
+export async function promptSelectWithArrows(message: string, options: string[]): Promise<string> {
   return new Promise((resolve) => {
     let selectedIndex = 0;
 
@@ -102,10 +99,7 @@ export async function promptInput(message: string): Promise<string> {
   return answer.trim();
 }
 
-export async function promptSelect(
-  message: string,
-  options: string[],
-): Promise<string> {
+export async function promptSelect(message: string, options: string[]): Promise<string> {
   console.log(`\n${message}`);
   options.forEach((opt, i) => {
     console.log(`  ${i + 1}. ${opt}`);
@@ -152,10 +146,7 @@ export async function promptConfirm(
   }
 }
 
-export async function promptMultiSelect(
-  message: string,
-  options: string[],
-): Promise<string[]> {
+export async function promptMultiSelect(message: string, options: string[]): Promise<string[]> {
   console.log(`\n${message}`);
   options.forEach((opt, i) => {
     console.log(`  ${i + 1}. ${opt}`);
@@ -166,9 +157,7 @@ export async function promptMultiSelect(
   const selected: string[] = [];
   const customTechs: string[] = [];
 
-  console.log(
-    "\nEnter a number to select, or type text to add custom technology (0 when done):",
-  );
+  console.log("\nEnter a number to select, or type text to add custom technology (0 when done):");
 
   while (true) {
     const answer = await prompt.question("> ");
@@ -196,9 +185,7 @@ export async function promptMultiSelect(
       }
     } else if (!isNaN(num)) {
       // Invalid number
-      console.log(
-        `Invalid number. Enter 1-${options.length}, or type text for custom technology.`,
-      );
+      console.log(`Invalid number. Enter 1-${options.length}, or type text for custom technology.`);
     } else {
       // Text input - treat as custom technology
       if (
@@ -234,11 +221,7 @@ export async function promptMultiSelectWithArrows(
       allOptions.forEach((opt, i) => {
         const isLastOption = i === allOptions.length - 1;
         const cursor = i === selectedIndex ? "\x1B[36m❯\x1B[0m" : " ";
-        const checkbox = isLastOption
-          ? ""
-          : selected.has(i)
-            ? "\x1B[32m[x]\x1B[0m"
-            : "[ ]";
+        const checkbox = isLastOption ? "" : selected.has(i) ? "\x1B[32m[x]\x1B[0m" : "[ ]";
         const text = i === selectedIndex ? `\x1B[36m${opt}\x1B[0m` : opt;
         process.stdout.write(`\x1B[2K${cursor} ${checkbox} ${text}\n`);
       });
@@ -246,17 +229,11 @@ export async function promptMultiSelectWithArrows(
 
     const initialRender = () => {
       console.log(`\n${message}`);
-      console.log(
-        "(Use arrow keys to navigate, Space to select, Enter to confirm)\n",
-      );
+      console.log("(Use arrow keys to navigate, Space to select, Enter to confirm)\n");
       allOptions.forEach((opt, i) => {
         const isLastOption = i === allOptions.length - 1;
         const cursor = i === selectedIndex ? "\x1B[36m❯\x1B[0m" : " ";
-        const checkbox = isLastOption
-          ? ""
-          : selected.has(i)
-            ? "\x1B[32m[x]\x1B[0m"
-            : "[ ]";
+        const checkbox = isLastOption ? "" : selected.has(i) ? "\x1B[32m[x]\x1B[0m" : "[ ]";
         const text = i === selectedIndex ? `\x1B[36m${opt}\x1B[0m` : opt;
         console.log(`${cursor} ${checkbox} ${text}`);
       });
@@ -273,8 +250,7 @@ export async function promptMultiSelectWithArrows(
     const onKeypress = (key: string) => {
       if (key === "\x1B[A" || key === "k") {
         // Up
-        selectedIndex =
-          (selectedIndex - 1 + allOptions.length) % allOptions.length;
+        selectedIndex = (selectedIndex - 1 + allOptions.length) % allOptions.length;
         render();
       } else if (key === "\x1B[B" || key === "j") {
         // Down

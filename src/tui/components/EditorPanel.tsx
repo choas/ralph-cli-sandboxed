@@ -8,13 +8,7 @@ import { getFieldErrors, hasFieldError } from "../utils/validation.js";
 /**
  * Field types for determining which editor to render.
  */
-export type FieldType =
-  | "string"
-  | "boolean"
-  | "number"
-  | "array"
-  | "object"
-  | "unknown";
+export type FieldType = "string" | "boolean" | "number" | "array" | "object" | "unknown";
 
 /**
  * Field schema describes a configuration field for editing.
@@ -221,9 +215,7 @@ export function EditorPanel({
     if (field) {
       // JSON editor is useful for arrays, objects, and unknown types
       const isComplexType =
-        field.type === "array" ||
-        field.type === "object" ||
-        field.type === "unknown";
+        field.type === "array" || field.type === "object" || field.type === "unknown";
       onSelectField(field.path, isComplexType);
     }
   }, [highlightedIndex, fields, onSelectField]);
@@ -283,13 +275,7 @@ export function EditorPanel({
   // Render loading state
   if (!config) {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="gray"
-        paddingX={1}
-        flexGrow={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} flexGrow={1}>
         <Text dimColor>Loading configuration...</Text>
       </Box>
     );
@@ -298,13 +284,7 @@ export function EditorPanel({
   // Render empty section
   if (!currentSection || fields.length === 0) {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="gray"
-        paddingX={1}
-        flexGrow={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} flexGrow={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
             {breadcrumb}
@@ -316,13 +296,7 @@ export function EditorPanel({
   }
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="single"
-      borderColor="gray"
-      paddingX={1}
-      flexGrow={1}
-    >
+    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} flexGrow={1}>
       {/* Breadcrumb */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
@@ -369,35 +343,24 @@ export function EditorPanel({
           <Box key={field.path} flexDirection="column">
             <Box>
               {/* Selection indicator */}
-              <Text
-                color={
-                  isHighlighted ? "cyan" : fieldHasError ? "red" : undefined
-                }
-              >
+              <Text color={isHighlighted ? "cyan" : fieldHasError ? "red" : undefined}>
                 {isHighlighted ? "▸ " : fieldHasError ? "✗ " : "  "}
               </Text>
               {/* Field label */}
               <Text
                 bold={isHighlighted}
-                color={
-                  fieldHasError ? "red" : isHighlighted ? "cyan" : undefined
-                }
+                color={fieldHasError ? "red" : isHighlighted ? "cyan" : undefined}
                 inverse={isHighlighted}
               >
                 {field.label}
               </Text>
               <Text dimColor>: </Text>
               {/* Field value */}
-              <Text
-                color={typeColor}
-                dimColor={value === undefined || value === null}
-              >
+              <Text color={typeColor} dimColor={value === undefined || value === null}>
                 {displayValue}
               </Text>
               {/* Type indicator for complex types */}
-              {(field.type === "array" || field.type === "object") && (
-                <Text dimColor> →</Text>
-              )}
+              {(field.type === "array" || field.type === "object") && <Text dimColor> →</Text>}
             </Box>
             {/* Validation error message */}
             {fieldHasError && fieldErrors.length > 0 && (
@@ -414,10 +377,7 @@ export function EditorPanel({
       {/* Down scroll indicator */}
       {hasOverflow && (
         <Box>
-          <Text
-            color={canScrollDown ? "cyan" : "gray"}
-            dimColor={!canScrollDown}
-          >
+          <Text color={canScrollDown ? "cyan" : "gray"} dimColor={!canScrollDown}>
             {canScrollDown ? "▼ more" : ""}
           </Text>
         </Box>

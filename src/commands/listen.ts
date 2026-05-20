@@ -207,9 +207,7 @@ async function processMessage(
       const runArgs = ["run"];
       if (message.args && message.args.length > 0) {
         runArgs.push("--category", message.args[0]);
-        console.log(
-          `[listen] Starting ralph run with category: ${message.args[0]}...`,
-        );
+        console.log(`[listen] Starting ralph run with category: ${message.args[0]}...`);
       } else {
         console.log("[listen] Starting ralph run...");
       }
@@ -287,9 +285,7 @@ async function processMessage(
         return;
       }
 
-      console.log(
-        `[listen] Running Claude Code with prompt: ${prompt.substring(0, 50)}...`,
-      );
+      console.log(`[listen] Running Claude Code with prompt: ${prompt.substring(0, 50)}...`);
 
       // Build the command: claude -p "prompt" --dangerously-skip-permissions
       // Using --print to get non-interactive output
@@ -312,9 +308,7 @@ async function processMessage(
       });
 
       if (debug) {
-        console.log(
-          `[listen] Claude Code result: ${result.success ? "OK" : "FAILED"}`,
-        );
+        console.log(`[listen] Claude Code result: ${result.success ? "OK" : "FAILED"}`);
       }
       break;
     }
@@ -444,9 +438,7 @@ EXAMPLE:
 
   // Warn if not in container (but allow for testing)
   if (!isRunningInContainer()) {
-    console.warn(
-      "Warning: ralph listen is designed to run inside a container.",
-    );
+    console.warn("Warning: ralph listen is designed to run inside a container.");
     console.warn("Running on host for testing purposes...");
     console.warn("");
   }

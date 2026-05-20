@@ -1,11 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import type {
-  RespondersConfig,
-  ResponderConfig,
-  ResponderType,
-} from "../../utils/config.js";
+import type { RespondersConfig, ResponderConfig, ResponderType } from "../../utils/config.js";
 
 /**
  * Responder type options for dropdown.
@@ -85,26 +81,19 @@ export function RespondersEditor({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [mode, setMode] = useState<EditorMode>("list");
   const [editText, setEditText] = useState("");
-  const [editingResponder, setEditingResponder] =
-    useState<EditingResponder | null>(null);
+  const [editingResponder, setEditingResponder] = useState<EditingResponder | null>(null);
   const [typeIndex, setTypeIndex] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
 
   // Get sorted responder names
-  const responderNames = useMemo(
-    () => Object.keys(editResponders).sort(),
-    [editResponders],
-  );
+  const responderNames = useMemo(() => Object.keys(editResponders).sort(), [editResponders]);
   // Total options includes all responders plus "+ Add responder" option
   const totalOptions = responderNames.length + 1;
 
   // Calculate visible range for scrolling
   const visibleCount = Math.min(maxHeight - 6, totalOptions); // Reserve lines for header, footer, hints
   const visibleResponders = useMemo(() => {
-    const endIndex = Math.min(
-      scrollOffset + visibleCount,
-      responderNames.length,
-    );
+    const endIndex = Math.min(scrollOffset + visibleCount, responderNames.length);
     return responderNames.slice(scrollOffset, endIndex);
   }, [scrollOffset, visibleCount, responderNames]);
 
@@ -170,8 +159,7 @@ export function RespondersEditor({
         setMode("edit-responder");
       } else {
         // Create new responder with default values
-        const defaultTrigger =
-          trimmedName === "default" ? undefined : `@${trimmedName}`;
+        const defaultTrigger = trimmedName === "default" ? undefined : `@${trimmedName}`;
         setEditingResponder({
           name: trimmedName,
           config: {
@@ -290,9 +278,7 @@ export function RespondersEditor({
           ...editingResponder,
           config: {
             ...editingResponder.config,
-            timeout: trimmedValue
-              ? parseInt(trimmedValue, 10) || undefined
-              : undefined,
+            timeout: trimmedValue ? parseInt(trimmedValue, 10) || undefined : undefined,
           },
         });
         break;
@@ -301,9 +287,7 @@ export function RespondersEditor({
           ...editingResponder,
           config: {
             ...editingResponder.config,
-            maxLength: trimmedValue
-              ? parseInt(trimmedValue, 10) || undefined
-              : undefined,
+            maxLength: trimmedValue ? parseInt(trimmedValue, 10) || undefined : undefined,
           },
         });
         break;
@@ -341,13 +325,9 @@ export function RespondersEditor({
       if (!isFocused || mode !== "select-type") return;
 
       if (input === "j" || key.downArrow) {
-        setTypeIndex((prev) =>
-          prev < RESPONDER_TYPES.length - 1 ? prev + 1 : 0,
-        );
+        setTypeIndex((prev) => (prev < RESPONDER_TYPES.length - 1 ? prev + 1 : 0));
       } else if (input === "k" || key.upArrow) {
-        setTypeIndex((prev) =>
-          prev > 0 ? prev - 1 : RESPONDER_TYPES.length - 1,
-        );
+        setTypeIndex((prev) => (prev > 0 ? prev - 1 : RESPONDER_TYPES.length - 1));
       } else if (key.return) {
         handleTypeSelect();
       } else if (key.escape) {
@@ -447,28 +427,19 @@ export function RespondersEditor({
   // Render type selection mode
   if (mode === "select-type") {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Select Responder Type
           </Text>
-          {editingResponder && (
-            <Text dimColor> for "{editingResponder.name}"</Text>
-          )}
+          {editingResponder && <Text dimColor> for "{editingResponder.name}"</Text>}
         </Box>
 
         {RESPONDER_TYPES.map((type, index) => {
           const isHighlighted = index === typeIndex;
           return (
             <Box key={type}>
-              <Text color={isHighlighted ? "cyan" : undefined}>
-                {isHighlighted ? "▸ " : "  "}
-              </Text>
+              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
               <Text
                 bold={isHighlighted}
                 color={isHighlighted ? "cyan" : undefined}
@@ -491,12 +462,7 @@ export function RespondersEditor({
   // Render name input mode
   if (mode === "add-name") {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Add New Responder
@@ -528,12 +494,7 @@ export function RespondersEditor({
   // Render trigger input mode
   if (mode === "edit-trigger" && editingResponder) {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Edit Trigger Pattern
@@ -541,9 +502,7 @@ export function RespondersEditor({
         </Box>
 
         <Box marginBottom={1}>
-          <Text dimColor>
-            Use @name for mentions, leave empty for default handler
-          </Text>
+          <Text dimColor>Use @name for mentions, leave empty for default handler</Text>
         </Box>
 
         <Box>
@@ -567,12 +526,7 @@ export function RespondersEditor({
   // Render provider input mode
   if (mode === "edit-provider" && editingResponder) {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Edit LLM Provider
@@ -580,9 +534,7 @@ export function RespondersEditor({
         </Box>
 
         <Box marginBottom={1}>
-          <Text dimColor>
-            Name from llmProviders config (e.g., anthropic, openai)
-          </Text>
+          <Text dimColor>Name from llmProviders config (e.g., anthropic, openai)</Text>
         </Box>
 
         <Box>
@@ -606,12 +558,7 @@ export function RespondersEditor({
   // Render system prompt input mode
   if (mode === "edit-system" && editingResponder) {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Edit System Prompt
@@ -619,9 +566,7 @@ export function RespondersEditor({
         </Box>
 
         <Box marginBottom={1}>
-          <Text dimColor>
-            Supports {"{{project}}"} placeholder for project context
-          </Text>
+          <Text dimColor>Supports {"{{project}}"} placeholder for project context</Text>
         </Box>
 
         <Box>
@@ -645,12 +590,7 @@ export function RespondersEditor({
   // Render command input mode
   if (mode === "edit-command" && editingResponder) {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Edit CLI Command
@@ -658,9 +598,7 @@ export function RespondersEditor({
         </Box>
 
         <Box marginBottom={1}>
-          <Text dimColor>
-            Supports {"{{message}}"} placeholder for the user message
-          </Text>
+          <Text dimColor>Supports {"{{message}}"} placeholder for the user message</Text>
         </Box>
 
         <Box>
@@ -685,12 +623,7 @@ export function RespondersEditor({
   if (mode === "edit-timeout" && editingResponder) {
     const defaultTimeout = DEFAULT_TIMEOUTS[editingResponder.config.type];
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Edit Timeout
@@ -698,9 +631,7 @@ export function RespondersEditor({
         </Box>
 
         <Box marginBottom={1}>
-          <Text dimColor>
-            Timeout in milliseconds (default: {defaultTimeout})
-          </Text>
+          <Text dimColor>Timeout in milliseconds (default: {defaultTimeout})</Text>
         </Box>
 
         <Box>
@@ -724,12 +655,7 @@ export function RespondersEditor({
   // Render max length input mode
   if (mode === "edit-maxlength" && editingResponder) {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Edit Max Response Length
@@ -737,9 +663,7 @@ export function RespondersEditor({
         </Box>
 
         <Box marginBottom={1}>
-          <Text dimColor>
-            Maximum characters to send back to chat (default: 2000)
-          </Text>
+          <Text dimColor>Maximum characters to send back to chat (default: 2000)</Text>
         </Box>
 
         <Box>
@@ -767,12 +691,7 @@ export function RespondersEditor({
     const isCLI = config.type === "cli";
 
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Edit Responder: {editingResponder.name}
@@ -786,18 +705,14 @@ export function RespondersEditor({
 
         <Box>
           <Text color="yellow">[G] Trigger: </Text>
-          <Text dimColor={!config.trigger}>
-            {config.trigger || "(default handler)"}
-          </Text>
+          <Text dimColor={!config.trigger}>{config.trigger || "(default handler)"}</Text>
         </Box>
 
         {isLLM && (
           <>
             <Box>
               <Text color="yellow">[P] Provider: </Text>
-              <Text dimColor={!config.provider}>
-                {config.provider || "(not set)"}
-              </Text>
+              <Text dimColor={!config.provider}>{config.provider || "(not set)"}</Text>
             </Box>
             <Box>
               <Text color="yellow">[Y] System: </Text>
@@ -815,9 +730,7 @@ export function RespondersEditor({
         {isCLI && (
           <Box>
             <Text color="yellow">[C] Command: </Text>
-            <Text dimColor={!config.command}>
-              {config.command || "(not set)"}
-            </Text>
+            <Text dimColor={!config.command}>{config.command || "(not set)"}</Text>
           </Box>
         )}
 
@@ -851,12 +764,7 @@ export function RespondersEditor({
 
   // Render list mode
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="single"
-      borderColor="cyan"
-      paddingX={1}
-    >
+    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
       {/* Header */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
@@ -888,15 +796,12 @@ export function RespondersEditor({
           const config = editResponders[name];
 
           // Format display: type abbreviation and trigger
-          const typeAbbrev =
-            config.type === "claude-code" ? "claude" : config.type;
+          const typeAbbrev = config.type === "claude-code" ? "claude" : config.type;
           const trigger = config.trigger || "(default)";
 
           return (
             <Box key={name}>
-              <Text color={isHighlighted ? "cyan" : undefined}>
-                {isHighlighted ? "▸ " : "  "}
-              </Text>
+              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
               <Text
                 bold={isHighlighted}
                 color={isHighlighted ? "cyan" : "yellow"}
@@ -914,10 +819,7 @@ export function RespondersEditor({
       {/* Down scroll indicator */}
       {hasOverflow && (
         <Box>
-          <Text
-            color={canScrollDown ? "cyan" : "gray"}
-            dimColor={!canScrollDown}
-          >
+          <Text color={canScrollDown ? "cyan" : "gray"} dimColor={!canScrollDown}>
             {canScrollDown ? "  ▼ more" : ""}
           </Text>
         </Box>
@@ -925,11 +827,7 @@ export function RespondersEditor({
 
       {/* Add responder option */}
       <Box>
-        <Text
-          color={
-            highlightedIndex === responderNames.length ? "green" : undefined
-          }
-        >
+        <Text color={highlightedIndex === responderNames.length ? "green" : undefined}>
           {highlightedIndex === responderNames.length ? "▸ " : "  "}
         </Text>
         <Text

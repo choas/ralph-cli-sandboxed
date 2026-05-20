@@ -89,12 +89,7 @@ async function main() {
     process.exit(0);
   }
 
-  if (
-    !command ||
-    command === "help" ||
-    command === "--help" ||
-    command === "-h"
-  ) {
+  if (!command || command === "help" || command === "--help" || command === "-h") {
     help([]);
     process.exit(0);
   }

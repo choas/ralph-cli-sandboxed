@@ -2,13 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  existsSync,
-  readFileSync,
-  writeFileSync,
-  mkdirSync,
-  unlinkSync,
-} from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "fs";
 import { dirname, extname, join } from "path";
 import { fileURLToPath } from "url";
 import { z } from "zod";
@@ -135,34 +129,19 @@ function parsePrdFile(path: string): PrdEntry[] {
     }
     const obj = entry as Record<string, unknown>;
 
-    if (
-      typeof obj.category !== "string" ||
-      !CATEGORIES.includes(obj.category as Category)
-    ) {
+    if (typeof obj.category !== "string" || !CATEGORIES.includes(obj.category as Category)) {
       throw new Error(
         `${path}[${index}]: missing or invalid "category" (expected one of: ${CATEGORIES.join(", ")})`,
       );
     }
-    if (
-      typeof obj.description !== "string" ||
-      obj.description.trim().length === 0
-    ) {
-      throw new Error(
-        `${path}[${index}]: missing or invalid "description" (expected string)`,
-      );
+    if (typeof obj.description !== "string" || obj.description.trim().length === 0) {
+      throw new Error(`${path}[${index}]: missing or invalid "description" (expected string)`);
     }
-    if (
-      !Array.isArray(obj.steps) ||
-      !obj.steps.every((s: unknown) => typeof s === "string")
-    ) {
-      throw new Error(
-        `${path}[${index}]: missing or invalid "steps" (expected string array)`,
-      );
+    if (!Array.isArray(obj.steps) || !obj.steps.every((s: unknown) => typeof s === "string")) {
+      throw new Error(`${path}[${index}]: missing or invalid "steps" (expected string array)`);
     }
     if (typeof obj.passes !== "boolean") {
-      throw new Error(
-        `${path}[${index}]: missing or invalid "passes" (expected boolean)`,
-      );
+      throw new Error(`${path}[${index}]: missing or invalid "passes" (expected boolean)`);
     }
     if (obj.branch !== undefined && typeof obj.branch !== "string") {
       throw new Error(`${path}[${index}]: invalid "branch" (expected string)`);
@@ -271,10 +250,7 @@ server.tool(
       .array(z.string().min(1))
       .min(1)
       .describe("Verification steps to check if requirement is met"),
-    branch: z
-      .string()
-      .optional()
-      .describe("Git branch associated with this entry"),
+    branch: z.string().optional().describe("Git branch associated with this entry"),
   },
   async ({ category, description, steps, branch }) => {
     try {
@@ -357,28 +333,25 @@ server.tool(
         if (entry.passes) categories[entry.category].passing++;
       });
 
-      const remaining = prd.reduce<
-        { index: number; category: string; description: string }[]
-      >((acc, entry, i) => {
-        if (!entry.passes) {
-          acc.push({
-            index: i + 1,
-            category: entry.category,
-            description: entry.description,
-          });
-        }
-        return acc;
-      }, []);
+      const remaining = prd.reduce<{ index: number; category: string; description: string }[]>(
+        (acc, entry, i) => {
+          if (!entry.passes) {
+            acc.push({
+              index: i + 1,
+              category: entry.category,
+              description: entry.description,
+            });
+          }
+          return acc;
+        },
+        [],
+      );
 
       return {
         content: [
           {
             type: "text" as const,
-            text: JSON.stringify(
-              { passing, total, percentage, categories, remaining },
-              null,
-              2,
-            ),
+            text: JSON.stringify({ passing, total, percentage, categories, remaining }, null, 2),
           },
         ],
       };

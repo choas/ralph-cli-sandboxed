@@ -46,14 +46,12 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
     },
     {
       key: "appToken",
-      description:
-        "Slack App Token (xapp-...) from Basic Information > App-Level Tokens",
+      description: "Slack App Token (xapp-...) from Basic Information > App-Level Tokens",
       required: true,
     },
     {
       key: "signingSecret",
-      description:
-        "Slack Signing Secret from Basic Information > App Credentials",
+      description: "Slack Signing Secret from Basic Information > App Credentials",
       required: true,
     },
     {
@@ -95,8 +93,7 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
     { key: "type", description: "Provider type (anthropic)", required: true },
     {
       key: "model",
-      description:
-        "Model name (e.g., claude-sonnet-4-20250514, claude-opus-4-20250514)",
+      description: "Model name (e.g., claude-sonnet-4-20250514, claude-opus-4-20250514)",
       required: true,
     },
     {
@@ -164,12 +161,7 @@ export interface KeyValueEditorProps {
   providerName?: string;
 }
 
-type EditorMode =
-  | "list"
-  | "add-key"
-  | "add-value"
-  | "edit-value"
-  | "select-hint";
+type EditorMode = "list" | "add-key" | "add-value" | "edit-value" | "select-hint";
 
 /**
  * KeyValueEditor component for editing key-value pairs with provider-specific hints.
@@ -369,13 +361,9 @@ export function KeyValueEditor({
       if (!isFocused || mode !== "select-hint") return;
 
       if (input === "j" || key.downArrow) {
-        setHintIndex((prev) =>
-          prev < availableHints.length - 1 ? prev + 1 : 0,
-        );
+        setHintIndex((prev) => (prev < availableHints.length - 1 ? prev + 1 : 0));
       } else if (input === "k" || key.upArrow) {
-        setHintIndex((prev) =>
-          prev > 0 ? prev - 1 : availableHints.length - 1,
-        );
+        setHintIndex((prev) => (prev > 0 ? prev - 1 : availableHints.length - 1));
       } else if (key.return) {
         handleSelectHint();
       } else if (key.escape) {
@@ -400,12 +388,7 @@ export function KeyValueEditor({
   // Render hint selection mode
   if (mode === "select-hint") {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         {/* Header */}
         <Box marginBottom={1}>
           <Text bold color="cyan">
@@ -419,14 +402,10 @@ export function KeyValueEditor({
           const isHighlighted = index === hintIndex;
           return (
             <Box key={hint.key}>
-              <Text color={isHighlighted ? "cyan" : undefined}>
-                {isHighlighted ? "▸ " : "  "}
-              </Text>
+              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
               <Text
                 bold={isHighlighted}
-                color={
-                  hint.required ? "yellow" : isHighlighted ? "cyan" : undefined
-                }
+                color={hint.required ? "yellow" : isHighlighted ? "cyan" : undefined}
                 inverse={isHighlighted}
               >
                 {hint.key}
@@ -448,12 +427,7 @@ export function KeyValueEditor({
   // Render key input mode
   if (mode === "add-key") {
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         {/* Header */}
         <Box marginBottom={1}>
           <Text bold color="cyan">
@@ -501,18 +475,11 @@ export function KeyValueEditor({
     const currentHint = providerHints.find((h) => h.key === newKey);
 
     return (
-      <Box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor="cyan"
-        paddingX={1}
-      >
+      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
         {/* Header */}
         <Box marginBottom={1}>
           <Text bold color="cyan">
-            {mode === "add-value"
-              ? "Add New Entry - Enter Value"
-              : `Edit Value for "${newKey}"`}
+            {mode === "add-value" ? "Add New Entry - Enter Value" : `Edit Value for "${newKey}"`}
           </Text>
         </Box>
 
@@ -521,9 +488,7 @@ export function KeyValueEditor({
           <Box marginBottom={1}>
             <Text dimColor>Key: </Text>
             <Text color="yellow">{newKey}</Text>
-            {currentHint && currentHint.required && (
-              <Text color="red"> (required)</Text>
-            )}
+            {currentHint && currentHint.required && <Text color="red"> (required)</Text>}
           </Box>
         )}
 
@@ -554,18 +519,11 @@ export function KeyValueEditor({
   }
 
   // Check for missing required keys
-  const missingRequired = providerHints.filter(
-    (h) => h.required && !(h.key in editEntries),
-  );
+  const missingRequired = providerHints.filter((h) => h.required && !(h.key in editEntries));
 
   // Render list mode
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="single"
-      borderColor="cyan"
-      paddingX={1}
-    >
+    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
       {/* Header */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
@@ -579,9 +537,7 @@ export function KeyValueEditor({
       {missingRequired.length > 0 && (
         <Box marginBottom={1}>
           <Text color="yellow">⚠ Missing required: </Text>
-          <Text color="yellow">
-            {missingRequired.map((h) => h.key).join(", ")}
-          </Text>
+          <Text color="yellow">{missingRequired.map((h) => h.key).join(", ")}</Text>
         </Box>
       )}
 
@@ -611,13 +567,7 @@ export function KeyValueEditor({
                 {/* Key name */}
                 <Text
                   bold={isHighlighted}
-                  color={
-                    isHighlighted
-                      ? "cyan"
-                      : hint?.required
-                        ? "yellow"
-                        : "yellow"
-                  }
+                  color={isHighlighted ? "cyan" : hint?.required ? "yellow" : "yellow"}
                   inverse={isHighlighted}
                 >
                   {key}
@@ -628,9 +578,7 @@ export function KeyValueEditor({
                   <>
                     <Text dimColor>: </Text>
                     <Text dimColor>
-                      {value.length > 30
-                        ? value.substring(0, 30) + "..."
-                        : value}
+                      {value.length > 30 ? value.substring(0, 30) + "..." : value}
                     </Text>
                   </>
                 )}
@@ -667,26 +615,16 @@ export function KeyValueEditor({
       <Box>
         <Text
           color={
-            highlightedIndex === (hasHints ? keys.length + 1 : keys.length)
-              ? "green"
-              : undefined
+            highlightedIndex === (hasHints ? keys.length + 1 : keys.length) ? "green" : undefined
           }
         >
-          {highlightedIndex === (hasHints ? keys.length + 1 : keys.length)
-            ? "▸ "
-            : "  "}
+          {highlightedIndex === (hasHints ? keys.length + 1 : keys.length) ? "▸ " : "  "}
         </Text>
         <Text dimColor>{"  "}</Text>
         <Text
           bold={highlightedIndex === (hasHints ? keys.length + 1 : keys.length)}
-          color={
-            highlightedIndex === (hasHints ? keys.length + 1 : keys.length)
-              ? "green"
-              : "gray"
-          }
-          inverse={
-            highlightedIndex === (hasHints ? keys.length + 1 : keys.length)
-          }
+          color={highlightedIndex === (hasHints ? keys.length + 1 : keys.length) ? "green" : "gray"}
+          inverse={highlightedIndex === (hasHints ? keys.length + 1 : keys.length)}
         >
           + Add custom entry
         </Text>
