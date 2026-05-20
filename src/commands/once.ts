@@ -12,15 +12,19 @@ import {
 import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
 import { getStreamJsonParser } from "../utils/stream-json.js";
 import { sendNotificationWithDaemonEvents } from "../utils/notification.js";
+import { runOnceViaPty } from "./once-pty.js";
 
 export async function once(args: string[]): Promise<void> {
   // Parse flags
   let debug = false;
   let model: string | undefined;
+  let usePty = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--debug" || args[i] === "-d") {
       debug = true;
+    } else if (args[i] === "--pty") {
+      usePty = true;
     } else if (args[i] === "--model" || args[i] === "-m") {
       if (i + 1 < args.length) {
         model = args[i + 1];
@@ -30,6 +34,11 @@ export async function once(args: string[]): Promise<void> {
         process.exit(1);
       }
     }
+  }
+
+  if (usePty) {
+    await runOnceViaPty({ debug, model });
+    return;
   }
 
   requireContainer("once");
