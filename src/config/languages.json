@@ -27,7 +27,7 @@
       "checkCommand": "npm run typecheck",
       "testCommand": "npm test",
       "docker": {
-        "install": "# Node.js already included in base image"
+        "install": "# Node.js already included in base image\nRUN npm install -g npm@latest"
       },
       "technologies": [
         { "name": "Express", "description": "Minimal web framework" },

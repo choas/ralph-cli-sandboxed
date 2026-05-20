@@ -22,7 +22,11 @@ import {
   clearBranchState,
   getProjectName,
 } from "../utils/config.js";
-import { resolvePromptVariables, getCliProviders, GEMINI_MD } from "../templates/prompts.js";
+import {
+  resolvePromptVariables,
+  getCliProviders,
+  generateInstructionFileContent,
+} from "../templates/prompts.js";
 import {
   validatePrd,
   smartMerge,
@@ -800,13 +804,20 @@ export async function run(args: string[]): Promise<void> {
 
   const config = loadConfig();
 
-  // Generate GEMINI.md in project root when using Gemini CLI
-  // Gemini CLI auto-reads this file for provider-specific instructions
-  if (config.cliProvider === "gemini") {
-    const geminiMdPath = join(process.cwd(), "GEMINI.md");
-    if (!existsSync(geminiMdPath)) {
-      writeFileSync(geminiMdPath, GEMINI_MD);
-      console.log("Created GEMINI.md (Gemini CLI instructions)");
+  // Generate provider-specific instruction file (CLAUDE.md, GEMINI.md, AGENTS.md, etc.)
+  // These files are auto-read by AI agents and contain skill instructions
+  {
+    const allProviders = getCliProviders();
+    const providerKey = config.cliProvider || "claude";
+    const providerCfg = allProviders[providerKey];
+    if (providerCfg?.instructionFile) {
+      const skills = config.claude?.skills || [];
+      if (skills.length > 0) {
+        const instrPath = join(process.cwd(), providerCfg.instructionFile);
+        const content = generateInstructionFileContent(skills, providerKey);
+        writeFileSync(instrPath, content);
+        console.log(`Updated ${providerCfg.instructionFile} (${skills.length} skill${skills.length === 1 ? "" : "s"})`);
+      }
     }
   }
 
