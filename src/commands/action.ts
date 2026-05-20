@@ -1,8 +1,16 @@
 import { spawn } from "child_process";
 import { existsSync } from "fs";
 import { loadConfig, isRunningInContainer } from "../utils/config.js";
-import { getMessagesPath, sendMessage, waitForResponse } from "../utils/message-queue.js";
-import { getDefaultActions, getBuiltInActionNames, DaemonAction } from "../utils/daemon-actions.js";
+import {
+  getMessagesPath,
+  sendMessage,
+  waitForResponse,
+} from "../utils/message-queue.js";
+import {
+  getDefaultActions,
+  getBuiltInActionNames,
+  DaemonAction,
+} from "../utils/daemon-actions.js";
 
 /**
  * Execute an action from config.json - works both inside and outside containers.
@@ -51,7 +59,10 @@ export async function action(args: string[]): Promise<void> {
   const configuredActions = config.daemon?.actions || {};
 
   // Merge: configured actions override built-in ones
-  const allActions: Record<string, DaemonAction> = { ...builtInActions, ...configuredActions };
+  const allActions: Record<string, DaemonAction> = {
+    ...builtInActions,
+    ...configuredActions,
+  };
   const actionNames = Object.keys(allActions);
 
   // If --list, no action specified, or "help" action, show available actions
@@ -117,7 +128,8 @@ export async function action(args: string[]): Promise<void> {
   }
 
   const actionConfig = allActions[actionName];
-  const isBuiltIn = builtInNames.has(actionName) && !configuredActions[actionName];
+  const isBuiltIn =
+    builtInNames.has(actionName) && !configuredActions[actionName];
   const inContainer = isRunningInContainer();
 
   if (debug) {
@@ -144,14 +156,20 @@ export async function action(args: string[]): Promise<void> {
 /**
  * Execute action via message queue (when running inside container).
  */
-async function executeViaQueue(actionName: string, args: string[], debug: boolean): Promise<void> {
+async function executeViaQueue(
+  actionName: string,
+  args: string[],
+  debug: boolean,
+): Promise<void> {
   const messagesPath = getMessagesPath(true);
 
   if (!existsSync(messagesPath)) {
     const ralphDir = "/workspace/.ralph";
     if (!existsSync(ralphDir)) {
       console.error("Error: .ralph directory not mounted in container.");
-      console.error("Make sure the container is started with 'ralph docker run'.");
+      console.error(
+        "Make sure the container is started with 'ralph docker run'.",
+      );
       process.exit(1);
     }
   }
@@ -197,7 +215,9 @@ async function executeViaQueue(actionName: string, args: string[], debug: boolea
     console.log(`Action '${actionName}' completed successfully.`);
   } else {
     console.error("");
-    console.error(`Action '${actionName}' failed: ${response.error || "Unknown error"}`);
+    console.error(
+      `Action '${actionName}' failed: ${response.error || "Unknown error"}`,
+    );
     process.exit(1);
   }
 }
@@ -205,7 +225,11 @@ async function executeViaQueue(actionName: string, args: string[], debug: boolea
 /**
  * Execute action directly on host (when running outside container).
  */
-async function executeDirectly(command: string, args: string[], debug: boolean): Promise<void> {
+async function executeDirectly(
+  command: string,
+  args: string[],
+  debug: boolean,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     // Build full command with arguments
     let fullCommand = command;

@@ -18,7 +18,10 @@ export interface ProviderHint {
 export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
   ntfy: [
     { key: "topic", description: "ntfy topic name", required: true },
-    { key: "server", description: "ntfy server URL (default: https://ntfy.sh)" },
+    {
+      key: "server",
+      description: "ntfy server URL (default: https://ntfy.sh)",
+    },
     { key: "priority", description: "Message priority (1-5)" },
     { key: "tags", description: "Comma-separated tags/emojis" },
   ],
@@ -43,20 +46,32 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
     },
     {
       key: "appToken",
-      description: "Slack App Token (xapp-...) from Basic Information > App-Level Tokens",
+      description:
+        "Slack App Token (xapp-...) from Basic Information > App-Level Tokens",
       required: true,
     },
     {
       key: "signingSecret",
-      description: "Slack Signing Secret from Basic Information > App Credentials",
+      description:
+        "Slack Signing Secret from Basic Information > App Credentials",
       required: true,
     },
-    { key: "allowedChannelIds", description: "Only respond in these channel IDs (security)" },
+    {
+      key: "allowedChannelIds",
+      description: "Only respond in these channel IDs (security)",
+    },
     { key: "enabled", description: "Enable/disable Slack integration" },
   ],
   telegram: [
-    { key: "botToken", description: "Telegram Bot API token from @BotFather", required: true },
-    { key: "allowedChatIds", description: "Only respond in these chat IDs (security)" },
+    {
+      key: "botToken",
+      description: "Telegram Bot API token from @BotFather",
+      required: true,
+    },
+    {
+      key: "allowedChatIds",
+      description: "Only respond in these chat IDs (security)",
+    },
     { key: "enabled", description: "Enable/disable Telegram integration" },
   ],
   discord: [
@@ -65,8 +80,14 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
       description: "Discord Bot Token from Developer Portal > Bot > Token",
       required: true,
     },
-    { key: "allowedGuildIds", description: "Only respond in these server/guild IDs (security)" },
-    { key: "allowedChannelIds", description: "Only respond in these channel IDs (security)" },
+    {
+      key: "allowedGuildIds",
+      description: "Only respond in these server/guild IDs (security)",
+    },
+    {
+      key: "allowedChannelIds",
+      description: "Only respond in these channel IDs (security)",
+    },
     { key: "enabled", description: "Enable/disable Discord integration" },
   ],
   // LLM provider hints
@@ -74,10 +95,14 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
     { key: "type", description: "Provider type (anthropic)", required: true },
     {
       key: "model",
-      description: "Model name (e.g., claude-sonnet-4-20250514, claude-opus-4-20250514)",
+      description:
+        "Model name (e.g., claude-sonnet-4-20250514, claude-opus-4-20250514)",
       required: true,
     },
-    { key: "apiKey", description: "API key (defaults to ANTHROPIC_API_KEY env var)" },
+    {
+      key: "apiKey",
+      description: "API key (defaults to ANTHROPIC_API_KEY env var)",
+    },
     { key: "baseUrl", description: "Custom API base URL (optional)" },
   ],
   openai: [
@@ -87,19 +112,39 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
       description: "Model name (e.g., gpt-4o, gpt-4-turbo, gpt-3.5-turbo)",
       required: true,
     },
-    { key: "apiKey", description: "API key (defaults to OPENAI_API_KEY env var)" },
-    { key: "baseUrl", description: "Custom API base URL (for OpenAI-compatible services)" },
+    {
+      key: "apiKey",
+      description: "API key (defaults to OPENAI_API_KEY env var)",
+    },
+    {
+      key: "baseUrl",
+      description: "Custom API base URL (for OpenAI-compatible services)",
+    },
   ],
   ollama: [
     { key: "type", description: "Provider type (ollama)", required: true },
-    { key: "model", description: "Model name (e.g., llama3, mistral, codellama)", required: true },
-    { key: "baseUrl", description: "Ollama server URL (default: http://localhost:11434)" },
+    {
+      key: "model",
+      description: "Model name (e.g., llama3, mistral, codellama)",
+      required: true,
+    },
+    {
+      key: "baseUrl",
+      description: "Ollama server URL (default: http://localhost:11434)",
+    },
   ],
   // Generic LLM provider hint for unknown providers
   llmprovider: [
-    { key: "type", description: "Provider type (anthropic, openai, or ollama)", required: true },
+    {
+      key: "type",
+      description: "Provider type (anthropic, openai, or ollama)",
+      required: true,
+    },
     { key: "model", description: "Model name", required: true },
-    { key: "apiKey", description: "API key (optional, uses env var if not set)" },
+    {
+      key: "apiKey",
+      description: "API key (optional, uses env var if not set)",
+    },
     { key: "baseUrl", description: "Custom API base URL (optional)" },
   ],
 };
@@ -119,7 +164,12 @@ export interface KeyValueEditorProps {
   providerName?: string;
 }
 
-type EditorMode = "list" | "add-key" | "add-value" | "edit-value" | "select-hint";
+type EditorMode =
+  | "list"
+  | "add-key"
+  | "add-value"
+  | "edit-value"
+  | "select-hint";
 
 /**
  * KeyValueEditor component for editing key-value pairs with provider-specific hints.
@@ -133,7 +183,9 @@ export function KeyValueEditor({
   isFocused = true,
   providerName,
 }: KeyValueEditorProps): React.ReactElement {
-  const [editEntries, setEditEntries] = useState<Record<string, string>>({ ...entries });
+  const [editEntries, setEditEntries] = useState<Record<string, string>>({
+    ...entries,
+  });
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [mode, setMode] = useState<EditorMode>("list");
   const [editText, setEditText] = useState("");
@@ -317,9 +369,13 @@ export function KeyValueEditor({
       if (!isFocused || mode !== "select-hint") return;
 
       if (input === "j" || key.downArrow) {
-        setHintIndex((prev) => (prev < availableHints.length - 1 ? prev + 1 : 0));
+        setHintIndex((prev) =>
+          prev < availableHints.length - 1 ? prev + 1 : 0,
+        );
       } else if (input === "k" || key.upArrow) {
-        setHintIndex((prev) => (prev > 0 ? prev - 1 : availableHints.length - 1));
+        setHintIndex((prev) =>
+          prev > 0 ? prev - 1 : availableHints.length - 1,
+        );
       } else if (key.return) {
         handleSelectHint();
       } else if (key.escape) {
@@ -344,7 +400,12 @@ export function KeyValueEditor({
   // Render hint selection mode
   if (mode === "select-hint") {
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         {/* Header */}
         <Box marginBottom={1}>
           <Text bold color="cyan">
@@ -358,10 +419,14 @@ export function KeyValueEditor({
           const isHighlighted = index === hintIndex;
           return (
             <Box key={hint.key}>
-              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
+              <Text color={isHighlighted ? "cyan" : undefined}>
+                {isHighlighted ? "▸ " : "  "}
+              </Text>
               <Text
                 bold={isHighlighted}
-                color={hint.required ? "yellow" : isHighlighted ? "cyan" : undefined}
+                color={
+                  hint.required ? "yellow" : isHighlighted ? "cyan" : undefined
+                }
                 inverse={isHighlighted}
               >
                 {hint.key}
@@ -383,7 +448,12 @@ export function KeyValueEditor({
   // Render key input mode
   if (mode === "add-key") {
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         {/* Header */}
         <Box marginBottom={1}>
           <Text bold color="cyan">
@@ -431,11 +501,18 @@ export function KeyValueEditor({
     const currentHint = providerHints.find((h) => h.key === newKey);
 
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         {/* Header */}
         <Box marginBottom={1}>
           <Text bold color="cyan">
-            {mode === "add-value" ? "Add New Entry - Enter Value" : `Edit Value for "${newKey}"`}
+            {mode === "add-value"
+              ? "Add New Entry - Enter Value"
+              : `Edit Value for "${newKey}"`}
           </Text>
         </Box>
 
@@ -444,7 +521,9 @@ export function KeyValueEditor({
           <Box marginBottom={1}>
             <Text dimColor>Key: </Text>
             <Text color="yellow">{newKey}</Text>
-            {currentHint && currentHint.required && <Text color="red"> (required)</Text>}
+            {currentHint && currentHint.required && (
+              <Text color="red"> (required)</Text>
+            )}
           </Box>
         )}
 
@@ -475,11 +554,18 @@ export function KeyValueEditor({
   }
 
   // Check for missing required keys
-  const missingRequired = providerHints.filter((h) => h.required && !(h.key in editEntries));
+  const missingRequired = providerHints.filter(
+    (h) => h.required && !(h.key in editEntries),
+  );
 
   // Render list mode
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="cyan"
+      paddingX={1}
+    >
       {/* Header */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
@@ -493,7 +579,9 @@ export function KeyValueEditor({
       {missingRequired.length > 0 && (
         <Box marginBottom={1}>
           <Text color="yellow">⚠ Missing required: </Text>
-          <Text color="yellow">{missingRequired.map((h) => h.key).join(", ")}</Text>
+          <Text color="yellow">
+            {missingRequired.map((h) => h.key).join(", ")}
+          </Text>
         </Box>
       )}
 
@@ -523,7 +611,13 @@ export function KeyValueEditor({
                 {/* Key name */}
                 <Text
                   bold={isHighlighted}
-                  color={isHighlighted ? "cyan" : hint?.required ? "yellow" : "yellow"}
+                  color={
+                    isHighlighted
+                      ? "cyan"
+                      : hint?.required
+                        ? "yellow"
+                        : "yellow"
+                  }
                   inverse={isHighlighted}
                 >
                   {key}
@@ -534,7 +628,9 @@ export function KeyValueEditor({
                   <>
                     <Text dimColor>: </Text>
                     <Text dimColor>
-                      {value.length > 30 ? value.substring(0, 30) + "..." : value}
+                      {value.length > 30
+                        ? value.substring(0, 30) + "..."
+                        : value}
                     </Text>
                   </>
                 )}
@@ -571,16 +667,26 @@ export function KeyValueEditor({
       <Box>
         <Text
           color={
-            highlightedIndex === (hasHints ? keys.length + 1 : keys.length) ? "green" : undefined
+            highlightedIndex === (hasHints ? keys.length + 1 : keys.length)
+              ? "green"
+              : undefined
           }
         >
-          {highlightedIndex === (hasHints ? keys.length + 1 : keys.length) ? "▸ " : "  "}
+          {highlightedIndex === (hasHints ? keys.length + 1 : keys.length)
+            ? "▸ "
+            : "  "}
         </Text>
         <Text dimColor>{"  "}</Text>
         <Text
           bold={highlightedIndex === (hasHints ? keys.length + 1 : keys.length)}
-          color={highlightedIndex === (hasHints ? keys.length + 1 : keys.length) ? "green" : "gray"}
-          inverse={highlightedIndex === (hasHints ? keys.length + 1 : keys.length)}
+          color={
+            highlightedIndex === (hasHints ? keys.length + 1 : keys.length)
+              ? "green"
+              : "gray"
+          }
+          inverse={
+            highlightedIndex === (hasHints ? keys.length + 1 : keys.length)
+          }
         >
           + Add custom entry
         </Text>

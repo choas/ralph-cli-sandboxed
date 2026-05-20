@@ -206,7 +206,9 @@ echo "  ./scripts/gen_xcode.sh"
  */
 export function hasSwiftUI(technologies: string[]): boolean {
   return technologies.some(
-    (tech) => tech.toLowerCase().includes("swiftui") || tech.toLowerCase() === "swiftui",
+    (tech) =>
+      tech.toLowerCase().includes("swiftui") ||
+      tech.toLowerCase() === "swiftui",
   );
 }
 
@@ -215,7 +217,9 @@ export function hasSwiftUI(technologies: string[]): boolean {
  */
 export function hasFastlane(technologies: string[]): boolean {
   return technologies.some(
-    (tech) => tech.toLowerCase().includes("fastlane") || tech.toLowerCase() === "fastlane",
+    (tech) =>
+      tech.toLowerCase().includes("fastlane") ||
+      tech.toLowerCase() === "fastlane",
   );
 }
 
@@ -398,7 +402,9 @@ app_identifier "${bundleId}"
  *
  * @param projectName - Name of the Xcode project/app
  */
-export function generateFastlaneReadmeSection(projectName: string = "App"): string {
+export function generateFastlaneReadmeSection(
+  projectName: string = "App",
+): string {
   return `## Fastlane Deployment for ${projectName}
 
 This project includes [Fastlane](https://fastlane.tools/) configuration for automated builds and deployments of ${projectName}.

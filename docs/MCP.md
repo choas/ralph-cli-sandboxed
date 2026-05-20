@@ -6,12 +6,12 @@ Ralph includes a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/
 
 The MCP server runs over **stdio** transport and provides four tools:
 
-| Tool | Description |
-|------|-------------|
-| `ralph_prd_list` | List PRD entries with optional filters |
-| `ralph_prd_add` | Add a new PRD entry |
-| `ralph_prd_status` | Get completion status and breakdown |
-| `ralph_prd_toggle` | Toggle pass/fail status for entries |
+| Tool               | Description                            |
+| ------------------ | -------------------------------------- |
+| `ralph_prd_list`   | List PRD entries with optional filters |
+| `ralph_prd_add`    | Add a new PRD entry                    |
+| `ralph_prd_status` | Get completion status and breakdown    |
+| `ralph_prd_toggle` | Toggle pass/fail status for entries    |
 
 ## Installation
 
@@ -65,10 +65,10 @@ List PRD entries with optional category and status filters.
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `category` | enum | No | Filter by category: `ui`, `feature`, `bugfix`, `setup`, `development`, `testing`, `docs` |
-| `status` | enum | No | Filter by status: `all` (default), `passing`, `failing` |
+| Parameter  | Type | Required | Description                                                                              |
+| ---------- | ---- | -------- | ---------------------------------------------------------------------------------------- |
+| `category` | enum | No       | Filter by category: `ui`, `feature`, `bugfix`, `setup`, `development`, `testing`, `docs` |
+| `status`   | enum | No       | Filter by status: `all` (default), `passing`, `failing`                                  |
 
 **Returns:** JSON array of entries, each containing:
 
@@ -85,6 +85,7 @@ List PRD entries with optional category and status filters.
 ```
 
 **Examples:**
+
 - List all entries: `ralph_prd_list({})`
 - List failing features: `ralph_prd_list({ category: "feature", status: "failing" })`
 - List passing entries: `ralph_prd_list({ status: "passing" })`
@@ -95,12 +96,12 @@ Add a new PRD entry with category, description, and verification steps.
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `category` | enum | Yes | Category: `ui`, `feature`, `bugfix`, `setup`, `development`, `testing`, `docs` |
-| `description` | string | Yes | Description of the requirement |
-| `steps` | string[] | Yes | Non-empty array of verification steps |
-| `branch` | string | No | Git branch associated with this entry |
+| Parameter     | Type     | Required | Description                                                                    |
+| ------------- | -------- | -------- | ------------------------------------------------------------------------------ |
+| `category`    | enum     | Yes      | Category: `ui`, `feature`, `bugfix`, `setup`, `development`, `testing`, `docs` |
+| `description` | string   | Yes      | Description of the requirement                                                 |
+| `steps`       | string[] | Yes      | Non-empty array of verification steps                                          |
+| `branch`      | string   | No       | Git branch associated with this entry                                          |
 
 **Returns:** JSON with confirmation message and the added entry including its 1-based index.
 
@@ -134,7 +135,11 @@ Get PRD completion status with counts, percentage, per-category breakdown, and r
     "docs": { "passing": 0, "total": 1 }
   },
   "remaining": [
-    { "index": 3, "category": "feature", "description": "Add search functionality" },
+    {
+      "index": 3,
+      "category": "feature",
+      "description": "Add search functionality"
+    },
     { "index": 6, "category": "feature", "description": "Add notifications" },
     { "index": 8, "category": "docs", "description": "Write API documentation" }
   ]
@@ -147,9 +152,9 @@ Toggle the completion status (`passes`) for one or more PRD entries by their 1-b
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `indices` | number[] | Yes | 1-based indices of PRD entries to toggle |
+| Parameter | Type     | Required | Description                              |
+| --------- | -------- | -------- | ---------------------------------------- |
+| `indices` | number[] | Yes      | 1-based indices of PRD entries to toggle |
 
 **Returns:** JSON with confirmation and list of toggled entries.
 
@@ -171,22 +176,22 @@ Out-of-range indices return an error. Duplicate indices are deduplicated before 
 
 > **User:** What's the status of our PRD?
 >
-> **Assistant:** *(calls `ralph_prd_status`)* Your PRD is 63% complete (5 of 8 tasks passing). You have 3 remaining items: search functionality, notifications, and API documentation.
+> **Assistant:** _(calls `ralph_prd_status`)_ Your PRD is 63% complete (5 of 8 tasks passing). You have 3 remaining items: search functionality, notifications, and API documentation.
 
 ### Adding a new requirement
 
 > **User:** We need to add internationalization support.
 >
-> **Assistant:** *(calls `ralph_prd_add` with category "feature", description "Add internationalization (i18n) support", steps ["Install i18n library", "Extract user-facing strings", "Add language switcher"])* Done! Added as entry #9 in the feature category.
+> **Assistant:** _(calls `ralph_prd_add` with category "feature", description "Add internationalization (i18n) support", steps ["Install i18n library", "Extract user-facing strings", "Add language switcher"])_ Done! Added as entry #9 in the feature category.
 
 ### Marking work as complete
 
 > **User:** I've finished the search functionality (item 3).
 >
-> **Assistant:** *(calls `ralph_prd_toggle` with indices [3])* Toggled entry #3 "Add search functionality" to passing.
+> **Assistant:** _(calls `ralph_prd_toggle` with indices [3])_ Toggled entry #3 "Add search functionality" to passing.
 
 ### Filtering the PRD
 
 > **User:** Show me all the incomplete feature tasks.
 >
-> **Assistant:** *(calls `ralph_prd_list` with category "feature", status "failing")* You have 2 incomplete feature tasks: notifications (#6) and i18n support (#9).
+> **Assistant:** _(calls `ralph_prd_list` with category "feature", status "failing")_ You have 2 incomplete feature tasks: notifications (#6) and i18n support (#9).

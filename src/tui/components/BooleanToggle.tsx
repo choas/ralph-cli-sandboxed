@@ -43,7 +43,13 @@ export function BooleanToggle({
       if (!isFocused) return;
 
       // Space, left/right arrows, or 't'/'f' to toggle
-      if (input === " " || key.leftArrow || key.rightArrow || input === "t" || input === "f") {
+      if (
+        input === " " ||
+        key.leftArrow ||
+        key.rightArrow ||
+        input === "t" ||
+        input === "f"
+      ) {
         if (input === "t") {
           setEditValue(true);
         } else if (input === "f") {
@@ -61,7 +67,12 @@ export function BooleanToggle({
   );
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="cyan"
+      paddingX={1}
+    >
       {/* Header */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
@@ -74,7 +85,11 @@ export function BooleanToggle({
         <Text dimColor>{">"} </Text>
         {/* False option */}
         <Box marginRight={2}>
-          <Text color={!editValue ? "red" : undefined} bold={!editValue} inverse={!editValue}>
+          <Text
+            color={!editValue ? "red" : undefined}
+            bold={!editValue}
+            inverse={!editValue}
+          >
             {!editValue ? " ● " : " ○ "}
           </Text>
           <Text color={!editValue ? "red" : "gray"} bold={!editValue}>
@@ -83,7 +98,11 @@ export function BooleanToggle({
         </Box>
         {/* True option */}
         <Box>
-          <Text color={editValue ? "green" : undefined} bold={editValue} inverse={editValue}>
+          <Text
+            color={editValue ? "green" : undefined}
+            bold={editValue}
+            inverse={editValue}
+          >
             {editValue ? " ● " : " ○ "}
           </Text>
           <Text color={editValue ? "green" : "gray"} bold={editValue}>
@@ -94,7 +113,9 @@ export function BooleanToggle({
 
       {/* Help text */}
       <Box marginTop={1}>
-        <Text dimColor>Space/←/→: toggle | t/f: set | Enter: confirm | Esc: cancel</Text>
+        <Text dimColor>
+          Space/←/→: toggle | t/f: set | Enter: confirm | Esc: cancel
+        </Text>
       </Box>
     </Box>
   );

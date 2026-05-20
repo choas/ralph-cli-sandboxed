@@ -57,7 +57,15 @@ interface PrdItem {
   branch?: string;
 }
 
-const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
+const CATEGORIES = [
+  "ui",
+  "feature",
+  "bugfix",
+  "setup",
+  "development",
+  "testing",
+  "docs",
+];
 
 /**
  * Converts a branch name to a worktree directory name, prefixed with the project name.
@@ -121,11 +129,15 @@ function ensureWorktree(branch: string, worktreesBase: string): string {
     return worktreePath;
   }
 
-  console.log(`\x1b[90m[ralph] Creating worktree for branch "${branch}" at ${worktreePath}\x1b[0m`);
+  console.log(
+    `\x1b[90m[ralph] Creating worktree for branch "${branch}" at ${worktreePath}\x1b[0m`,
+  );
 
   // Validate branch name to prevent command injection
   if (!/^[a-zA-Z0-9_\-./]+$/.test(branch)) {
-    throw new Error(`Invalid branch name "${branch}": contains disallowed characters`);
+    throw new Error(
+      `Invalid branch name "${branch}": contains disallowed characters`,
+    );
   }
 
   // Check if the branch already exists
@@ -139,14 +151,20 @@ function ensureWorktree(branch: string, worktreesBase: string): string {
 
   try {
     if (branchExists) {
-      execFileSync("git", ["worktree", "add", worktreePath, branch], { stdio: "pipe" });
+      execFileSync("git", ["worktree", "add", worktreePath, branch], {
+        stdio: "pipe",
+      });
     } else {
       // Create new branch from current HEAD
-      execFileSync("git", ["worktree", "add", "-b", branch, worktreePath], { stdio: "pipe" });
+      execFileSync("git", ["worktree", "add", "-b", branch, worktreePath], {
+        stdio: "pipe",
+      });
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    throw new Error(`Failed to create worktree for branch "${branch}": ${message}`);
+    throw new Error(
+      `Failed to create worktree for branch "${branch}": ${message}`,
+    );
   }
 
   return worktreePath;
@@ -176,7 +194,10 @@ function setupWorktreeRalphDir(
 
   // Write filtered prd-tasks.json for this branch
   // Expand @{filepath} references relative to the workspace .ralph/ dir
-  const expandedItems = expandPrdFileReferences(branchItems, workspacePaths.dir);
+  const expandedItems = expandPrdFileReferences(
+    branchItems,
+    workspacePaths.dir,
+  );
   writeFileSync(prdTasksPath, JSON.stringify(expandedItems, null, 2));
 
   // Create progress.txt if it doesn't exist (preserve existing one for resume)
@@ -213,14 +234,20 @@ function createFilteredPrd(
     const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
     console.error(`\x1b[31mError: PRD file contains invalid ${format}.\x1b[0m`);
     console.error("The file may have been corrupted by an LLM.\n");
-    console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
+    console.error(
+      "Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.",
+    );
     process.exit(1);
   }
 
   if (!Array.isArray(parsed.content)) {
-    console.error("\x1b[31mError: PRD is corrupted - expected an array of items.\x1b[0m");
+    console.error(
+      "\x1b[31mError: PRD is corrupted - expected an array of items.\x1b[0m",
+    );
     console.error("The file may have been modified incorrectly by an LLM.\n");
-    console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
+    console.error(
+      "Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.",
+    );
     process.exit(1);
   }
 
@@ -274,7 +301,9 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): SyncResult {
     const tasksContent = readFileSync(tasksPath, "utf-8");
     const tasksParsed = JSON.parse(tasksContent);
     if (!Array.isArray(tasksParsed)) {
-      console.warn("\x1b[33mWarning: prd-tasks.json is not a valid array - skipping sync.\x1b[0m");
+      console.warn(
+        "\x1b[33mWarning: prd-tasks.json is not a valid array - skipping sync.\x1b[0m",
+      );
       return { count: 0, taskNames: [] };
     }
     const tasks: PrdItem[] = tasksParsed;
@@ -284,13 +313,19 @@ function syncPassesFromTasks(tasksPath: string, prdPath: string): SyncResult {
     if (!prdParsed) {
       const ext = extname(prdPath).toLowerCase();
       const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
-      console.warn(`\x1b[33mWarning: PRD contains invalid ${format} - skipping sync.\x1b[0m`);
-      console.warn("Run \x1b[36mralph fix-prd\x1b[0m after this session to repair.\n");
+      console.warn(
+        `\x1b[33mWarning: PRD contains invalid ${format} - skipping sync.\x1b[0m`,
+      );
+      console.warn(
+        "Run \x1b[36mralph fix-prd\x1b[0m after this session to repair.\n",
+      );
       return { count: 0, taskNames: [] };
     }
     if (!Array.isArray(prdParsed.content)) {
       console.warn("\x1b[33mWarning: PRD is corrupted - skipping sync.\x1b[0m");
-      console.warn("Run \x1b[36mralph fix-prd\x1b[0m after this session to repair.\n");
+      console.warn(
+        "Run \x1b[36mralph fix-prd\x1b[0m after this session to repair.\n",
+      );
       return { count: 0, taskNames: [] };
     }
     const prd: PrdItem[] = prdParsed.content;
@@ -369,7 +404,10 @@ async function runIteration(
         if (!existsSync(outputDir)) {
           mkdirSync(outputDir, { recursive: true });
         }
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+        const timestamp = new Date()
+          .toISOString()
+          .replace(/[:.]/g, "-")
+          .slice(0, 19);
         jsonLogPath = join(outputDir, `ralph-run-${timestamp}.jsonl`);
       }
     }
@@ -507,7 +545,9 @@ async function runIteration(
  * Supports OpenCode's ProviderModelNotFoundError format.
  * Returns the first suggested model, or null if no suggestion found.
  */
-function parseModelNotFoundError(stderr: string): { modelID: string; suggestion: string } | null {
+function parseModelNotFoundError(
+  stderr: string,
+): { modelID: string; suggestion: string } | null {
   // Match OpenCode's error format:
   // modelID: "glm-free",
   // suggestions: [ "glm-4.7-free" ],
@@ -581,14 +621,20 @@ function countPrdItems(
     const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
     console.error(`\x1b[31mError: PRD contains invalid ${format}.\x1b[0m`);
     console.error("The file may have been corrupted by an LLM.\n");
-    console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
+    console.error(
+      "Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.",
+    );
     process.exit(1);
   }
 
   if (!Array.isArray(parsed.content)) {
-    console.error("\x1b[31mError: PRD is corrupted - expected an array of items.\x1b[0m");
+    console.error(
+      "\x1b[31mError: PRD is corrupted - expected an array of items.\x1b[0m",
+    );
     console.error("The file may have been modified incorrectly by an LLM.\n");
-    console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
+    console.error(
+      "Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.",
+    );
     process.exit(1);
   }
 
@@ -602,7 +648,9 @@ function countPrdItems(
   }
 
   const complete = filteredItems.filter((item) => item.passes === true).length;
-  const incomplete = filteredItems.filter((item) => item.passes === false).length;
+  const incomplete = filteredItems.filter(
+    (item) => item.passes === false,
+  ).length;
 
   return {
     total: filteredItems.length,
@@ -644,7 +692,9 @@ function validateAndRecoverPrd(
               ? (typedItem.category as "feature" | "bug" | "chore")
               : "feature",
           description: typedItem.description as string,
-          steps: Array.isArray(typedItem.steps) ? (typedItem.steps as string[]) : [],
+          steps: Array.isArray(typedItem.steps)
+            ? (typedItem.steps as string[])
+            : [],
           passes: typedItem.passes === true,
         };
         if (typeof typedItem.branch === "string") {
@@ -670,7 +720,11 @@ function validateAndRecoverPrd(
     if (newItems.length > 0) {
       console.log(`Preserved ${newItems.length} newly-added item(s).`);
     }
-    return { recovered: true, itemsUpdated: 0, newItemsPreserved: newItems.length };
+    return {
+      recovered: true,
+      itemsUpdated: 0,
+      newItemsPreserved: newItems.length,
+    };
   }
 
   // Validate the structure
@@ -727,7 +781,9 @@ function loadValidPrd(prdPath: string): PrdEntry[] {
     const ext = extname(prdPath).toLowerCase();
     const format = ext === ".yaml" || ext === ".yml" ? "YAML" : "JSON";
     console.error(`\x1b[31mError: PRD contains invalid ${format}.\x1b[0m`);
-    console.error("Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.");
+    console.error(
+      "Run \x1b[36mralph fix-prd\x1b[0m to diagnose and repair the file.",
+    );
     process.exit(1);
   }
 
@@ -796,7 +852,9 @@ export async function run(args: string[]): Promise<void> {
   // - If a specific number of iterations is provided, use that
   // - Otherwise, default to --all mode (run until all tasks complete)
   const hasIterationArg =
-    filteredArgs.length > 0 && !isNaN(parseInt(filteredArgs[0])) && parseInt(filteredArgs[0]) >= 1;
+    filteredArgs.length > 0 &&
+    !isNaN(parseInt(filteredArgs[0])) &&
+    parseInt(filteredArgs[0]) >= 1;
   const allMode = !loopMode && (allModeExplicit || !hasIterationArg);
 
   requireContainer("run");
@@ -842,7 +900,9 @@ export async function run(args: string[]): Promise<void> {
   const streamJsonConfig = config.docker?.asciinema?.streamJson;
   // Get provider-specific streamJsonArgs, falling back to Claude's defaults
   const providers = getCliProviders();
-  const providerConfig = config.cliProvider ? providers[config.cliProvider] : providers["claude"];
+  const providerConfig = config.cliProvider
+    ? providers[config.cliProvider]
+    : providers["claude"];
   // Only use provider's streamJsonArgs if defined, otherwise empty array (no special args)
   // This allows providers without JSON streaming to still have output displayed
   const streamJsonArgs = providerConfig?.streamJsonArgs ?? [];
@@ -867,15 +927,24 @@ export async function run(args: string[]): Promise<void> {
   const sandboxed = true;
 
   if (allMode) {
-    const counts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
-    console.log("Starting ralph in --all mode (runs until all tasks complete)...");
+    const counts = countPrdItems(
+      paths.prd,
+      category,
+      branchFilterActive,
+      branchFilter,
+    );
+    console.log(
+      "Starting ralph in --all mode (runs until all tasks complete)...",
+    );
     console.log(
       `PRD Status: ${counts.complete}/${counts.total} complete, ${counts.incomplete} remaining`,
     );
   } else if (loopMode) {
     console.log("Starting ralph in loop mode (runs until interrupted)...");
   } else {
-    console.log(`Starting ralph iterations (requested: ${requestedIterations})...`);
+    console.log(
+      `Starting ralph iterations (requested: ${requestedIterations})...`,
+    );
   }
   if (category) {
     console.log(`Filtering PRD items by category: ${category}`);
@@ -888,7 +957,12 @@ export async function run(args: string[]): Promise<void> {
     }
 
     // Check if any items match the branch filter; if not, exit early
-    const branchCounts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
+    const branchCounts = countPrdItems(
+      paths.prd,
+      category,
+      branchFilterActive,
+      branchFilter,
+    );
     if (branchCounts.total === 0) {
       if (branchFilter === "") {
         console.error("\nNo PRD items have a branch field set.");
@@ -899,7 +973,9 @@ export async function run(args: string[]): Promise<void> {
     }
   }
   if (streamJson?.enabled) {
-    console.log("Stream JSON output enabled - displaying formatted Claude output");
+    console.log(
+      "Stream JSON output enabled - displaying formatted Claude output",
+    );
     if (streamJson.saveRawJson) {
       console.log(`Raw JSON logs will be saved to: ${streamJson.outputDir}/`);
     }
@@ -918,7 +994,12 @@ export async function run(args: string[]): Promise<void> {
 
   // Progress tracking for --all mode
   // Progress = tasks completed OR new tasks added (allows ralph to expand the PRD)
-  const initialCounts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
+  const initialCounts = countPrdItems(
+    paths.prd,
+    category,
+    branchFilterActive,
+    branchFilter,
+  );
   let lastCompletedCount = initialCounts.complete;
   let lastTotalCount = initialCounts.total;
   let iterationsWithoutProgress = 0;
@@ -929,14 +1010,19 @@ export async function run(args: string[]): Promise<void> {
   // Check if another instance is already running
   if (existsSync(pidFilePath)) {
     try {
-      const existingPid = parseInt(readFileSync(pidFilePath, "utf-8").trim(), 10);
+      const existingPid = parseInt(
+        readFileSync(pidFilePath, "utf-8").trim(),
+        10,
+      );
       if (!isNaN(existingPid)) {
         try {
           process.kill(existingPid, 0); // Check if process exists
           console.error(
             `\x1b[31mError: Another ralph run is already running (PID ${existingPid})\x1b[0m`,
           );
-          console.error("Use 'ralph stop' or '/stop' via Telegram to terminate it first.");
+          console.error(
+            "Use 'ralph stop' or '/stop' via Telegram to terminate it first.",
+          );
           process.exit(1);
         } catch {
           // Process doesn't exist, stale PID file - clean it up
@@ -955,7 +1041,10 @@ export async function run(args: string[]): Promise<void> {
   const cleanupPidFile = () => {
     try {
       if (existsSync(pidFilePath)) {
-        const storedPid = parseInt(readFileSync(pidFilePath, "utf-8").trim(), 10);
+        const storedPid = parseInt(
+          readFileSync(pidFilePath, "utf-8").trim(),
+          10,
+        );
         // Only delete if it's our PID (in case another instance started)
         if (storedPid === process.pid) {
           unlinkSync(pidFilePath);
@@ -985,7 +1074,10 @@ export async function run(args: string[]): Promise<void> {
   // Check for existing branch state from a previous interrupted run
   const resumedBranchState = loadBranchState();
   if (resumedBranchState) {
-    const resumeDir = join(worktreesBase, branchToWorktreeName(resumedBranchState.currentBranch));
+    const resumeDir = join(
+      worktreesBase,
+      branchToWorktreeName(resumedBranchState.currentBranch),
+    );
     if (existsSync(resumeDir)) {
       console.log(
         `\x1b[90m[ralph] Resuming work on branch "${resumedBranchState.currentBranch}" (worktree: ${resumeDir})\x1b[0m`,
@@ -1008,7 +1100,12 @@ export async function run(args: string[]): Promise<void> {
     iterValidPrd: PrdEntry[],
     targetDir: string,
     branchLabel?: string,
-  ): Promise<{ exitCode: number; output: string; stderr: string; syncResult: SyncResult }> {
+  ): Promise<{
+    exitCode: number;
+    output: string;
+    stderr: string;
+    syncResult: SyncResult;
+  }> {
     // Change to target directory
     if (targetDir !== workspaceCwd) {
       process.chdir(targetDir);
@@ -1097,7 +1194,12 @@ export async function run(args: string[]): Promise<void> {
     while (true) {
       iterationCount++;
 
-      const currentCounts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
+      const currentCounts = countPrdItems(
+        paths.prd,
+        category,
+        branchFilterActive,
+        branchFilter,
+      );
 
       // Check if we should stop (not in loop mode)
       if (!loopMode && !allMode) {
@@ -1126,7 +1228,9 @@ export async function run(args: string[]): Promise<void> {
       const allItems: PrdItem[] = Array.isArray(prdContent) ? prdContent : [];
       let itemsForIteration = allItems.filter((item) => !item.passes);
       if (category) {
-        itemsForIteration = itemsForIteration.filter((item) => item.category === category);
+        itemsForIteration = itemsForIteration.filter(
+          (item) => item.category === category,
+        );
       }
       if (branchFilterActive) {
         itemsForIteration = applyBranchFilter(itemsForIteration, branchFilter!);
@@ -1138,11 +1242,15 @@ export async function run(args: string[]): Promise<void> {
         if (loopMode) {
           console.log("\n" + "=".repeat(50));
           if (category) {
-            console.log(`All "${category}" items complete. Waiting for new items...`);
+            console.log(
+              `All "${category}" items complete. Waiting for new items...`,
+            );
           } else {
             console.log("All items complete. Waiting for new items...");
           }
-          console.log(`(Checking every ${POLL_INTERVAL_MS / 1000} seconds. Press Ctrl+C to stop)`);
+          console.log(
+            `(Checking every ${POLL_INTERVAL_MS / 1000} seconds. Press Ctrl+C to stop)`,
+          );
           console.log("=".repeat(50));
 
           while (true) {
@@ -1164,15 +1272,24 @@ export async function run(args: string[]): Promise<void> {
         } else {
           console.log("\n" + "=".repeat(50));
           if (allMode) {
-            const counts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
+            const counts = countPrdItems(
+              paths.prd,
+              category,
+              branchFilterActive,
+              branchFilter,
+            );
             if (category) {
               console.log(`PRD COMPLETE - All "${category}" tasks finished!`);
             } else {
               console.log("PRD COMPLETE - All tasks finished!");
             }
-            console.log(`Final Status: ${counts.complete}/${counts.total} complete`);
+            console.log(
+              `Final Status: ${counts.complete}/${counts.total} complete`,
+            );
           } else if (category) {
-            console.log(`PRD COMPLETE - All "${category}" features already implemented!`);
+            console.log(
+              `PRD COMPLETE - All "${category}" features already implemented!`,
+            );
           } else {
             console.log("PRD COMPLETE - All features already implemented!");
           }
@@ -1197,9 +1314,12 @@ export async function run(args: string[]): Promise<void> {
       const hasCommits = repoHasCommits();
       if (hasCommits) {
         try {
-          baseBranch = execSync("git -C /workspace rev-parse --abbrev-ref HEAD", {
-            encoding: "utf-8",
-          }).trim();
+          baseBranch = execSync(
+            "git -C /workspace rev-parse --abbrev-ref HEAD",
+            {
+              encoding: "utf-8",
+            },
+          ).trim();
         } catch {
           // Default to "main"
         }
@@ -1261,7 +1381,11 @@ export async function run(args: string[]): Promise<void> {
           }
 
           // Set up .ralph/ in the worktree with branch-specific files
-          const worktreeSetup = setupWorktreeRalphDir(worktreePath, branchItems, paths);
+          const worktreeSetup = setupWorktreeRalphDir(
+            worktreePath,
+            branchItems,
+            paths,
+          );
 
           // Create paths object for the worktree
           const worktreePaths = {
@@ -1293,7 +1417,9 @@ export async function run(args: string[]): Promise<void> {
           `\x1b[33mConfigure docker.worktreesPath in .ralph/config.json and rebuild the container.\x1b[0m`,
         );
         const branchItems = branchGroups.get(targetBranch) || [];
-        console.warn(`\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`);
+        console.warn(
+          `\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`,
+        );
       } else if (targetBranch !== "" && !hasCommits) {
         // Branch items found but no commits — warn and process no-branch items instead
         console.warn(
@@ -1303,7 +1429,9 @@ export async function run(args: string[]): Promise<void> {
           `\x1b[33mCreate an initial commit before using branch-based PRD items.\x1b[0m`,
         );
         const branchItems = branchGroups.get(targetBranch) || [];
-        console.warn(`\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`);
+        console.warn(
+          `\x1b[33mSkipping ${branchItems.length} branch item(s).\x1b[0m\n`,
+        );
       }
 
       // Process no-branch items in /workspace (when target is no-branch, or branch was skipped)
@@ -1314,7 +1442,9 @@ export async function run(args: string[]): Promise<void> {
       ) {
         const noBranchItems = branchGroups.get("") || [];
         if (noBranchItems.length > 0) {
-          const hasBranches = [...branchGroups.keys()].some((key) => key !== "");
+          const hasBranches = [...branchGroups.keys()].some(
+            (key) => key !== "",
+          );
           if (hasBranches) {
             console.log(
               `\n\x1b[36m--- No-branch items (${noBranchItems.length} item(s)) ---\x1b[0m`,
@@ -1333,11 +1463,22 @@ export async function run(args: string[]): Promise<void> {
 
           // If there are branch groups, rewrite prd-tasks.json to only include no-branch items
           if (hasBranches) {
-            const expandedNoBranch = expandPrdFileReferences(noBranchItems, paths.dir);
-            writeFileSync(filteredPrdPath, JSON.stringify(expandedNoBranch, null, 2));
+            const expandedNoBranch = expandPrdFileReferences(
+              noBranchItems,
+              paths.dir,
+            );
+            writeFileSync(
+              filteredPrdPath,
+              JSON.stringify(expandedNoBranch, null, 2),
+            );
           }
 
-          const result = await runIterationInDir(paths, filteredPrdPath, validPrd, workspaceCwd);
+          const result = await runIterationInDir(
+            paths,
+            filteredPrdPath,
+            validPrd,
+            workspaceCwd,
+          );
           filteredPrdPath = null;
 
           iterExitCode = result.exitCode;
@@ -1350,7 +1491,12 @@ export async function run(args: string[]): Promise<void> {
 
       // Track progress for --all mode: stop if no progress after N iterations
       if (allMode) {
-        const progressCounts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
+        const progressCounts = countPrdItems(
+          paths.prd,
+          category,
+          branchFilterActive,
+          branchFilter,
+        );
         const tasksCompleted = progressCounts.complete > lastCompletedCount;
         const tasksAdded = progressCounts.total > lastTotalCount;
 
@@ -1390,7 +1536,9 @@ export async function run(args: string[]): Promise<void> {
       }
 
       if (iterExitCode !== 0) {
-        console.error(`\n${cliConfig.command} exited with code ${iterExitCode}`);
+        console.error(
+          `\n${cliConfig.command} exited with code ${iterExitCode}`,
+        );
 
         if (iterExitCode === lastExitCode) {
           consecutiveFailures++;
@@ -1403,17 +1551,23 @@ export async function run(args: string[]): Promise<void> {
           console.error(
             `\nStopping: ${cliConfig.command} failed ${consecutiveFailures} times in a row with exit code ${iterExitCode}.`,
           );
-          console.error("This usually indicates a configuration error (e.g., missing API key).");
+          console.error(
+            "This usually indicates a configuration error (e.g., missing API key).",
+          );
           console.error("Please check your CLI configuration and try again.");
 
           const errorMessage = `CLI failed ${consecutiveFailures} times with exit code ${iterExitCode}. Check configuration.`;
-          await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, {
-            command: config.notifyCommand,
-            debug,
-            daemonConfig: config.daemon,
-            chatConfig: config.chat,
-            errorMessage,
-          });
+          await sendNotificationWithDaemonEvents(
+            "error",
+            `Ralph: ${errorMessage}`,
+            {
+              command: config.notifyCommand,
+              debug,
+              daemonConfig: config.daemon,
+              chatConfig: config.chat,
+              errorMessage,
+            },
+          );
 
           break;
         }
@@ -1429,7 +1583,12 @@ export async function run(args: string[]): Promise<void> {
       // so its COMPLETE signal means "this group is done", not "all PRD items are done".
       // We must verify the full PRD before treating this as a global completion.
       if (iterOutput.includes("<promise>COMPLETE</promise>")) {
-        const fullCounts = countPrdItems(paths.prd, category, branchFilterActive, branchFilter);
+        const fullCounts = countPrdItems(
+          paths.prd,
+          category,
+          branchFilterActive,
+          branchFilter,
+        );
         if (fullCounts.incomplete > 0) {
           // There are still incomplete items in other groups — continue the loop
           if (debug) {
@@ -1440,7 +1599,9 @@ export async function run(args: string[]): Promise<void> {
         } else if (loopMode) {
           console.log("\n" + "=".repeat(50));
           console.log("PRD iteration complete. Waiting for new items...");
-          console.log(`(Checking every ${POLL_INTERVAL_MS / 1000} seconds. Press Ctrl+C to stop)`);
+          console.log(
+            `(Checking every ${POLL_INTERVAL_MS / 1000} seconds. Press Ctrl+C to stop)`,
+          );
           console.log("=".repeat(50));
 
           while (true) {
@@ -1462,7 +1623,9 @@ export async function run(args: string[]): Promise<void> {
           console.log("\n" + "=".repeat(50));
           if (allMode) {
             console.log("PRD COMPLETE - All tasks finished!");
-            console.log(`Final Status: ${fullCounts.complete}/${fullCounts.total} complete`);
+            console.log(
+              `Final Status: ${fullCounts.complete}/${fullCounts.total} complete`,
+            );
           } else {
             console.log("PRD COMPLETE - All features implemented!");
           }

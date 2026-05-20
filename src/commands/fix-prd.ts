@@ -110,7 +110,9 @@ function handleBrokenPrd(prdPath: string): void {
         writePrdAuto(prdPath, backupValidation.data!);
         console.log("\x1b[32m✓ PRD restored from backup!\x1b[0m");
         console.log(`  Restored ${backupValidation.data!.length} entries.`);
-        console.log("\x1b[33m  Note: Recent changes may have been lost.\x1b[0m");
+        console.log(
+          "\x1b[33m  Note: Recent changes may have been lost.\x1b[0m",
+        );
         return;
       } else {
         console.log("  Backup is also invalid, cannot restore.\n");
@@ -126,7 +128,9 @@ function handleBrokenPrd(prdPath: string): void {
   console.log("Resetting PRD to recovery template...");
   writePrdAuto(prdPath, createTemplatePrd(backupPath));
   console.log("\x1b[33m✓ PRD reset with recovery task.\x1b[0m");
-  console.log("  Next 'ralph run' will instruct the LLM to recover entries from backup.");
+  console.log(
+    "  Next 'ralph run' will instruct the LLM to recover entries from backup.",
+  );
   console.log(`  Backup location: ${backupPath}`);
 }
 
@@ -165,7 +169,8 @@ export async function fixPrd(args: string[] = []): Promise<void> {
   // Use the primary PRD path (YAML preferred over JSON)
   const prdPath = paths.prd;
   const isYamlFile =
-    extname(prdPath).toLowerCase() === ".yaml" || extname(prdPath).toLowerCase() === ".yml";
+    extname(prdPath).toLowerCase() === ".yaml" ||
+    extname(prdPath).toLowerCase() === ".yml";
   const fileFormatName = isYamlFile ? "YAML" : "JSON";
 
   console.log(`Checking PRD structure (${fileFormatName})...\n`);
@@ -175,7 +180,9 @@ export async function fixPrd(args: string[] = []): Promise<void> {
 
   if (!parsed) {
     // Parsing failed - file is completely broken
-    console.log(`\x1b[31m✗ PRD file contains invalid ${fileFormatName}.\x1b[0m\n`);
+    console.log(
+      `\x1b[31m✗ PRD file contains invalid ${fileFormatName}.\x1b[0m\n`,
+    );
     if (verifyOnly) {
       process.exit(1);
     }
@@ -223,7 +230,9 @@ export async function fixPrd(args: string[] = []): Promise<void> {
     if (recoveredValidation.valid) {
       writePrdAuto(prdPath, recovered);
       console.log("\x1b[32m✓ PRD recovered successfully!\x1b[0m");
-      console.log(`  Recovered ${recovered.length} entries by unwrapping/remapping fields.`);
+      console.log(
+        `  Recovered ${recovered.length} entries by unwrapping/remapping fields.`,
+      );
       return;
     }
   }
@@ -245,7 +254,9 @@ export async function fixPrd(args: string[] = []): Promise<void> {
         writePrdAuto(prdPath, backupValidation.data!);
         console.log("\x1b[32m✓ PRD restored from backup!\x1b[0m");
         console.log(`  Restored ${backupValidation.data!.length} entries.`);
-        console.log("\x1b[33m  Note: Recent changes may have been lost.\x1b[0m");
+        console.log(
+          "\x1b[33m  Note: Recent changes may have been lost.\x1b[0m",
+        );
         return;
       } else {
         console.log("  Backup is also invalid, cannot restore.\n");
@@ -261,6 +272,8 @@ export async function fixPrd(args: string[] = []): Promise<void> {
   console.log("Resetting PRD to recovery template...");
   writePrdAuto(prdPath, createTemplatePrd(backupPath));
   console.log("\x1b[33m✓ PRD reset with recovery task.\x1b[0m");
-  console.log("  Next 'ralph run' will instruct the LLM to recover entries from backup.");
+  console.log(
+    "  Next 'ralph run' will instruct the LLM to recover entries from backup.",
+  );
   console.log(`  Backup location: ${backupPath}`);
 }

@@ -15,8 +15,15 @@ import {
   escapeHtml,
 } from "../utils/chat-client.js";
 import { ResponderMatcher, ResponderMatch } from "../utils/responder.js";
-import { ResponderConfig, RespondersConfig, loadConfig } from "../utils/config.js";
-import { executeLLMResponder, ResponderResult } from "../responders/llm-responder.js";
+import {
+  ResponderConfig,
+  RespondersConfig,
+  loadConfig,
+} from "../utils/config.js";
+import {
+  executeLLMResponder,
+  ResponderResult,
+} from "../responders/llm-responder.js";
 import { executeClaudeCodeResponder } from "../responders/claude-code-responder.js";
 import { executeCLIResponder } from "../responders/cli-responder.js";
 
@@ -146,7 +153,10 @@ export class TelegramChatClient implements ChatClient {
   /**
    * Execute a responder and return the result.
    */
-  private async executeResponder(match: ResponderMatch, message: string): Promise<ResponderResult> {
+  private async executeResponder(
+    match: ResponderMatch,
+    message: string,
+  ): Promise<ResponderResult> {
     const { responder } = match;
 
     switch (responder.type) {
@@ -172,7 +182,10 @@ export class TelegramChatClient implements ChatClient {
    * Handle a message that might match a responder.
    * Returns true if a responder was matched and executed.
    */
-  private async handleResponderMessage(message: ChatMessage, messageId: number): Promise<boolean> {
+  private async handleResponderMessage(
+    message: ChatMessage,
+    messageId: number,
+  ): Promise<boolean> {
     if (!this.responderMatcher) {
       return false;
     }
@@ -183,11 +196,16 @@ export class TelegramChatClient implements ChatClient {
     }
 
     if (this.debug) {
-      console.log(`[telegram] Matched responder: ${match.name} (type: ${match.responder.type})`);
+      console.log(
+        `[telegram] Matched responder: ${match.name} (type: ${match.responder.type})`,
+      );
     }
 
     // Execute the responder
-    const result = await this.executeResponder(match, match.args || message.text);
+    const result = await this.executeResponder(
+      match,
+      match.args || message.text,
+    );
 
     // Send the response (reply to the original message for context)
     if (result.success) {
@@ -223,12 +241,18 @@ export class TelegramChatClient implements ChatClient {
     if (msg.entities && this.botUsername) {
       for (const entity of msg.entities) {
         if (entity.type === "mention" && msg.text) {
-          const mention = msg.text.substring(entity.offset, entity.offset + entity.length);
+          const mention = msg.text.substring(
+            entity.offset,
+            entity.offset + entity.length,
+          );
           if (mention.toLowerCase() === `@${this.botUsername.toLowerCase()}`) {
             return true;
           }
         }
-        if (entity.type === "text_mention" && entity.user?.id === this.botUserId) {
+        if (
+          entity.type === "text_mention" &&
+          entity.user?.id === this.botUserId
+        ) {
           return true;
         }
       }
@@ -259,7 +283,10 @@ export class TelegramChatClient implements ChatClient {
   /**
    * Make a request to the Telegram Bot API.
    */
-  private async apiRequest<T>(method: string, body?: Record<string, unknown>): Promise<T> {
+  private async apiRequest<T>(
+    method: string,
+    body?: Record<string, unknown>,
+  ): Promise<T> {
     return new Promise((resolve, reject) => {
       const url = `https://api.telegram.org/bot${this.settings.botToken}/${method}`;
 
@@ -314,7 +341,10 @@ export class TelegramChatClient implements ChatClient {
    */
   private isChatAllowed(chatId: string): boolean {
     // If no allowed chat IDs specified, allow all
-    if (!this.settings.allowedChatIds || this.settings.allowedChatIds.length === 0) {
+    if (
+      !this.settings.allowedChatIds ||
+      this.settings.allowedChatIds.length === 0
+    ) {
       return true;
     }
     return this.settings.allowedChatIds.includes(chatId);
@@ -323,7 +353,10 @@ export class TelegramChatClient implements ChatClient {
   /**
    * Start long polling for updates.
    */
-  private async poll(onCommand: ChatCommandHandler, onMessage?: ChatMessageHandler): Promise<void> {
+  private async poll(
+    onCommand: ChatCommandHandler,
+    onMessage?: ChatMessageHandler,
+  ): Promise<void> {
     if (!this.polling) return;
 
     try {
@@ -348,7 +381,9 @@ export class TelegramChatClient implements ChatClient {
               await this.answerCallbackQuery(callbackQuery.id);
             } catch (err) {
               if (this.debug) {
-                console.error(`[telegram] Failed to answer callback query: ${err}`);
+                console.error(
+                  `[telegram] Failed to answer callback query: ${err}`,
+                );
               }
             }
 
@@ -358,7 +393,10 @@ export class TelegramChatClient implements ChatClient {
               text: callbackQuery.data,
               chatId,
               senderId: String(callbackQuery.from.id),
-              senderName: [callbackQuery.from.first_name, callbackQuery.from.last_name]
+              senderName: [
+                callbackQuery.from.first_name,
+                callbackQuery.from.last_name,
+              ]
                 .filter(Boolean)
                 .join(" "),
               timestamp: new Date(),
@@ -392,7 +430,9 @@ export class TelegramChatClient implements ChatClient {
           // Check if chat is allowed
           if (!this.isChatAllowed(chatId)) {
             if (this.debug) {
-              console.log(`[telegram] Ignoring message from unauthorized chat: ${chatId}`);
+              console.log(
+                `[telegram] Ignoring message from unauthorized chat: ${chatId}`,
+              );
             }
             continue;
           }
@@ -410,7 +450,9 @@ export class TelegramChatClient implements ChatClient {
           const message: ChatMessage = {
             text: messageText,
             chatId,
-            senderId: update.message.from ? String(update.message.from.id) : undefined,
+            senderId: update.message.from
+              ? String(update.message.from.id)
+              : undefined,
             senderName: update.message.from
               ? [update.message.from.first_name, update.message.from.last_name]
                   .filter(Boolean)
@@ -459,12 +501,16 @@ export class TelegramChatClient implements ChatClient {
 
           if (shouldProcessAsResponder && this.responderMatcher) {
             // Check if there's a matching responder or a default responder
-            const hasDefaultResponder = this.responderMatcher.hasDefaultResponder();
+            const hasDefaultResponder =
+              this.responderMatcher.hasDefaultResponder();
             const match = this.responderMatcher.matchResponder(message.text);
 
             if (match) {
               try {
-                const handled = await this.handleResponderMessage(message, messageId);
+                const handled = await this.handleResponderMessage(
+                  message,
+                  messageId,
+                );
                 if (handled) {
                   continue;
                 }
@@ -501,24 +547,34 @@ export class TelegramChatClient implements ChatClient {
 
     // Schedule next poll
     if (this.polling) {
-      this.pollingTimeout = setTimeout(() => this.poll(onCommand, onMessage), 100);
+      this.pollingTimeout = setTimeout(
+        () => this.poll(onCommand, onMessage),
+        100,
+      );
     }
   }
 
-  async connect(onCommand: ChatCommandHandler, onMessage?: ChatMessageHandler): Promise<void> {
+  async connect(
+    onCommand: ChatCommandHandler,
+    onMessage?: ChatMessageHandler,
+  ): Promise<void> {
     if (this.connected) {
       throw new Error("Already connected");
     }
 
     // Verify bot token by calling getMe and store bot info
     try {
-      const me = await this.apiRequest<{ id: number; first_name: string; username?: string }>(
-        "getMe",
-      );
+      const me = await this.apiRequest<{
+        id: number;
+        first_name: string;
+        username?: string;
+      }>("getMe");
       this.botUserId = me.id;
       this.botUsername = me.username || null;
       if (this.debug) {
-        console.log(`[telegram] Connected as @${me.username || me.first_name} (ID: ${me.id})`);
+        console.log(
+          `[telegram] Connected as @${me.username || me.first_name} (ID: ${me.id})`,
+        );
       }
     } catch (err) {
       throw new Error(
@@ -533,7 +589,11 @@ export class TelegramChatClient implements ChatClient {
     this.poll(onCommand, onMessage);
   }
 
-  async sendMessage(chatId: string, text: string, options?: SendMessageOptions): Promise<void> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    options?: SendMessageOptions,
+  ): Promise<void> {
     if (!this.connected) {
       throw new Error("Not connected");
     }
@@ -555,13 +615,14 @@ export class TelegramChatClient implements ChatClient {
 
     // Convert generic InlineButton format to Telegram's InlineKeyboardMarkup
     if (options?.inlineKeyboard && options.inlineKeyboard.length > 0) {
-      const inlineKeyboard: InlineKeyboardButton[][] = options.inlineKeyboard.map((row) =>
-        row.map((button) => ({
-          text: button.text,
-          callback_data: button.callbackData,
-          url: button.url,
-        })),
-      );
+      const inlineKeyboard: InlineKeyboardButton[][] =
+        options.inlineKeyboard.map((row) =>
+          row.map((button) => ({
+            text: button.text,
+            callback_data: button.callbackData,
+            url: button.url,
+          })),
+        );
       body.reply_markup = { inline_keyboard: inlineKeyboard };
     }
 
@@ -571,7 +632,10 @@ export class TelegramChatClient implements ChatClient {
   /**
    * Answer a callback query (acknowledge button press).
    */
-  async answerCallbackQuery(callbackQueryId: string, text?: string): Promise<void> {
+  async answerCallbackQuery(
+    callbackQueryId: string,
+    text?: string,
+  ): Promise<void> {
     if (!this.connected) {
       throw new Error("Not connected");
     }
@@ -600,6 +664,9 @@ export class TelegramChatClient implements ChatClient {
 /**
  * Create a Telegram chat client from settings.
  */
-export function createTelegramClient(settings: TelegramSettings, debug = false): ChatClient {
+export function createTelegramClient(
+  settings: TelegramSettings,
+  debug = false,
+): ChatClient {
   return new TelegramChatClient(settings, debug);
 }

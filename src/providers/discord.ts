@@ -17,8 +17,15 @@ import {
   parseCommand,
 } from "../utils/chat-client.js";
 import { ResponderMatcher, ResponderMatch } from "../utils/responder.js";
-import { ResponderConfig, RespondersConfig, loadConfig } from "../utils/config.js";
-import { executeLLMResponder, ResponderResult } from "../responders/llm-responder.js";
+import {
+  ResponderConfig,
+  RespondersConfig,
+  loadConfig,
+} from "../utils/config.js";
+import {
+  executeLLMResponder,
+  ResponderResult,
+} from "../responders/llm-responder.js";
 import { executeClaudeCodeResponder } from "../responders/claude-code-responder.js";
 import { executeCLIResponder } from "../responders/cli-responder.js";
 
@@ -117,7 +124,10 @@ export class DiscordChatClient implements ChatClient {
   /**
    * Execute a responder and return the result.
    */
-  private async executeResponder(match: ResponderMatch, message: string): Promise<ResponderResult> {
+  private async executeResponder(
+    match: ResponderMatch,
+    message: string,
+  ): Promise<ResponderResult> {
     const { responder } = match;
 
     switch (responder.type) {
@@ -157,11 +167,16 @@ export class DiscordChatClient implements ChatClient {
     }
 
     if (this.debug) {
-      console.log(`[discord] Matched responder: ${match.name} (type: ${match.responder.type})`);
+      console.log(
+        `[discord] Matched responder: ${match.name} (type: ${match.responder.type})`,
+      );
     }
 
     // Execute the responder
-    const result = await this.executeResponder(match, match.args || cleanedText);
+    const result = await this.executeResponder(
+      match,
+      match.args || cleanedText,
+    );
 
     // Send the response (reply to the original message for context)
     try {
@@ -208,7 +223,9 @@ export class DiscordChatClient implements ChatClient {
     }
     // Remove <@BOT_ID> and any surrounding whitespace
     // Also handles <@!BOT_ID> format (with nickname)
-    return text.replace(new RegExp(`<@!?${this.botUserId}>\\s*`, "g"), "").trim();
+    return text
+      .replace(new RegExp(`<@!?${this.botUserId}>\\s*`, "g"), "")
+      .trim();
   }
 
   /**
@@ -224,7 +241,10 @@ export class DiscordChatClient implements ChatClient {
    */
   private isGuildAllowed(guildId: string | null): boolean {
     // If no allowed guild IDs specified, allow all
-    if (!this.settings.allowedGuildIds || this.settings.allowedGuildIds.length === 0) {
+    if (
+      !this.settings.allowedGuildIds ||
+      this.settings.allowedGuildIds.length === 0
+    ) {
       return true;
     }
     if (!guildId) return false;
@@ -236,7 +256,10 @@ export class DiscordChatClient implements ChatClient {
    */
   private isChannelAllowed(channelId: string): boolean {
     // If no allowed channel IDs specified, allow all
-    if (!this.settings.allowedChannelIds || this.settings.allowedChannelIds.length === 0) {
+    if (
+      !this.settings.allowedChannelIds ||
+      this.settings.allowedChannelIds.length === 0
+    ) {
       return true;
     }
     return this.settings.allowedChannelIds.includes(channelId);
@@ -287,7 +310,11 @@ export class DiscordChatClient implements ChatClient {
         argDesc: "Shell command to run",
         required: true,
       },
-      { name: "stop", description: "Stop running ralph process", hasArgs: false },
+      {
+        name: "stop",
+        description: "Stop running ralph process",
+        hasArgs: false,
+      },
       { name: "help", description: "Show help", hasArgs: false },
       {
         name: "action",
@@ -307,7 +334,9 @@ export class DiscordChatClient implements ChatClient {
     ];
 
     const slashCommands = commands.map((cmd) => {
-      const builder = new SlashCommandBuilder().setName(cmd.name).setDescription(cmd.description);
+      const builder = new SlashCommandBuilder()
+        .setName(cmd.name)
+        .setDescription(cmd.description);
 
       if (cmd.hasArgs && cmd.argName) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -328,7 +357,9 @@ export class DiscordChatClient implements ChatClient {
       const clientId = this.client.user?.id;
       if (!clientId) {
         if (this.debug) {
-          console.log("[discord] Cannot register slash commands: client ID not available");
+          console.log(
+            "[discord] Cannot register slash commands: client ID not available",
+          );
         }
         return;
       }
@@ -362,7 +393,9 @@ export class DiscordChatClient implements ChatClient {
     // Check if guild is allowed (null guild is ok for DMs)
     if (!this.isGuildAllowed(message.guild?.id)) {
       if (this.debug) {
-        console.log(`[discord] Ignoring message from unauthorized guild: ${message.guild?.id}`);
+        console.log(
+          `[discord] Ignoring message from unauthorized guild: ${message.guild?.id}`,
+        );
       }
       return;
     }
@@ -370,7 +403,9 @@ export class DiscordChatClient implements ChatClient {
     // Check if channel is allowed
     if (!this.isChannelAllowed(message.channel.id)) {
       if (this.debug) {
-        console.log(`[discord] Ignoring message from unauthorized channel: ${message.channel.id}`);
+        console.log(
+          `[discord] Ignoring message from unauthorized channel: ${message.channel.id}`,
+        );
       }
       return;
     }
@@ -438,7 +473,10 @@ export class DiscordChatClient implements ChatClient {
 
       if (match) {
         try {
-          const handled = await this.handleResponderMessage(message, messageText);
+          const handled = await this.handleResponderMessage(
+            message,
+            messageText,
+          );
           if (handled) {
             return;
           }
@@ -472,7 +510,9 @@ export class DiscordChatClient implements ChatClient {
   /**
    * Handle slash command interactions.
    */
-  private async handleInteraction(interaction: DiscordInteraction): Promise<void> {
+  private async handleInteraction(
+    interaction: DiscordInteraction,
+  ): Promise<void> {
     // Handle button interactions
     if (interaction.isButton && interaction.isButton()) {
       await this.handleButtonInteraction(interaction);
@@ -480,7 +520,8 @@ export class DiscordChatClient implements ChatClient {
     }
 
     // Only handle slash commands
-    if (!interaction.isChatInputCommand || !interaction.isChatInputCommand()) return;
+    if (!interaction.isChatInputCommand || !interaction.isChatInputCommand())
+      return;
 
     // Check if guild is allowed
     if (!this.isGuildAllowed(interaction.guild?.id)) {
@@ -535,7 +576,11 @@ export class DiscordChatClient implements ChatClient {
       const argValue = interaction.options?.getString(argName);
       if (argValue) {
         // Split the argument for commands that expect multiple args
-        if (commandName === "exec" || commandName === "add" || commandName === "claude") {
+        if (
+          commandName === "exec" ||
+          commandName === "add" ||
+          commandName === "claude"
+        ) {
           args.push(...argValue.split(/\s+/));
         } else {
           args.push(argValue);
@@ -590,11 +635,15 @@ export class DiscordChatClient implements ChatClient {
   /**
    * Handle button interactions.
    */
-  private async handleButtonInteraction(interaction: DiscordInteraction): Promise<void> {
+  private async handleButtonInteraction(
+    interaction: DiscordInteraction,
+  ): Promise<void> {
     // Check if guild is allowed
     if (!this.isGuildAllowed(interaction.guild?.id)) {
       if (this.debug) {
-        console.log(`[discord] Ignoring button from unauthorized guild: ${interaction.guild?.id}`);
+        console.log(
+          `[discord] Ignoring button from unauthorized guild: ${interaction.guild?.id}`,
+        );
       }
       return;
     }
@@ -645,7 +694,10 @@ export class DiscordChatClient implements ChatClient {
     }
   }
 
-  async connect(onCommand: ChatCommandHandler, onMessage?: ChatMessageHandler): Promise<void> {
+  async connect(
+    onCommand: ChatCommandHandler,
+    onMessage?: ChatMessageHandler,
+  ): Promise<void> {
     if (this.connected) {
       throw new Error("Already connected");
     }
@@ -674,7 +726,9 @@ export class DiscordChatClient implements ChatClient {
       });
 
       // Setup event handlers
-      this.client.on("messageCreate", (message: DiscordMessage) => this.handleMessage(message));
+      this.client.on("messageCreate", (message: DiscordMessage) =>
+        this.handleMessage(message),
+      );
       this.client.on("interactionCreate", (interaction: DiscordInteraction) =>
         this.handleInteraction(interaction),
       );
@@ -692,7 +746,9 @@ export class DiscordChatClient implements ChatClient {
           this.botUserId = this.client!.user?.id || null;
 
           if (this.debug) {
-            console.log(`[discord] Connected as ${this.client!.user?.tag} (ID: ${this.botUserId})`);
+            console.log(
+              `[discord] Connected as ${this.client!.user?.tag} (ID: ${this.botUserId})`,
+            );
           }
 
           // Register slash commands after login
@@ -721,7 +777,11 @@ export class DiscordChatClient implements ChatClient {
     }
   }
 
-  async sendMessage(chatId: string, text: string, options?: SendMessageOptions): Promise<void> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    options?: SendMessageOptions,
+  ): Promise<void> {
     if (!this.connected || !this.client) {
       throw new Error("Not connected");
     }
@@ -737,7 +797,9 @@ export class DiscordChatClient implements ChatClient {
     }
 
     if (!channel || !channel.send) {
-      throw new Error(`Channel ${chatId} is not a text channel or doesn't exist`);
+      throw new Error(
+        `Channel ${chatId} is not a text channel or doesn't exist`,
+      );
     }
 
     // Build message payload
@@ -808,6 +870,9 @@ export class DiscordChatClient implements ChatClient {
 /**
  * Create a Discord chat client from settings.
  */
-export function createDiscordClient(settings: DiscordSettings, debug = false): ChatClient {
+export function createDiscordClient(
+  settings: DiscordSettings,
+  debug = false,
+): ChatClient {
   return new DiscordChatClient(settings, debug);
 }

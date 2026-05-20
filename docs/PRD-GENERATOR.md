@@ -13,6 +13,7 @@ Ralph's PRD format is intentionally simple - each item should be completable in 
 **IMPORTANT:** The PRD file must be a **top-level array** of items, not wrapped in an object.
 
 **Correct format:**
+
 ```yaml
 - category: feature
   description: Imperative description of what to implement
@@ -30,11 +31,12 @@ Ralph's PRD format is intentionally simple - each item should be completable in 
 ```
 
 **Wrong format (do NOT use):**
+
 ```yaml
 # WRONG - Don't wrap in an object!
 project: MyProject
 description: Some description
-tasks:    # <-- This wrapper causes issues
+tasks: # <-- This wrapper causes issues
   - category: feature
     description: ...
 ```
@@ -45,14 +47,15 @@ tasks:    # <-- This wrapper causes issues
 
 Each PRD item must have these fields:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `category` | string | One of: ui, feature, bugfix, setup, development, testing, docs |
-| `description` | string | What to implement (imperative verb + specific action) |
-| `steps` | string[] | Concrete actions to complete the task |
-| `passes` | boolean | **Must be `false` for new items** - Ralph sets to `true` when completed |
+| Field         | Type     | Description                                                             |
+| ------------- | -------- | ----------------------------------------------------------------------- |
+| `category`    | string   | One of: ui, feature, bugfix, setup, development, testing, docs          |
+| `description` | string   | What to implement (imperative verb + specific action)                   |
+| `steps`       | string[] | Concrete actions to complete the task                                   |
+| `passes`      | boolean  | **Must be `false` for new items** - Ralph sets to `true` when completed |
 
 **IMPORTANT:** Always set `passes: false` for new PRD items. This field indicates whether the task is complete:
+
 - `passes: false` = incomplete, will be executed by Ralph
 - `passes: true` = complete, will be skipped
 
@@ -68,15 +71,12 @@ The JSON file must also be a top-level array:
   {
     "category": "feature",
     "description": "Imperative description of what to implement",
-    "steps": [
-      "Concrete action 1",
-      "Concrete action 2",
-      "Verification step"
-    ],
+    "steps": ["Concrete action 1", "Concrete action 2", "Verification step"],
     "passes": false
   }
 ]
 ```
+
 </details>
 
 ## Input Document Types
@@ -86,6 +86,7 @@ The JSON file must also be a top-level array:
 Structure: Phases > Tasks > Sub-tasks with code examples
 
 **Conversion Strategy:**
+
 - Each **sub-task** becomes one PRD item
 - Reference the original document for code examples
 - Preserve ordering (phases execute in sequence)
@@ -95,6 +96,7 @@ Structure: Phases > Tasks > Sub-tasks with code examples
 Structure: "As a user, I want X so that Y"
 
 **Conversion Strategy:**
+
 - Break each story into implementation steps
 - Each step that produces working code = one PRD item
 - Add acceptance criteria as verification steps
@@ -104,6 +106,7 @@ Structure: "As a user, I want X so that Y"
 Structure: Requirements, constraints, acceptance criteria
 
 **Conversion Strategy:**
+
 - Group related requirements into implementable chunks
 - Each chunk = one PRD item
 - Convert acceptance criteria to verification steps
@@ -113,6 +116,7 @@ Structure: Requirements, constraints, acceptance criteria
 Structure: Description, reproduction steps, expected behavior
 
 **Conversion Strategy:**
+
 - Usually one bug = one PRD item
 - Steps: investigate, fix, verify
 - Include reproduction test in verification
@@ -122,35 +126,39 @@ Structure: Description, reproduction steps, expected behavior
 The right granularity is: **"What can an AI complete in one iteration?"**
 
 ### Too Large (Split It)
+
 - "Implement authentication system" - has multiple components
 - "Build the UI" - too vague, many parts
 - "Add database support" - schema, queries, migrations are separate
 
 ### Too Small (Combine It)
+
 - "Add import statement" - trivial
 - "Create empty file" - no value alone
 - "Update one variable name" - part of a larger change
 
 ### Just Right
+
 - "Implement login endpoint with JWT token generation"
 - "Create user registration form with validation"
 - "Add password reset email functionality"
 
 ### Rule of Thumb
+
 If a task has 3+ distinct sub-parts that each require thought, split it.
 If a task takes 2 minutes without thinking, combine with related work.
 
 ## Category Selection
 
-| Category | When to Use |
-|----------|-------------|
-| `ui` | User interface changes, frontend components |
-| `feature` | New functionality for users |
-| `bugfix` | Fixing broken behavior |
-| `setup` | Project initialization, tooling, dependencies |
+| Category      | When to Use                                   |
+| ------------- | --------------------------------------------- |
+| `ui`          | User interface changes, frontend components   |
+| `feature`     | New functionality for users                   |
+| `bugfix`      | Fixing broken behavior                        |
+| `setup`       | Project initialization, tooling, dependencies |
 | `development` | Code improvements, refactoring, configuration |
-| `testing` | Test coverage (unit, integration, e2e) |
-| `docs` | Documentation (README, guides, comments) |
+| `testing`     | Test coverage (unit, integration, e2e)        |
+| `docs`        | Documentation (README, guides, comments)      |
 
 ## Branch Field (Optional)
 
@@ -163,7 +171,7 @@ PRD items can include an optional `branch` field to group related work into git 
     - Create login endpoint
     - Add JWT token generation
   passes: false
-  branch: feat/auth    # Items with same branch are grouped together
+  branch: feat/auth # Items with same branch are grouped together
 ```
 
 ### How Branches Work
@@ -176,6 +184,7 @@ PRD items can include an optional `branch` field to group related work into git 
 ### Requirements for Using Branches
 
 1. **Configure worktrees path**: Set `docker.worktreesPath` in `.ralph/config.json` to a host directory:
+
    ```json
    {
      "docker": {
@@ -212,25 +221,28 @@ ralph branch pr <name>         # Create a GitHub PR from the branch
 ## Writing Descriptions
 
 ### Format
+
 ```
 [Imperative verb] [specific what] [where/context] (Reference)
 ```
 
 ### Examples
 
-| Source Text | PRD Description |
-|-------------|-----------------|
-| "The system should authenticate users" | "Implement user authentication with JWT tokens" |
-| "Task 2.3.1: Message Display" | "Create chat message display view (Task 2.3.1)" |
-| "Bug: Login fails on Safari" | "Fix login failure on Safari browser" |
-| "We need better error handling" | "Add error boundary component to catch React errors" |
+| Source Text                            | PRD Description                                      |
+| -------------------------------------- | ---------------------------------------------------- |
+| "The system should authenticate users" | "Implement user authentication with JWT tokens"      |
+| "Task 2.3.1: Message Display"          | "Create chat message display view (Task 2.3.1)"      |
+| "Bug: Login fails on Safari"           | "Fix login failure on Safari browser"                |
+| "We need better error handling"        | "Add error boundary component to catch React errors" |
 
 ### Do
+
 - Start with imperative verb (Implement, Create, Add, Fix, Update)
 - Be specific about location (file, component, endpoint)
 - Include task reference if converting from structured PRD
 
 ### Don't
+
 - Use passive voice ("should be implemented")
 - Be vague ("improve the system")
 - Include implementation details (save for steps)
@@ -242,12 +254,14 @@ Steps tell the AI **how** to implement and **how** to verify.
 ### Step Types
 
 1. **Action Steps** - What to do
+
    ```
    "Create internal/auth/jwt.go with JWT token functions"
    "Add login endpoint POST /api/auth/login in routes.go"
    ```
 
 2. **Reference Steps** - Where to find details
+
    ```
    "Follow the implementation pattern in spec.md section 3.2"
    "Use the schema defined in docs/api.yaml"
@@ -262,6 +276,7 @@ Steps tell the AI **how** to implement and **how** to verify.
 ### Step Patterns by Category
 
 **Feature:**
+
 ```yaml
 steps:
   - Create [file/component] with [functionality]
@@ -270,6 +285,7 @@ steps:
 ```
 
 **Bugfix:**
+
 ```yaml
 steps:
   - Identify root cause of [bug] in [location]
@@ -278,6 +294,7 @@ steps:
 ```
 
 **Setup:**
+
 ```yaml
 steps:
   - Run [init/install command]
@@ -290,6 +307,7 @@ steps:
 When your source document has code examples or detailed specs, reference them instead of copying:
 
 ### Good
+
 ```yaml
 - description: Implement WebSocket transport (Task 4.4.1)
   steps:
@@ -299,12 +317,14 @@ When your source document has code examples or detailed specs, reference them in
 ```
 
 ### Why Reference?
+
 - Keeps prd.json concise
 - Source document has full context
 - AI can read referenced doc for details
 - Avoids sync issues if source changes
 
 ### Reference Format
+
 - `"See [document] section [X.Y.Z]"`
 - `"Follow pattern in [document] [section name]"`
 - `"Use schema from [document]"`
@@ -314,14 +334,17 @@ When your source document has code examples or detailed specs, reference them in
 ### Example 1: Technical PRD Sub-task
 
 **Source (lazymcp-prd.md):**
+
 ```markdown
 #### Sub-task 4.2.1: Process Management
+
 - Initialize subprocess with exec.Command
 - Setup stdin/stdout/stderr pipes
 - Handle environment variables from config
 ```
 
 **Converted:**
+
 ```yaml
 - category: feature
   description: Implement stdio transport process management (Task 4.2.1)
@@ -335,6 +358,7 @@ When your source document has code examples or detailed specs, reference them in
 ### Example 2: User Story
 
 **Source:**
+
 ```
 As a user, I want to reset my password via email so I can regain access to my account.
 
@@ -345,6 +369,7 @@ Acceptance criteria:
 ```
 
 **Converted (3 items):**
+
 ```yaml
 - category: feature
   description: Add password reset request endpoint POST /api/auth/reset-request
@@ -374,6 +399,7 @@ Acceptance criteria:
 ### Example 3: Bug Report
 
 **Source:**
+
 ```
 Bug: App crashes when user uploads file > 10MB
 Steps to reproduce:
@@ -384,6 +410,7 @@ Steps to reproduce:
 ```
 
 **Converted:**
+
 ```yaml
 - category: bugfix
   description: Fix crash when uploading files larger than 10MB
@@ -470,6 +497,7 @@ Document to convert:
 [paste document here]
 ---
 ```
+
 </details>
 
 ## Validation Checklist
@@ -511,17 +539,17 @@ Every project should include a PRD item for generating a `README.md` that descri
 
 ## Common Mistakes
 
-| Mistake | Problem | Fix |
-|---------|---------|-----|
-| Wrapping array in object | `{tasks: [...]}` not valid | Use top-level array, no wrapper |
-| Multi-line strings in YAML | Parsing errors | Keep step text on one line or quote it |
-| Special chars in values (`{ } : [ ]`) | YAML parsing errors | Wrap the value in single quotes: `'Add "server: { port: 9999 }" to config'` |
-| Copy-pasting code into steps | PRD file too large, hard to read | Reference source document |
-| Vague descriptions | AI doesn't know what to do | Be specific about what and where |
-| Missing verification | No way to confirm completion | Add test/build/check step |
-| Too many steps | Overwhelming, hard to track | Max 4-5 steps per item |
-| Wrong granularity | Items too big or too small | One iteration = one item |
-| Starting dev servers | Hangs in sandbox, blocks iteration | Use build/typecheck instead |
+| Mistake                               | Problem                            | Fix                                                                         |
+| ------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------- |
+| Wrapping array in object              | `{tasks: [...]}` not valid         | Use top-level array, no wrapper                                             |
+| Multi-line strings in YAML            | Parsing errors                     | Keep step text on one line or quote it                                      |
+| Special chars in values (`{ } : [ ]`) | YAML parsing errors                | Wrap the value in single quotes: `'Add "server: { port: 9999 }" to config'` |
+| Copy-pasting code into steps          | PRD file too large, hard to read   | Reference source document                                                   |
+| Vague descriptions                    | AI doesn't know what to do         | Be specific about what and where                                            |
+| Missing verification                  | No way to confirm completion       | Add test/build/check step                                                   |
+| Too many steps                        | Overwhelming, hard to track        | Max 4-5 steps per item                                                      |
+| Wrong granularity                     | Items too big or too small         | One iteration = one item                                                    |
+| Starting dev servers                  | Hangs in sandbox, blocks iteration | Use build/typecheck instead                                                 |
 
 ## Sandbox Constraints
 
@@ -530,11 +558,13 @@ When running in Docker/Podman sandboxes, certain operations can cause the iterat
 ### Avoid Starting Dev Servers
 
 **Problem:** Starting development servers (`npm run dev`, `uvicorn --reload`, `rails server`, etc.) in verification steps can hang the sandbox:
+
 - Servers wait for network connections that may be blocked by firewall
 - Long-running processes prevent the iteration from completing
 - Telemetry/update checks may timeout on restricted networks
 
 **Bad:**
+
 ```yaml
 steps:
   - Create the component
@@ -543,6 +573,7 @@ steps:
 ```
 
 **Good:**
+
 ```yaml
 steps:
   - Create the component
@@ -554,22 +585,24 @@ steps:
 
 Instead of starting servers, use these verification methods:
 
-| Instead of | Use |
-|------------|-----|
-| `npm run dev` | `npm run build` or `npx tsc --noEmit` |
-| `uvicorn app:app` | `python -m py_compile app.py` or `mypy app.py` |
-| `rails server` | `rails runner "puts 'OK'"` or `bundle exec rake` |
-| `go run main.go` | `go build ./...` |
-| curl to localhost | Unit tests or integration tests |
+| Instead of        | Use                                              |
+| ----------------- | ------------------------------------------------ |
+| `npm run dev`     | `npm run build` or `npx tsc --noEmit`            |
+| `uvicorn app:app` | `python -m py_compile app.py` or `mypy app.py`   |
+| `rails server`    | `rails runner "puts 'OK'"` or `bundle exec rake` |
+| `go run main.go`  | `go build ./...`                                 |
+| curl to localhost | Unit tests or integration tests                  |
 
 ### Network-Dependent Operations
 
 Be aware that sandboxed environments may have restricted network access:
+
 - Package installs work (npm, pip, etc.) if registries are allowed
 - External API calls may be blocked
 - Telemetry and update checks may timeout
 
 **Tip:** Add domains your app needs to the firewall allowlist in `.ralph/config.json`:
+
 ```json
 {
   "docker": {
@@ -589,6 +622,7 @@ ralph prd convert
 ```
 
 This will:
+
 1. Read your `.ralph/prd.json` file
 2. Convert it to YAML format
 3. Write the result to `.ralph/prd.yaml`
@@ -617,6 +651,7 @@ mv .ralph/prd.json.pre-yaml .ralph/prd.json
 ### Why YAML?
 
 YAML is now the recommended format for PRD files because:
+
 - **More readable** - No quotes around strings, cleaner syntax
 - **Easier to edit** - Simpler structure for manual edits
 - **Better diffs** - Changes are easier to review in version control

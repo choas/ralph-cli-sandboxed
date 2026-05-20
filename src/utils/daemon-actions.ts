@@ -44,7 +44,9 @@ function isDiscordEnabled(config: RalphConfig): boolean {
  * Default actions available to the sandbox.
  * These are built-in actions that the daemon provides.
  */
-export function getDefaultActions(config: RalphConfig): Record<string, DaemonAction> {
+export function getDefaultActions(
+  config: RalphConfig,
+): Record<string, DaemonAction> {
   const actions: Record<string, DaemonAction> = {
     ping: {
       command: "echo pong",
@@ -53,7 +55,10 @@ export function getDefaultActions(config: RalphConfig): Record<string, DaemonAct
   };
 
   // Add notify action based on notifications config
-  if (config.notifications?.provider === "ntfy" && config.notifications.ntfy?.topic) {
+  if (
+    config.notifications?.provider === "ntfy" &&
+    config.notifications.ntfy?.topic
+  ) {
     const server = config.notifications.ntfy.server || "https://ntfy.sh";
     const topic = config.notifications.ntfy.topic;
     actions.notify = {
@@ -61,7 +66,10 @@ export function getDefaultActions(config: RalphConfig): Record<string, DaemonAct
       description: `Send notification via ntfy to ${topic}`,
       ntfyUrl: `${server}/${topic}`,
     };
-  } else if (config.notifications?.provider === "command" && config.notifications.command) {
+  } else if (
+    config.notifications?.provider === "command" &&
+    config.notifications.command
+  ) {
     actions.notify = {
       command: config.notifications.command,
       description: "Send notification to host",

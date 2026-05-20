@@ -54,7 +54,12 @@ export function StringEditor({
   );
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="cyan"
+      paddingX={1}
+    >
       {/* Header */}
       <Box marginBottom={1}>
         <Text bold color="cyan">

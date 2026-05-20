@@ -33,7 +33,9 @@ export function ObjectEditor({
   isFocused = true,
   maxHeight = 10,
 }: ObjectEditorProps): React.ReactElement {
-  const [editEntries, setEditEntries] = useState<Record<string, string>>({ ...entries });
+  const [editEntries, setEditEntries] = useState<Record<string, string>>({
+    ...entries,
+  });
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
   const [mode, setMode] = useState<EditorMode>("list");
@@ -235,7 +237,12 @@ export function ObjectEditor({
   // Render key input mode
   if (mode === "add-key") {
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         {/* Header */}
         <Box marginBottom={1}>
           <Text bold color="cyan">
@@ -265,11 +272,18 @@ export function ObjectEditor({
   // Render value input mode (for add or edit)
   if (mode === "add-value" || mode === "edit-value") {
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         {/* Header */}
         <Box marginBottom={1}>
           <Text bold color="cyan">
-            {mode === "add-value" ? "Add New Entry - Enter Value" : `Edit Value for "${newKey}"`}
+            {mode === "add-value"
+              ? "Add New Entry - Enter Value"
+              : `Edit Value for "${newKey}"`}
           </Text>
         </Box>
 
@@ -302,7 +316,12 @@ export function ObjectEditor({
 
   // Render list mode
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="cyan"
+      paddingX={1}
+    >
       {/* Header */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
@@ -385,7 +404,9 @@ export function ObjectEditor({
                   <>
                     <Text dimColor>: </Text>
                     <Text dimColor>
-                      {value.length > 30 ? value.substring(0, 30) + "..." : value}
+                      {value.length > 30
+                        ? value.substring(0, 30) + "..."
+                        : value}
                     </Text>
                   </>
                 )}
@@ -404,7 +425,10 @@ export function ObjectEditor({
       {/* Down scroll indicator */}
       {hasOverflow && (
         <Box>
-          <Text color={canScrollDown ? "cyan" : "gray"} dimColor={!canScrollDown}>
+          <Text
+            color={canScrollDown ? "cyan" : "gray"}
+            dimColor={!canScrollDown}
+          >
             {canScrollDown ? "  ▼ more" : ""}
           </Text>
         </Box>
@@ -413,7 +437,9 @@ export function ObjectEditor({
       {/* Help text */}
       <Box marginTop={1} flexDirection="column">
         <Text dimColor>j/k: navigate | Tab/Space: expand | Enter/e: edit</Text>
-        <Text dimColor>d: delete | s: save | Esc: cancel{hasOverflow && " | PgUp/Dn: scroll"}</Text>
+        <Text dimColor>
+          d: delete | s: save | Esc: cancel{hasOverflow && " | PgUp/Dn: scroll"}
+        </Text>
       </Box>
     </Box>
   );

@@ -3,7 +3,11 @@
  * This provides a unified interface for Anthropic, OpenAI, and Ollama.
  */
 
-import { LLMProviderConfig, getLLMProviderApiKey, getLLMProviderBaseUrl } from "./config.js";
+import {
+  LLMProviderConfig,
+  getLLMProviderApiKey,
+  getLLMProviderBaseUrl,
+} from "./config.js";
 
 /**
  * A single message in a conversation.
@@ -42,7 +46,11 @@ export interface LLMClient {
    * @param options Optional generation parameters
    * @returns The assistant's response text
    */
-  chat(messages: Message[], systemPrompt?: string, options?: ChatOptions): Promise<string>;
+  chat(
+    messages: Message[],
+    systemPrompt?: string,
+    options?: ChatOptions,
+  ): Promise<string>;
 }
 
 /**
@@ -75,15 +83,22 @@ export class AnthropicClient implements LLMClient {
     this.baseUrl = getLLMProviderBaseUrl(config);
   }
 
-  async chat(messages: Message[], systemPrompt?: string, options?: ChatOptions): Promise<string> {
+  async chat(
+    messages: Message[],
+    systemPrompt?: string,
+    options?: ChatOptions,
+  ): Promise<string> {
     const opts = { ...DEFAULT_CHAT_OPTIONS, ...options };
 
     // Dynamic import to avoid requiring the SDK if not used
-    const Anthropic = await import("@anthropic-ai/sdk").then((m) => m.default || m.Anthropic);
+    const Anthropic = await import("@anthropic-ai/sdk").then(
+      (m) => m.default || m.Anthropic,
+    );
 
     const client = new Anthropic({
       apiKey: this.apiKey,
-      baseURL: this.baseUrl !== "https://api.anthropic.com" ? this.baseUrl : undefined,
+      baseURL:
+        this.baseUrl !== "https://api.anthropic.com" ? this.baseUrl : undefined,
     });
 
     // Filter out system messages - Anthropic uses a separate system parameter
@@ -95,7 +110,9 @@ export class AnthropicClient implements LLMClient {
       }));
 
     // Combine any system messages from the messages array with the systemPrompt
-    const systemMessages = messages.filter((m) => m.role === "system").map((m) => m.content);
+    const systemMessages = messages
+      .filter((m) => m.role === "system")
+      .map((m) => m.content);
     const fullSystemPrompt = systemPrompt
       ? [systemPrompt, ...systemMessages].join("\n\n")
       : systemMessages.length > 0
@@ -113,7 +130,9 @@ export class AnthropicClient implements LLMClient {
 
     // Extract text content from the response
     const textContent = response.content.find((block) => block.type === "text");
-    return textContent ? (textContent as { type: "text"; text: string }).text : "";
+    return textContent
+      ? (textContent as { type: "text"; text: string }).text
+      : "";
   }
 }
 
@@ -139,7 +158,11 @@ export class OpenAIClient implements LLMClient {
     this.baseUrl = getLLMProviderBaseUrl(config);
   }
 
-  async chat(messages: Message[], systemPrompt?: string, options?: ChatOptions): Promise<string> {
+  async chat(
+    messages: Message[],
+    systemPrompt?: string,
+    options?: ChatOptions,
+  ): Promise<string> {
     const opts = { ...DEFAULT_CHAT_OPTIONS, ...options };
 
     // Dynamic import to avoid requiring the SDK if not used
@@ -194,7 +217,11 @@ export class OllamaClient implements LLMClient {
     this.baseUrl = getLLMProviderBaseUrl(config);
   }
 
-  async chat(messages: Message[], systemPrompt?: string, options?: ChatOptions): Promise<string> {
+  async chat(
+    messages: Message[],
+    systemPrompt?: string,
+    options?: ChatOptions,
+  ): Promise<string> {
     const opts = { ...DEFAULT_CHAT_OPTIONS, ...options };
 
     // Build messages array with system prompt first if provided

@@ -22,7 +22,7 @@ REPO_URL:     _______________ (optional)
 - [ ] Python (uv)
 - [ ] Go
 - [ ] Rust
-- [ ] Other: _______________
+- [ ] Other: ******\_\_\_******
 
 ## API Providers (check all that apply)
 
@@ -35,19 +35,19 @@ REPO_URL:     _______________ (optional)
 - [ ] Discord
 - [ ] Supabase
 - [ ] Firebase
-- [ ] Other: _______________
+- [ ] Other: ******\_\_\_******
 
 ## Notifications (optional)
 
-- [ ] ntfy.sh - Topic: _______________
-- [ ] Custom command: _______________
+- [ ] ntfy.sh - Topic: ******\_\_\_******
+- [ ] Custom command: ******\_\_\_******
 - [ ] None
 
 ## Daemon Events (optional)
 
 - [ ] Log task completions to file
 - [ ] Log ralph completion to file
-- [ ] Send webhook on completion: _______________
+- [ ] Send webhook on completion: ******\_\_\_******
 - [ ] None
 
 ## Project Concept
@@ -87,13 +87,13 @@ Set up a Ralph CLI project based on the configuration above.
 
 ### Config Values by Tech Stack
 
-| Stack | language | checkCommand | testCommand |
-|-------|----------|--------------|-------------|
-| Node/TS (npm) | `node` | `npm run typecheck` | `npm test` |
-| Node/TS (bun) | `bun` | `bun check` | `bun test` |
-| Python | `python` | `mypy .` | `pytest` |
-| Go | `go` | `go build ./...` | `go test ./...` |
-| Rust | `rust` | `cargo check` | `cargo test` |
+| Stack         | language | checkCommand        | testCommand     |
+| ------------- | -------- | ------------------- | --------------- |
+| Node/TS (npm) | `node`   | `npm run typecheck` | `npm test`      |
+| Node/TS (bun) | `bun`    | `bun check`         | `bun test`      |
+| Python        | `python` | `mypy .`            | `pytest`        |
+| Go            | `go`     | `go build ./...`    | `go test ./...` |
+| Rust          | `rust`   | `cargo check`       | `cargo test`    |
 
 ### Firewall Domains
 
@@ -101,33 +101,34 @@ The Docker firewall allows these domains by default: `github.com`, `api.github.c
 
 Add additional domains to `docker.firewall.allowedDomains` in `.ralph/config.json` based on your stack:
 
-| Stack | Recommended Additions |
-|-------|----------------------|
+| Stack  | Recommended Additions                |
+| ------ | ------------------------------------ |
 | Python | `pypi.org`, `files.pythonhosted.org` |
-| Go | `proxy.golang.org`, `sum.golang.org` |
-| Rust | `crates.io`, `static.crates.io` |
+| Go     | `proxy.golang.org`, `sum.golang.org` |
+| Rust   | `crates.io`, `static.crates.io`      |
 
 ### API Provider Domains
 
 Add these to `docker.firewall.allowedDomains` if using external APIs:
 
-| Provider | Domains |
-|----------|---------|
-| OpenAI | `api.openai.com` |
-| Google AI | `generativelanguage.googleapis.com` |
-| AWS | `*.amazonaws.com` |
-| Telegram | `api.telegram.org` |
-| Slack | `slack.com`, `api.slack.com` |
-| Discord | `discord.com`, `gateway.discord.gg` |
-| Supabase | `*.supabase.co` |
-| Firebase | `*.firebaseio.com`, `*.googleapis.com` |
-| ntfy.sh | `ntfy.sh` |
+| Provider  | Domains                                |
+| --------- | -------------------------------------- |
+| OpenAI    | `api.openai.com`                       |
+| Google AI | `generativelanguage.googleapis.com`    |
+| AWS       | `*.amazonaws.com`                      |
+| Telegram  | `api.telegram.org`                     |
+| Slack     | `slack.com`, `api.slack.com`           |
+| Discord   | `discord.com`, `gateway.discord.gg`    |
+| Supabase  | `*.supabase.co`                        |
+| Firebase  | `*.firebaseio.com`, `*.googleapis.com` |
+| ntfy.sh   | `ntfy.sh`                              |
 
 ### Notifications Config
 
 Supported providers: `ntfy`, `pushover`, `gotify`, `command`.
 
 Using ntfy (recommended - no install needed):
+
 ```json
 {
   "notifications": {
@@ -141,6 +142,7 @@ Using ntfy (recommended - no install needed):
 ```
 
 Using pushover:
+
 ```json
 {
   "notifications": {
@@ -154,6 +156,7 @@ Using pushover:
 ```
 
 Using gotify:
+
 ```json
 {
   "notifications": {
@@ -167,6 +170,7 @@ Using gotify:
 ```
 
 Using custom command:
+
 ```json
 {
   "notifications": {
@@ -179,6 +183,7 @@ Using custom command:
 ### Daemon Events Config
 
 Log task completions and ralph finished to file:
+
 ```json
 {
   "daemon": {
@@ -200,12 +205,12 @@ Log task completions and ralph finished to file:
 }
 ```
 
-| Event | When Triggered |
-|-------|----------------|
-| `task_complete` | After each PRD task passes |
-| `ralph_complete` | When all PRD tasks complete |
+| Event                | When Triggered                    |
+| -------------------- | --------------------------------- |
+| `task_complete`      | After each PRD task passes        |
+| `ralph_complete`     | When all PRD tasks complete       |
 | `iteration_complete` | After each `ralph once` iteration |
-| `error` | When an error occurs |
+| `error`              | When an error occurs              |
 
 ### Telegram Chat Setup
 
@@ -234,6 +239,7 @@ Log task completions and ralph finished to file:
 ```
 
 Chat commands (send in Telegram):
+
 - `/run [category]` - Start ralph automation
 - `/status` - Show PRD progress
 - `/stop` - Stop a running ralph process
@@ -246,15 +252,15 @@ Chat commands (send in Telegram):
 
 ### PRD Task Categories
 
-| Category | Use For |
-|----------|---------|
-| `setup` | Project initialization, dependency installation |
-| `feature` | New functionality implementation |
-| `bugfix` | Bug fixes |
-| `ui` | User interface changes |
-| `development` | Development tooling, build configuration |
-| `testing` | Unit tests, integration tests |
-| `docs` | Documentation |
+| Category      | Use For                                         |
+| ------------- | ----------------------------------------------- |
+| `setup`       | Project initialization, dependency installation |
+| `feature`     | New functionality implementation                |
+| `bugfix`      | Bug fixes                                       |
+| `ui`          | User interface changes                          |
+| `development` | Development tooling, build configuration        |
+| `testing`     | Unit tests, integration tests                   |
+| `docs`        | Documentation                                   |
 
 ### PRD Guidelines
 
@@ -268,11 +274,13 @@ Chat commands (send in Telegram):
 ### Sandbox Safety
 
 **Avoid** (long-running/interactive):
+
 - `pnpm dev`, `npm start`, `python -m http.server`
 - `docker compose up`
 - Commands requiring user input
 
 **Use instead** (verification commands):
+
 - `pnpm build`, `npm run build`, `go build`
 - `pnpm test`, `pytest`, `go test`
 - `tsc --noEmit`, `mypy .`, `go vet`
@@ -281,14 +289,14 @@ Chat commands (send in Telegram):
 
 ## Ralph Commands
 
-| Command | Description |
-|---------|-------------|
-| `ralph init -y` | Initialize with defaults |
-| `ralph list` | Show all PRD tasks |
-| `ralph status` | Show completion status |
-| `ralph docker init <lang>` | Generate Docker files |
-| `ralph docker run` | Run sandboxed session |
-| `ralph docker run --yolo` | Run without confirmations |
-| `ralph daemon start` | Start daemon on host (for notifications) |
-| `ralph daemon status` | Check daemon status |
-| `ralph notify "msg"` | Send notification from sandbox |
+| Command                    | Description                              |
+| -------------------------- | ---------------------------------------- |
+| `ralph init -y`            | Initialize with defaults                 |
+| `ralph list`               | Show all PRD tasks                       |
+| `ralph status`             | Show completion status                   |
+| `ralph docker init <lang>` | Generate Docker files                    |
+| `ralph docker run`         | Run sandboxed session                    |
+| `ralph docker run --yolo`  | Run without confirmations                |
+| `ralph daemon start`       | Start daemon on host (for notifications) |
+| `ralph daemon status`      | Check daemon status                      |
+| `ralph notify "msg"`       | Send notification from sandbox           |

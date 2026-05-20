@@ -1,6 +1,10 @@
 import { existsSync, watch, FSWatcher } from "fs";
 import { spawn } from "child_process";
-import { loadConfig, getRalphDir, isRunningInContainer } from "../utils/config.js";
+import {
+  loadConfig,
+  getRalphDir,
+  isRunningInContainer,
+} from "../utils/config.js";
 import {
   getMessagesPath,
   readMessages,
@@ -32,11 +36,16 @@ export interface DaemonResponse {
 }
 
 // Telegram client for sending messages (lazy loaded)
-let telegramClient: { sendMessage: (chatId: string, text: string) => Promise<void> } | null = null;
-let telegramConfig: { botToken: string; allowedChatIds?: string[] } | null = null;
+let telegramClient: {
+  sendMessage: (chatId: string, text: string) => Promise<void>;
+} | null = null;
+let telegramConfig: { botToken: string; allowedChatIds?: string[] } | null =
+  null;
 
 // Slack client for sending messages (lazy loaded)
-let slackClient: { sendMessage: (channelId: string, text: string) => Promise<void> } | null = null;
+let slackClient: {
+  sendMessage: (channelId: string, text: string) => Promise<void>;
+} | null = null;
 let slackConfig: {
   botToken: string;
   appToken: string;
@@ -45,8 +54,9 @@ let slackConfig: {
 } | null = null;
 
 // Discord client for sending messages (lazy loaded)
-let discordClient: { sendMessage: (channelId: string, text: string) => Promise<void> } | null =
-  null;
+let discordClient: {
+  sendMessage: (channelId: string, text: string) => Promise<void>;
+} | null = null;
 let discordConfig: {
   botToken: string;
   allowedGuildIds?: string[];
@@ -87,7 +97,9 @@ function isDiscordEnabled(config: ReturnType<typeof loadConfig>): boolean {
 /**
  * Initialize Telegram client if configured.
  */
-async function initTelegramClient(config: ReturnType<typeof loadConfig>): Promise<void> {
+async function initTelegramClient(
+  config: ReturnType<typeof loadConfig>,
+): Promise<void> {
   if (isTelegramEnabled(config)) {
     telegramConfig = config.chat!.telegram!;
     // Dynamic import to avoid circular dependency
@@ -99,7 +111,9 @@ async function initTelegramClient(config: ReturnType<typeof loadConfig>): Promis
 /**
  * Initialize Slack client if configured.
  */
-async function initSlackClient(config: ReturnType<typeof loadConfig>): Promise<void> {
+async function initSlackClient(
+  config: ReturnType<typeof loadConfig>,
+): Promise<void> {
   if (isSlackEnabled(config)) {
     slackConfig = config.chat!.slack!;
     // Dynamic import to avoid circular dependency
@@ -111,7 +125,9 @@ async function initSlackClient(config: ReturnType<typeof loadConfig>): Promise<v
 /**
  * Initialize Discord client if configured.
  */
-async function initDiscordClient(config: ReturnType<typeof loadConfig>): Promise<void> {
+async function initDiscordClient(
+  config: ReturnType<typeof loadConfig>,
+): Promise<void> {
   if (isDiscordEnabled(config)) {
     discordConfig = config.chat!.discord!;
     // Dynamic import to avoid circular dependency
@@ -123,7 +139,9 @@ async function initDiscordClient(config: ReturnType<typeof loadConfig>): Promise
 /**
  * Send a message via Telegram if configured.
  */
-async function sendTelegramMessage(message: string): Promise<{ success: boolean; error?: string }> {
+async function sendTelegramMessage(
+  message: string,
+): Promise<{ success: boolean; error?: string }> {
   if (!telegramClient || !telegramConfig) {
     return { success: false, error: "Telegram not configured" };
   }
@@ -140,14 +158,19 @@ async function sendTelegramMessage(message: string): Promise<{ success: boolean;
     }
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
   }
 }
 
 /**
  * Send a message via Slack if configured.
  */
-async function sendSlackMessage(message: string): Promise<{ success: boolean; error?: string }> {
+async function sendSlackMessage(
+  message: string,
+): Promise<{ success: boolean; error?: string }> {
   if (!slackClient || !slackConfig) {
     return { success: false, error: "Slack not configured" };
   }
@@ -164,14 +187,19 @@ async function sendSlackMessage(message: string): Promise<{ success: boolean; er
     }
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
   }
 }
 
 /**
  * Send a message via Discord if configured.
  */
-async function sendDiscordMessage(message: string): Promise<{ success: boolean; error?: string }> {
+async function sendDiscordMessage(
+  message: string,
+): Promise<{ success: boolean; error?: string }> {
   if (!discordClient || !discordConfig) {
     return { success: false, error: "Discord not configured" };
   }
@@ -188,7 +216,10 @@ async function sendDiscordMessage(message: string): Promise<{ success: boolean; 
     }
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
   }
 }
 
@@ -307,10 +338,16 @@ async function processMessage(
 
   // Skip chat notification actions - these are handled by the chat client
   // (which has the connected Socket Mode client)
-  const chatNotifyActions = ["slack_notify", "telegram_notify", "discord_notify"];
+  const chatNotifyActions = [
+    "slack_notify",
+    "telegram_notify",
+    "discord_notify",
+  ];
   if (chatNotifyActions.includes(message.action)) {
     if (debug) {
-      console.log(`[daemon] Skipping ${message.action} - handled by chat client`);
+      console.log(
+        `[daemon] Skipping ${message.action} - handled by chat client`,
+      );
     }
     // Don't respond - let the chat client handle it
     return;
@@ -345,7 +382,9 @@ async function processMessage(
 async function startDaemon(debug: boolean): Promise<void> {
   // Daemon should not run inside a container
   if (isRunningInContainer()) {
-    console.error("Error: 'ralph daemon' should run on the host, not inside a container.");
+    console.error(
+      "Error: 'ralph daemon' should run on the host, not inside a container.",
+    );
     console.error("The daemon processes messages from the sandbox.");
     process.exit(1);
   }
@@ -467,7 +506,12 @@ export async function daemon(args: string[]): Promise<void> {
   const debug = args.includes("--debug") || args.includes("-d");
 
   // Show help
-  if (subcommand === "help" || subcommand === "--help" || subcommand === "-h" || !subcommand) {
+  if (
+    subcommand === "help" ||
+    subcommand === "--help" ||
+    subcommand === "-h" ||
+    !subcommand
+  ) {
     console.log(`
 ralph daemon - Host daemon for sandbox-to-host communication
 

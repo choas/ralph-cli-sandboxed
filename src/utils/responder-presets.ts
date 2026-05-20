@@ -58,7 +58,9 @@ export function loadResponderPresets(): ResponderPresetsConfig {
 /**
  * Get a single preset by ID.
  */
-export function getResponderPreset(presetId: string): ResponderPreset | undefined {
+export function getResponderPreset(
+  presetId: string,
+): ResponderPreset | undefined {
   const config = loadResponderPresets();
   return config.presets[presetId];
 }
@@ -74,7 +76,9 @@ export function getResponderPresetIds(): string[] {
 /**
  * Get all available presets with their metadata.
  */
-export function getResponderPresetList(): Array<{ id: string } & ResponderPreset> {
+export function getResponderPresetList(): Array<
+  { id: string } & ResponderPreset
+> {
   const config = loadResponderPresets();
   return Object.entries(config.presets).map(([id, preset]) => ({
     id,
@@ -93,7 +97,9 @@ export function getResponderBundles(): Record<string, ResponderBundle> {
 /**
  * Get a single bundle by ID.
  */
-export function getResponderBundle(bundleId: string): ResponderBundle | undefined {
+export function getResponderBundle(
+  bundleId: string,
+): ResponderBundle | undefined {
   const config = loadResponderPresets();
   return config.bundles[bundleId];
 }
@@ -110,7 +116,9 @@ export function getResponderBundleIds(): string[] {
  * Convert a preset to a ResponderConfig for use in config.json.
  * Strips the name and description fields that are only for display.
  */
-export function presetToResponderConfig(preset: ResponderPreset): ResponderConfig {
+export function presetToResponderConfig(
+  preset: ResponderPreset,
+): ResponderConfig {
   const config: ResponderConfig = {
     type: preset.type,
   };
@@ -130,7 +138,9 @@ export function presetToResponderConfig(preset: ResponderPreset): ResponderConfi
  * Convert multiple preset IDs to a RespondersConfig object.
  * Uses the preset ID as the responder name.
  */
-export function presetsToRespondersConfig(presetIds: string[]): RespondersConfig {
+export function presetsToRespondersConfig(
+  presetIds: string[],
+): RespondersConfig {
   const config = loadResponderPresets();
   const responders: RespondersConfig = {};
 
@@ -182,7 +192,9 @@ export function getBundleDisplayOptions(): string[] {
 /**
  * Map bundle display option back to bundle ID.
  */
-export function displayOptionToBundleId(displayOption: string): string | undefined {
+export function displayOptionToBundleId(
+  displayOption: string,
+): string | undefined {
   const config = loadResponderPresets();
   for (const [id, bundle] of Object.entries(config.bundles)) {
     if (displayOption.startsWith(bundle.name)) {
@@ -195,7 +207,9 @@ export function displayOptionToBundleId(displayOption: string): string | undefin
 /**
  * Map preset display option back to preset ID.
  */
-export function displayOptionToPresetId(displayOption: string): string | undefined {
+export function displayOptionToPresetId(
+  displayOption: string,
+): string | undefined {
   const config = loadResponderPresets();
   for (const [id, preset] of Object.entries(config.presets)) {
     if (displayOption.startsWith(preset.name)) {

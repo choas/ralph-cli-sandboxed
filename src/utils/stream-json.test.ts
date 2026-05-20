@@ -53,7 +53,10 @@ describe("ClaudeStreamParser", () => {
   });
 
   it("parses tool_result events", () => {
-    const line = JSON.stringify({ type: "tool_result", content: "file contents here" });
+    const line = JSON.stringify({
+      type: "tool_result",
+      content: "file contents here",
+    });
     expect(parser.parseStreamJsonLine(line)).toContain("file contents here");
   });
 
@@ -76,10 +79,14 @@ describe("ClaudeStreamParser", () => {
 
   it("parses file operations", () => {
     expect(
-      parser.parseStreamJsonLine(JSON.stringify({ type: "file_edit", path: "src/main.ts" })),
+      parser.parseStreamJsonLine(
+        JSON.stringify({ type: "file_edit", path: "src/main.ts" }),
+      ),
     ).toContain("src/main.ts");
     expect(
-      parser.parseStreamJsonLine(JSON.stringify({ type: "file_read", path: "README.md" })),
+      parser.parseStreamJsonLine(
+        JSON.stringify({ type: "file_read", path: "README.md" }),
+      ),
     ).toContain("README.md");
   });
 
@@ -89,7 +96,10 @@ describe("ClaudeStreamParser", () => {
   });
 
   it("parses error events", () => {
-    const line = JSON.stringify({ type: "error", error: { message: "Rate limited" } });
+    const line = JSON.stringify({
+      type: "error",
+      error: { message: "Rate limited" },
+    });
     expect(parser.parseStreamJsonLine(line)).toContain("Rate limited");
   });
 
@@ -98,11 +108,18 @@ describe("ClaudeStreamParser", () => {
   });
 
   it("handles message lifecycle events", () => {
-    expect(parser.parseStreamJsonLine(JSON.stringify({ type: "message_start" }))).toBe("\n");
-    expect(parser.parseStreamJsonLine(JSON.stringify({ type: "message_stop" }))).toBe("\n");
+    expect(
+      parser.parseStreamJsonLine(JSON.stringify({ type: "message_start" })),
+    ).toBe("\n");
+    expect(
+      parser.parseStreamJsonLine(JSON.stringify({ type: "message_stop" })),
+    ).toBe("\n");
     expect(
       parser.parseStreamJsonLine(
-        JSON.stringify({ type: "message_delta", delta: { stop_reason: "end_turn" } }),
+        JSON.stringify({
+          type: "message_delta",
+          delta: { stop_reason: "end_turn" },
+        }),
       ),
     ).toContain("end_turn");
   });
@@ -113,11 +130,15 @@ describe("ClaudeStreamParser", () => {
   });
 
   it("falls back to text/content/message fields", () => {
-    expect(parser.parseStreamJsonLine(JSON.stringify({ type: "unknown", text: "fallback" }))).toBe(
-      "fallback",
-    );
     expect(
-      parser.parseStreamJsonLine(JSON.stringify({ type: "unknown", content: "fallback2" })),
+      parser.parseStreamJsonLine(
+        JSON.stringify({ type: "unknown", text: "fallback" }),
+      ),
+    ).toBe("fallback");
+    expect(
+      parser.parseStreamJsonLine(
+        JSON.stringify({ type: "unknown", content: "fallback2" }),
+      ),
     ).toBe("fallback2");
   });
 
@@ -164,7 +185,10 @@ describe("ClaudeStreamParser", () => {
   });
 
   it("handles tool_result with output field instead of content", () => {
-    const line = JSON.stringify({ type: "tool_result", output: "tool output here" });
+    const line = JSON.stringify({
+      type: "tool_result",
+      output: "tool output here",
+    });
     expect(parser.parseStreamJsonLine(line)).toContain("tool output here");
   });
 
@@ -235,7 +259,10 @@ describe("ClaudeStreamParser", () => {
   });
 
   it("handles command_output event", () => {
-    const line = JSON.stringify({ type: "command_output", content: "output data" });
+    const line = JSON.stringify({
+      type: "command_output",
+      content: "output data",
+    });
     expect(parser.parseStreamJsonLine(line)).toContain("output data");
   });
 
@@ -250,7 +277,10 @@ describe("ClaudeStreamParser", () => {
   });
 
   it("handles error event without message (raw error object)", () => {
-    const line = JSON.stringify({ type: "error", error: { code: 500, detail: "server" } });
+    const line = JSON.stringify({
+      type: "error",
+      error: { code: 500, detail: "server" },
+    });
     const result = parser.parseStreamJsonLine(line);
     expect(result).toContain("Error");
     expect(result).toContain("500");
@@ -299,7 +329,10 @@ describe("GeminiStreamParser", () => {
   const parser = new GeminiStreamParser();
 
   it("parses initialization events", () => {
-    const line = JSON.stringify({ type: "initialization", model: "gemini-pro" });
+    const line = JSON.stringify({
+      type: "initialization",
+      model: "gemini-pro",
+    });
     expect(parser.parseStreamJsonLine(line)).toContain("gemini-pro");
   });
 
@@ -314,7 +347,9 @@ describe("GeminiStreamParser", () => {
   it("parses model role messages", () => {
     const line = JSON.stringify({
       type: "messages",
-      messages: [{ role: "model", content: [{ type: "text", text: "Model says" }] }],
+      messages: [
+        { role: "model", content: [{ type: "text", text: "Model says" }] },
+      ],
     });
     expect(parser.parseStreamJsonLine(line)).toBe("Model says");
   });
@@ -417,7 +452,10 @@ describe("GeminiStreamParser", () => {
   });
 
   it("handles response with content field instead of text", () => {
-    const line = JSON.stringify({ type: "response", content: "Content response" });
+    const line = JSON.stringify({
+      type: "response",
+      content: "Content response",
+    });
     expect(parser.parseStreamJsonLine(line)).toBe("Content response");
   });
 
@@ -432,7 +470,10 @@ describe("GeminiStreamParser", () => {
   });
 
   it("falls back to content field for unknown types", () => {
-    const line = JSON.stringify({ type: "custom_type", content: "custom content" });
+    const line = JSON.stringify({
+      type: "custom_type",
+      content: "custom content",
+    });
     expect(parser.parseStreamJsonLine(line)).toBe("custom content");
   });
 
@@ -488,7 +529,10 @@ describe("OpenCodeStreamParser", () => {
   });
 
   it("parses assistant_message events", () => {
-    const line = JSON.stringify({ type: "assistant_message", content: "Here is my analysis" });
+    const line = JSON.stringify({
+      type: "assistant_message",
+      content: "Here is my analysis",
+    });
     expect(parser.parseStreamJsonLine(line)).toBe("Here is my analysis");
   });
 
@@ -551,37 +595,58 @@ describe("OpenCodeStreamParser", () => {
   });
 
   it("handles tool event (direct tool invocation)", () => {
-    const line = JSON.stringify({ type: "tool", name: "search", input: { query: "test" } });
+    const line = JSON.stringify({
+      type: "tool",
+      name: "search",
+      input: { query: "test" },
+    });
     const result = parser.parseStreamJsonLine(line);
     expect(result).toContain("search");
     expect(result).toContain("test");
   });
 
   it("handles tool_call event", () => {
-    const line = JSON.stringify({ type: "tool_call", tool: "execute", args: "npm test" });
+    const line = JSON.stringify({
+      type: "tool_call",
+      tool: "execute",
+      args: "npm test",
+    });
     const result = parser.parseStreamJsonLine(line);
     expect(result).toContain("execute");
   });
 
   it("handles tool_call with string input", () => {
-    const line = JSON.stringify({ type: "tool_call", name: "bash", input: "ls -la" });
+    const line = JSON.stringify({
+      type: "tool_call",
+      name: "bash",
+      input: "ls -la",
+    });
     const result = parser.parseStreamJsonLine(line);
     expect(result).toContain("bash");
     expect(result).toContain("ls -la");
   });
 
   it("handles tool_response event", () => {
-    const line = JSON.stringify({ type: "tool_response", output: "command output" });
+    const line = JSON.stringify({
+      type: "tool_response",
+      output: "command output",
+    });
     expect(parser.parseStreamJsonLine(line)).toContain("command output");
   });
 
   it("handles model_response event", () => {
-    const line = JSON.stringify({ type: "model_response", content: "model says" });
+    const line = JSON.stringify({
+      type: "model_response",
+      content: "model says",
+    });
     expect(parser.parseStreamJsonLine(line)).toBe("model says");
   });
 
   it("handles assistant_message with text field", () => {
-    const line = JSON.stringify({ type: "assistant_message", text: "text field" });
+    const line = JSON.stringify({
+      type: "assistant_message",
+      text: "text field",
+    });
     expect(parser.parseStreamJsonLine(line)).toBe("text field");
   });
 
@@ -640,7 +705,10 @@ describe("CodexStreamParser", () => {
   const parser = new CodexStreamParser();
 
   it("parses thread.started events", () => {
-    const line = JSON.stringify({ type: "thread.started", thread_id: "abc123" });
+    const line = JSON.stringify({
+      type: "thread.started",
+      thread_id: "abc123",
+    });
     expect(parser.parseStreamJsonLine(line)).toContain("abc123");
   });
 
@@ -709,7 +777,10 @@ describe("CodexStreamParser", () => {
   });
 
   it("handles turn.failed with message field", () => {
-    const line = JSON.stringify({ type: "turn.failed", message: "Rate limited" });
+    const line = JSON.stringify({
+      type: "turn.failed",
+      message: "Rate limited",
+    });
     expect(parser.parseStreamJsonLine(line)).toContain("Rate limited");
   });
 
@@ -942,7 +1013,11 @@ describe("AiderStreamParser", () => {
   });
 
   it("parses tool_call events", () => {
-    const line = JSON.stringify({ type: "tool_call", name: "edit", arguments: { file: "a.ts" } });
+    const line = JSON.stringify({
+      type: "tool_call",
+      name: "edit",
+      arguments: { file: "a.ts" },
+    });
     const result = parser.parseStreamJsonLine(line);
     expect(result).toContain("edit");
   });
@@ -958,7 +1033,9 @@ describe("AiderStreamParser", () => {
   });
 
   it("returns raw line for non-JSON input", () => {
-    expect(parser.parseStreamJsonLine("plain text output")).toBe("plain text output");
+    expect(parser.parseStreamJsonLine("plain text output")).toBe(
+      "plain text output",
+    );
   });
 
   // --- new edge case tests ---
@@ -969,20 +1046,32 @@ describe("AiderStreamParser", () => {
   });
 
   it("parses function_call events (alternative to tool_call)", () => {
-    const line = JSON.stringify({ type: "function_call", function: "write_file", args: "test.ts" });
+    const line = JSON.stringify({
+      type: "function_call",
+      function: "write_file",
+      args: "test.ts",
+    });
     const result = parser.parseStreamJsonLine(line);
     expect(result).toContain("write_file");
   });
 
   it("parses tool_call with string arguments", () => {
-    const line = JSON.stringify({ type: "tool_call", name: "bash", arguments: "npm test" });
+    const line = JSON.stringify({
+      type: "tool_call",
+      name: "bash",
+      arguments: "npm test",
+    });
     const result = parser.parseStreamJsonLine(line);
     expect(result).toContain("bash");
     expect(result).toContain("npm test");
   });
 
   it("parses tool_call with args field", () => {
-    const line = JSON.stringify({ type: "tool_call", name: "search", args: { query: "test" } });
+    const line = JSON.stringify({
+      type: "tool_call",
+      name: "search",
+      args: { query: "test" },
+    });
     const result = parser.parseStreamJsonLine(line);
     expect(result).toContain("search");
   });
@@ -998,7 +1087,10 @@ describe("AiderStreamParser", () => {
   });
 
   it("parses function_result events", () => {
-    const line = JSON.stringify({ type: "function_result", output: "function output" });
+    const line = JSON.stringify({
+      type: "function_result",
+      output: "function output",
+    });
     expect(parser.parseStreamJsonLine(line)).toContain("function output");
   });
 
@@ -1039,7 +1131,10 @@ describe("AiderStreamParser", () => {
   });
 
   it("falls back to content field for unknown type", () => {
-    const line = JSON.stringify({ type: "custom", content: "fallback content" });
+    const line = JSON.stringify({
+      type: "custom",
+      content: "fallback content",
+    });
     expect(parser.parseStreamJsonLine(line)).toBe("fallback content");
   });
 
@@ -1175,7 +1270,9 @@ describe("getStreamJsonParser", () => {
   });
 
   it("returns OpenCodeStreamParser for 'opencode'", () => {
-    expect(getStreamJsonParser("opencode")).toBeInstanceOf(OpenCodeStreamParser);
+    expect(getStreamJsonParser("opencode")).toBeInstanceOf(
+      OpenCodeStreamParser,
+    );
   });
 
   it("returns CodexStreamParser for 'codex'", () => {

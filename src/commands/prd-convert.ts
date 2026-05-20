@@ -98,7 +98,9 @@ export async function prdConvert(args: string[]): Promise<void> {
 
   // Rename original JSON to backup
   renameSync(jsonPath, backupPath);
-  console.log(`\x1b[32m✓\x1b[0m Renamed .ralph/prd.json to .ralph/prd.json.pre-yaml`);
+  console.log(
+    `\x1b[32m✓\x1b[0m Renamed .ralph/prd.json to .ralph/prd.json.pre-yaml`,
+  );
 
   // Success message
   console.log(`\n\x1b[32mConversion complete!\x1b[0m`);
@@ -106,7 +108,9 @@ export async function prdConvert(args: string[]): Promise<void> {
 
   console.log("Next steps:");
   console.log("  1. Your PRD is now in .ralph/prd.yaml");
-  console.log("  2. The original JSON is preserved as .ralph/prd.json.pre-yaml");
+  console.log(
+    "  2. The original JSON is preserved as .ralph/prd.json.pre-yaml",
+  );
   console.log("  3. Ralph will automatically use the YAML file going forward");
   console.log("");
   console.log("To revert, simply rename the files back:");
@@ -119,9 +123,13 @@ function showHelp(): void {
   console.log("Convert .ralph/prd.json to .ralph/prd.yaml format.\n");
   console.log("Options:");
   console.log("  --force, -f     Overwrite existing prd.yaml and backup files");
-  console.log("  --dry-run, -n   Show what would be converted without making changes");
+  console.log(
+    "  --dry-run, -n   Show what would be converted without making changes",
+  );
   console.log("  --help, -h      Show this help message\n");
-  console.log("The original prd.json will be renamed to prd.json.pre-yaml as a backup.");
+  console.log(
+    "The original prd.json will be renamed to prd.json.pre-yaml as a backup.",
+  );
 }
 
 export async function convert(args: string[]): Promise<void> {

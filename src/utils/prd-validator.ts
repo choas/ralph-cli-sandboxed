@@ -66,11 +66,16 @@ export function validatePrd(content: unknown): ValidationResult {
     // Check required fields
     if (typeof entry.category !== "string") {
       errors.push(`${prefix} missing or invalid 'category' field`);
-    } else if (!(VALID_CATEGORIES as readonly string[]).includes(entry.category)) {
+    } else if (
+      !(VALID_CATEGORIES as readonly string[]).includes(entry.category)
+    ) {
       errors.push(`${prefix} invalid category '${entry.category}'`);
     }
 
-    if (typeof entry.description !== "string" || entry.description.length === 0) {
+    if (
+      typeof entry.description !== "string" ||
+      entry.description.length === 0
+    ) {
       errors.push(`${prefix} missing or invalid 'description' field`);
     }
 
@@ -85,7 +90,9 @@ export function validatePrd(content: unknown): ValidationResult {
     }
 
     if (typeof entry.passes !== "boolean") {
-      errors.push(`${prefix} missing or invalid 'passes' field (must be boolean)`);
+      errors.push(
+        `${prefix} missing or invalid 'passes' field (must be boolean)`,
+      );
     }
 
     // Validate optional branch field if present
@@ -184,7 +191,14 @@ function extractFromItem(item: unknown): ExtractedItem | null {
   const obj = item as Record<string, unknown>;
 
   // Find description - check various field names
-  const descriptionFields = ["description", "desc", "name", "title", "task", "feature"];
+  const descriptionFields = [
+    "description",
+    "desc",
+    "name",
+    "title",
+    "task",
+    "feature",
+  ];
   let description = "";
 
   for (const field of descriptionFields) {
@@ -270,7 +284,10 @@ function similarity(a: string, b: string): number {
  * Smart merge: applies passes flags from corrupted PRD to valid original.
  * Only updates items that were marked as passing in the corrupted version.
  */
-export function smartMerge(original: PrdEntry[], corrupted: unknown): MergeResult {
+export function smartMerge(
+  original: PrdEntry[],
+  corrupted: unknown,
+): MergeResult {
   const passingItems = extractPassingItems(corrupted);
   const merged = original.map((entry) => ({ ...entry })); // Deep copy
   let updated = 0;
@@ -306,7 +323,9 @@ export function smartMerge(original: PrdEntry[], corrupted: unknown): MergeResul
       bestMatch.passes = true;
       updated++;
     } else if (!bestMatch) {
-      warnings.push(`Could not match item: "${item.description.substring(0, 50)}..."`);
+      warnings.push(
+        `Could not match item: "${item.description.substring(0, 50)}..."`,
+      );
     }
   }
 
@@ -319,7 +338,11 @@ export function smartMerge(original: PrdEntry[], corrupted: unknown): MergeResul
  */
 export function attemptRecovery(corrupted: unknown): PrdEntry[] | null {
   // Strategy 1: Unwrap from common wrapper objects
-  if (typeof corrupted === "object" && corrupted !== null && !Array.isArray(corrupted)) {
+  if (
+    typeof corrupted === "object" &&
+    corrupted !== null &&
+    !Array.isArray(corrupted)
+  ) {
     const obj = corrupted as Record<string, unknown>;
     for (const key of PRD_WRAPPER_KEYS) {
       if (Array.isArray(obj[key])) {
@@ -367,7 +390,14 @@ function attemptArrayRecovery(items: unknown[]): PrdEntry[] | null {
     }
 
     // Description mapping
-    const descFields = ["description", "desc", "name", "title", "task", "feature"];
+    const descFields = [
+      "description",
+      "desc",
+      "name",
+      "title",
+      "task",
+      "feature",
+    ];
     for (const field of descFields) {
       if (typeof obj[field] === "string" && obj[field]) {
         entry.description = obj[field] as string;
@@ -379,7 +409,9 @@ function attemptArrayRecovery(items: unknown[]): PrdEntry[] | null {
     const stepsFields = ["steps", "verification", "checks", "tasks"];
     for (const field of stepsFields) {
       if (Array.isArray(obj[field])) {
-        const steps = (obj[field] as unknown[]).filter((s) => typeof s === "string") as string[];
+        const steps = (obj[field] as unknown[]).filter(
+          (s) => typeof s === "string",
+        ) as string[];
         if (steps.length > 0) {
           entry.steps = steps;
           break;
@@ -514,7 +546,9 @@ export function findLatestBackup(prdPath: string): string | null {
 export function createTemplatePrd(backupPath?: string): PrdEntry[] {
   if (backupPath) {
     // Use absolute path in @{} reference to avoid path resolution issues
-    const absolutePath = backupPath.startsWith("/") ? backupPath : join(process.cwd(), backupPath);
+    const absolutePath = backupPath.startsWith("/")
+      ? backupPath
+      : join(process.cwd(), backupPath);
 
     return [
       {
@@ -727,7 +761,11 @@ const PRD_WRAPPER_KEYS = [
  * when we just want the array.
  */
 function unwrapPrdContent(content: unknown): unknown {
-  if (typeof content === "object" && content !== null && !Array.isArray(content)) {
+  if (
+    typeof content === "object" &&
+    content !== null &&
+    !Array.isArray(content)
+  ) {
     const obj = content as Record<string, unknown>;
     for (const key of PRD_WRAPPER_KEYS) {
       if (Array.isArray(obj[key])) {
@@ -744,7 +782,9 @@ function unwrapPrdContent(content: unknown): unknown {
  * Automatically unwraps if the content is wrapped in a common object structure.
  * Returns the parsed content or null if it couldn't be parsed.
  */
-export function readYamlPrdFile(prdPath: string): { content: unknown; raw: string } | null {
+export function readYamlPrdFile(
+  prdPath: string,
+): { content: unknown; raw: string } | null {
   try {
     const raw = readFileSync(prdPath, "utf-8");
     // Try parsing as-is first, then with fixes for common LLM issues
@@ -770,7 +810,9 @@ export function readYamlPrdFile(prdPath: string): { content: unknown; raw: strin
  * Automatically unwraps if the content is wrapped in a common object structure.
  * Returns the parsed content or null if it couldn't be parsed.
  */
-export function readPrdFile(prdPath: string): { content: unknown; raw: string } | null {
+export function readPrdFile(
+  prdPath: string,
+): { content: unknown; raw: string } | null {
   try {
     const raw = readFileSync(prdPath, "utf-8");
     const ext = extname(prdPath).toLowerCase();
@@ -843,7 +885,9 @@ export function expandFileReferences(text: string, baseDir: string): string {
 
   return text.replace(pattern, (match, filepath) => {
     // Resolve path relative to baseDir (typically .ralph/)
-    const fullPath = filepath.startsWith("/") ? filepath : join(baseDir, filepath);
+    const fullPath = filepath.startsWith("/")
+      ? filepath
+      : join(baseDir, filepath);
 
     if (!existsSync(fullPath)) {
       return `[File not found: ${fullPath}]`;
@@ -862,7 +906,10 @@ export function expandFileReferences(text: string, baseDir: string): string {
  * Expands file references in all string fields of PRD entries.
  * Returns a new array with expanded content.
  */
-export function expandPrdFileReferences(entries: PrdEntry[], baseDir: string): PrdEntry[] {
+export function expandPrdFileReferences(
+  entries: PrdEntry[],
+  baseDir: string,
+): PrdEntry[] {
   return entries.map((entry) => ({
     ...entry,
     description: expandFileReferences(entry.description, baseDir),

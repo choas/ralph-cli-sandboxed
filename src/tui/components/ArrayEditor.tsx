@@ -208,7 +208,12 @@ export function ArrayEditor({
   // Render text input mode (add or edit)
   if (mode === "add" || mode === "edit") {
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         {/* Header */}
         <Box marginBottom={1}>
           <Text bold color="cyan">
@@ -237,7 +242,12 @@ export function ArrayEditor({
 
   // Render list mode
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="cyan"
+      paddingX={1}
+    >
       {/* Header */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
@@ -298,7 +308,9 @@ export function ArrayEditor({
           return (
             <Box key={`item-${actualIndex}`}>
               {/* Selection indicator */}
-              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
+              <Text color={isHighlighted ? "cyan" : undefined}>
+                {isHighlighted ? "▸ " : "  "}
+              </Text>
               {/* Item number */}
               <Text dimColor>{String(actualIndex + 1).padStart(2, " ")}. </Text>
               {/* Item value */}
@@ -317,7 +329,10 @@ export function ArrayEditor({
       {/* Down scroll indicator */}
       {hasOverflow && (
         <Box>
-          <Text color={canScrollDown ? "cyan" : "gray"} dimColor={!canScrollDown}>
+          <Text
+            color={canScrollDown ? "cyan" : "gray"}
+            dimColor={!canScrollDown}
+          >
             {canScrollDown ? "  ▼ more" : ""}
           </Text>
         </Box>
@@ -327,7 +342,8 @@ export function ArrayEditor({
       <Box marginTop={1} flexDirection="column">
         <Text dimColor>j/k: navigate | Enter/e: edit | d: delete</Text>
         <Text dimColor>
-          J/K: reorder | s: save | Esc: cancel{hasOverflow && " | PgUp/Dn: scroll"}
+          J/K: reorder | s: save | Esc: cancel
+          {hasOverflow && " | PgUp/Dn: scroll"}
         </Text>
       </Box>
     </Box>

@@ -29,18 +29,19 @@ Skills are configured in `.ralph/config.json` under the `claude.skills` array:
 
 Each skill has the following fields:
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Unique identifier for the skill. Use kebab-case (e.g., `swift-main-naming`). |
-| `description` | string | Yes | Brief human-readable description shown during selection. |
-| `instructions` | string | Yes | Full instructions injected into Claude's prompt. Can include examples, rules, and formatting. |
-| `userInvocable` | boolean | No | If `true`, user can invoke the skill via `/skill-name`. Defaults to `true`. |
+| Field           | Type    | Required | Description                                                                                   |
+| --------------- | ------- | -------- | --------------------------------------------------------------------------------------------- |
+| `name`          | string  | Yes      | Unique identifier for the skill. Use kebab-case (e.g., `swift-main-naming`).                  |
+| `description`   | string  | Yes      | Brief human-readable description shown during selection.                                      |
+| `instructions`  | string  | Yes      | Full instructions injected into Claude's prompt. Can include examples, rules, and formatting. |
+| `userInvocable` | boolean | No       | If `true`, user can invoke the skill via `/skill-name`. Defaults to `true`.                   |
 
 ### Field Details
 
 #### name
 
 The skill name should be:
+
 - Unique within the project
 - Descriptive of its purpose
 - Use kebab-case (lowercase with hyphens)
@@ -50,6 +51,7 @@ Examples: `swift-main-naming`, `react-hooks-rules`, `go-error-handling`
 #### description
 
 A concise one-line description that:
+
 - Explains what the skill does
 - Helps users understand when to use it
 - Is shown during `ralph init` skill selection
@@ -57,6 +59,7 @@ A concise one-line description that:
 #### instructions
 
 The detailed instructions that Claude receives. Best practices:
+
 - Start with a clear statement of the rule or guidance
 - Explain the "why" so Claude understands the reasoning
 - Include concrete examples of correct and incorrect patterns
@@ -64,6 +67,7 @@ The detailed instructions that Claude receives. Best practices:
 - Keep instructions focused on a single concern
 
 Example:
+
 ```
 IMPORTANT: In Swift, files containing the @main attribute MUST NOT be named main.swift.
 
@@ -87,6 +91,7 @@ GOOD:
 #### userInvocable
 
 Controls whether the skill can be invoked on-demand:
+
 - `true` (default): User can trigger the skill with `/skill-name`
 - `false`: Skill is always active but cannot be explicitly invoked
 
@@ -100,15 +105,15 @@ Ralph includes built-in skills for specific languages in `src/config/skills.json
 
 **Common Skills** (applied to all languages):
 
-| Skill Name | Description |
-|------------|-------------|
+| Skill Name     | Description                                             |
+| -------------- | ------------------------------------------------------- |
 | `sandbox-safe` | Prevents starting dev servers in sandboxed environments |
 
 **Language-Specific Skills**:
 
-| Language | Skill Name | Description |
-|----------|------------|-------------|
-| Swift | `swift-main-naming` | Prevents naming files main.swift when using @main attribute |
+| Language | Skill Name          | Description                                                 |
+| -------- | ------------------- | ----------------------------------------------------------- |
+| Swift    | `swift-main-naming` | Prevents naming files main.swift when using @main attribute |
 
 ## Adding Skills During Init
 
@@ -155,19 +160,25 @@ You can add custom skills directly to your config file:
 Skills can be scoped for different purposes:
 
 ### Language-Specific Skills
+
 Target common pitfalls or best practices for a language:
+
 - Naming conventions
 - Common anti-patterns
 - Language-specific idioms
 
 ### Framework Skills
+
 Target framework-specific patterns:
+
 - React hooks rules
 - Express middleware patterns
 - Django model conventions
 
 ### Project Skills
+
 Target project-specific requirements:
+
 - Code style guides
 - Architecture decisions
 - Team conventions
@@ -198,6 +209,7 @@ This ensures Claude consistently follows your defined rules across all iteration
 ### Conflicting skills
 
 If two skills have conflicting instructions:
+
 - Review and consolidate the instructions
 - Remove the less important skill
 - Adjust instructions to handle edge cases explicitly

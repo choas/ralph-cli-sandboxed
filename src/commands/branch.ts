@@ -1,7 +1,11 @@
 import { execSync } from "child_process";
 import { existsSync } from "fs";
 import { join } from "path";
-import { getPrdFiles, loadBranchState, getProjectName } from "../utils/config.js";
+import {
+  getPrdFiles,
+  loadBranchState,
+  getProjectName,
+} from "../utils/config.js";
 import { readPrdFile, writePrdAuto, PrdEntry } from "../utils/prd-validator.js";
 import { promptConfirm } from "../utils/prompt.js";
 
@@ -28,12 +32,16 @@ function getWorktreesBase(): string {
 function loadPrdEntries(): { entries: PrdEntry[]; prdPath: string } | null {
   const prdFiles = getPrdFiles();
   if (!prdFiles.primary) {
-    console.error("\x1b[31mError: No PRD file found. Run 'ralph init' first.\x1b[0m");
+    console.error(
+      "\x1b[31mError: No PRD file found. Run 'ralph init' first.\x1b[0m",
+    );
     return null;
   }
   const parsed = readPrdFile(prdFiles.primary);
   if (!parsed || !Array.isArray(parsed.content)) {
-    console.error("\x1b[31mError: PRD file is corrupted. Run 'ralph fix-prd' to repair.\x1b[0m");
+    console.error(
+      "\x1b[31mError: PRD file is corrupted. Run 'ralph fix-prd' to repair.\x1b[0m",
+    );
     return null;
   }
   return { entries: parsed.content as PrdEntry[], prdPath: prdFiles.primary };
@@ -44,7 +52,9 @@ function loadPrdEntries(): { entries: PrdEntry[]; prdPath: string } | null {
  */
 function getBaseBranch(): string {
   try {
-    return execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf-8" }).trim();
+    return execSync("git rev-parse --abbrev-ref HEAD", {
+      encoding: "utf-8",
+    }).trim();
   } catch {
     return "main";
   }
@@ -151,7 +161,9 @@ async function branchMerge(args: string[]): Promise<void> {
 
   // Verify the branch exists
   if (!branchExists(branchName)) {
-    console.error(`\x1b[31mError: Branch "${branchName}" does not exist.\x1b[0m`);
+    console.error(
+      `\x1b[31mError: Branch "${branchName}" does not exist.\x1b[0m`,
+    );
     process.exit(1);
   }
 
@@ -168,7 +180,10 @@ async function branchMerge(args: string[]): Promise<void> {
   console.log();
 
   // Ask for confirmation
-  const confirmed = await promptConfirm(`Merge "${branchName}" into "${baseBranch}"?`, true);
+  const confirmed = await promptConfirm(
+    `Merge "${branchName}" into "${baseBranch}"?`,
+    true,
+  );
 
   if (!confirmed) {
     console.log("Merge cancelled.");
@@ -179,7 +194,9 @@ async function branchMerge(args: string[]): Promise<void> {
   try {
     console.log(`\nMerging "${branchName}" into "${baseBranch}"...`);
     execSync(`git merge "${branchName}" --no-edit`, { stdio: "pipe" });
-    console.log(`\x1b[32mSuccessfully merged "${branchName}" into "${baseBranch}".\x1b[0m`);
+    console.log(
+      `\x1b[32mSuccessfully merged "${branchName}" into "${baseBranch}".\x1b[0m`,
+    );
   } catch (err) {
     // Check if this is a merge conflict
     let conflictingFiles: string[] = [];
@@ -223,7 +240,9 @@ async function branchMerge(args: string[]): Promise<void> {
       console.error(`\nTo resolve:`);
       console.error(`  1. Resolve conflicts manually and merge again`);
       console.error(`  2. Or add a PRD item to resolve the conflicts:`);
-      console.error(`     ralph prd add  # describe the conflict resolution needed`);
+      console.error(
+        `     ralph prd add  # describe the conflict resolution needed`,
+      );
       process.exit(1);
     } else {
       // Some other merge error
@@ -249,8 +268,12 @@ async function branchMerge(args: string[]): Promise<void> {
       console.log(`\x1b[32mWorktree removed.\x1b[0m`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.warn(`\x1b[33mWarning: Could not remove worktree: ${message}\x1b[0m`);
-      console.warn("You can remove it manually with: git worktree remove " + worktreePath);
+      console.warn(
+        `\x1b[33mWarning: Could not remove worktree: ${message}\x1b[0m`,
+      );
+      console.warn(
+        "You can remove it manually with: git worktree remove " + worktreePath,
+      );
     }
   }
 
@@ -291,14 +314,18 @@ async function branchPr(args: string[]): Promise<void> {
 
   // Verify the branch exists
   if (!branchExists(branchName)) {
-    console.error(`\x1b[31mError: Branch "${branchName}" does not exist.\x1b[0m`);
+    console.error(
+      `\x1b[31mError: Branch "${branchName}" does not exist.\x1b[0m`,
+    );
     process.exit(1);
   }
 
   // Verify a git remote exists
   let remote: string;
   try {
-    remote = execSync("git remote", { encoding: "utf-8" }).trim().split("\n")[0];
+    remote = execSync("git remote", { encoding: "utf-8" })
+      .trim()
+      .split("\n")[0];
     if (!remote) throw new Error("no remote");
   } catch {
     console.error("\x1b[31mError: No git remote configured.\x1b[0m");
@@ -309,13 +336,17 @@ async function branchPr(args: string[]): Promise<void> {
 
   // Auto-push: if branch has no upstream tracking, push it
   try {
-    execSync(`git rev-parse --abbrev-ref "${branchName}@{upstream}"`, { stdio: "pipe" });
+    execSync(`git rev-parse --abbrev-ref "${branchName}@{upstream}"`, {
+      stdio: "pipe",
+    });
   } catch {
     console.log(`Pushing "${branchName}" to ${remote}...`);
     try {
       execSync(`git push -u "${remote}" "${branchName}"`, { stdio: "inherit" });
     } catch {
-      console.error(`\x1b[31mError: Failed to push "${branchName}" to ${remote}.\x1b[0m`);
+      console.error(
+        `\x1b[31mError: Failed to push "${branchName}" to ${remote}.\x1b[0m`,
+      );
       process.exit(1);
     }
   }
@@ -342,9 +373,12 @@ async function branchPr(args: string[]): Promise<void> {
 
   // Commits section
   try {
-    const log = execSync(`git log "${baseBranch}..${branchName}" --oneline --no-decorate`, {
-      encoding: "utf-8",
-    }).trim();
+    const log = execSync(
+      `git log "${baseBranch}..${branchName}" --oneline --no-decorate`,
+      {
+        encoding: "utf-8",
+      },
+    ).trim();
     if (log) {
       bodyParts.push("## Commits\n");
       bodyParts.push(log);
@@ -400,7 +434,9 @@ async function branchDelete(args: string[]): Promise<void> {
 
   // Verify the branch exists
   if (!branchExists(branchName)) {
-    console.error(`\x1b[31mError: Branch "${branchName}" does not exist.\x1b[0m`);
+    console.error(
+      `\x1b[31mError: Branch "${branchName}" does not exist.\x1b[0m`,
+    );
     process.exit(1);
   }
 
@@ -411,7 +447,9 @@ async function branchDelete(args: string[]): Promise<void> {
 
   // Load PRD to check for tagged items
   const result = loadPrdEntries();
-  const taggedCount = result ? result.entries.filter((e) => e.branch === branchName).length : 0;
+  const taggedCount = result
+    ? result.entries.filter((e) => e.branch === branchName).length
+    : 0;
 
   console.log(`Branch: ${branchName}`);
   if (hasWorktree) {
@@ -437,12 +475,18 @@ async function branchDelete(args: string[]): Promise<void> {
   if (hasWorktree) {
     console.log(`\nRemoving worktree at ${worktreePath}...`);
     try {
-      execSync(`git worktree remove "${worktreePath}" --force`, { stdio: "pipe" });
+      execSync(`git worktree remove "${worktreePath}" --force`, {
+        stdio: "pipe",
+      });
       console.log(`\x1b[32mWorktree removed.\x1b[0m`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.warn(`\x1b[33mWarning: Could not remove worktree: ${message}\x1b[0m`);
-      console.warn("You can remove it manually with: git worktree remove " + worktreePath);
+      console.warn(
+        `\x1b[33mWarning: Could not remove worktree: ${message}\x1b[0m`,
+      );
+      console.warn(
+        "You can remove it manually with: git worktree remove " + worktreePath,
+      );
     }
   }
 
@@ -470,7 +514,9 @@ async function branchDelete(args: string[]): Promise<void> {
     console.log(`\x1b[32mPRD items updated.\x1b[0m`);
   }
 
-  console.log(`\n\x1b[32mDone!\x1b[0m Branch "${branchName}" has been deleted.`);
+  console.log(
+    `\n\x1b[32mDone!\x1b[0m Branch "${branchName}" has been deleted.`,
+  );
 }
 
 /**
@@ -496,9 +542,13 @@ export async function branch(args: string[]): Promise<void> {
       console.error("Usage: ralph branch <subcommand>");
       console.error("\nSubcommands:");
       console.error("  list             List all branches and their status");
-      console.error("  merge <name>     Merge a branch worktree into the base branch");
+      console.error(
+        "  merge <name>     Merge a branch worktree into the base branch",
+      );
       console.error("  delete <name>    Delete a branch and its worktree");
-      console.error("  pr <name>        Create a pull request for a branch using gh CLI");
+      console.error(
+        "  pr <name>        Create a pull request for a branch using gh CLI",
+      );
       process.exit(1);
   }
 }

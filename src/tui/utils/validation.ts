@@ -221,7 +221,10 @@ export function validateConfig(config: RalphConfig): ValidationResult {
  * @param fieldPath - The field path to check (e.g., "language", "docker.ports")
  * @returns Array of errors matching the field path
  */
-export function getFieldErrors(errors: ValidationError[], fieldPath: string): ValidationError[] {
+export function getFieldErrors(
+  errors: ValidationError[],
+  fieldPath: string,
+): ValidationError[] {
   return errors.filter((error) => {
     // Exact match
     if (error.field === fieldPath) {
@@ -241,6 +244,9 @@ export function getFieldErrors(errors: ValidationError[], fieldPath: string): Va
  * @param fieldPath - The field path to check
  * @returns true if the field has errors, false otherwise
  */
-export function hasFieldError(errors: ValidationError[], fieldPath: string): boolean {
+export function hasFieldError(
+  errors: ValidationError[],
+  fieldPath: string,
+): boolean {
   return getFieldErrors(errors, fieldPath).length > 0;
 }

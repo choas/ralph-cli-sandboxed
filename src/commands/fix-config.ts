@@ -88,7 +88,10 @@ function getDefaultConfig(): RalphConfig {
     cli: {
       command: defaultProvider.command,
       args: defaultProvider.defaultArgs,
-      yoloArgs: defaultProvider.yoloArgs.length > 0 ? defaultProvider.yoloArgs : undefined,
+      yoloArgs:
+        defaultProvider.yoloArgs.length > 0
+          ? defaultProvider.yoloArgs
+          : undefined,
       promptArgs: defaultProvider.promptArgs ?? [],
     },
     cliProvider: "claude",
@@ -160,7 +163,9 @@ function validateSection(section: ConfigSection, value: unknown): boolean {
       return typeof value === "string";
 
     case "technologies":
-      return Array.isArray(value) && value.every((item) => typeof item === "string");
+      return (
+        Array.isArray(value) && value.every((item) => typeof item === "string")
+      );
 
     case "javaVersion":
       return value === null || typeof value === "number";
@@ -190,7 +195,10 @@ function validateSection(section: ConfigSection, value: unknown): boolean {
  * Attempts to extract a value from potentially corrupt JSON using regex.
  * This is a best-effort approach for partially corrupt files.
  */
-function extractSectionFromCorrupt(content: string, section: ConfigSection): unknown | undefined {
+function extractSectionFromCorrupt(
+  content: string,
+  section: ConfigSection,
+): unknown | undefined {
   // Try to find the section in the raw content
   const patterns: Record<string, RegExp> = {
     language: /"language"\s*:\s*"([^"]+)"/,
@@ -217,7 +225,10 @@ function extractSectionFromCorrupt(content: string, section: ConfigSection): unk
  */
 function createBackup(configPath: string): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupPath = configPath.replace("config.json", `config.json.backup.${timestamp}`);
+  const backupPath = configPath.replace(
+    "config.json",
+    `config.json.backup.${timestamp}`,
+  );
   copyFileSync(configPath, backupPath);
   return backupPath;
 }
@@ -258,7 +269,9 @@ function buildRecoveredConfig(
       config[section] = value;
       result.recovered.push(section);
     } else {
-      config[section] = (defaultConfig as unknown as Record<string, unknown>)[section];
+      config[section] = (defaultConfig as unknown as Record<string, unknown>)[
+        section
+      ];
       result.reset.push(section);
     }
   }
@@ -277,7 +290,9 @@ export async function fixConfig(args: string[]): Promise<void> {
 
   // Check if config file exists
   if (!existsSync(configPath)) {
-    console.error("Error: .ralph/config.json not found. Run 'ralph init' first.");
+    console.error(
+      "Error: .ralph/config.json not found. Run 'ralph init' first.",
+    );
     process.exit(1);
   }
 
@@ -296,8 +311,10 @@ export async function fixConfig(args: string[]): Promise<void> {
     // Validate required fields
     const missingFields: string[] = [];
     if (typeof config.language !== "string") missingFields.push("language");
-    if (typeof config.checkCommand !== "string") missingFields.push("checkCommand");
-    if (typeof config.testCommand !== "string") missingFields.push("testCommand");
+    if (typeof config.checkCommand !== "string")
+      missingFields.push("checkCommand");
+    if (typeof config.testCommand !== "string")
+      missingFields.push("testCommand");
 
     if (missingFields.length === 0) {
       console.log("\x1b[32m✓ config.json is valid.\x1b[0m");
@@ -313,7 +330,9 @@ export async function fixConfig(args: string[]): Promise<void> {
 
     // Offer to fix missing fields
     if (!skipPrompt) {
-      const confirm = await promptConfirm("\nFix missing fields with defaults?");
+      const confirm = await promptConfirm(
+        "\nFix missing fields with defaults?",
+      );
       if (!confirm) {
         console.log("Aborted.");
         return;
@@ -345,7 +364,9 @@ export async function fixConfig(args: string[]): Promise<void> {
   console.log("\x1b[31m✗ config.json contains invalid JSON.\x1b[0m");
   console.log(`  Error: ${parseResult.error}`);
   if (parseResult.line) {
-    console.log(`  Location: line ${parseResult.line}, column ${parseResult.column || "?"}`);
+    console.log(
+      `  Location: line ${parseResult.line}, column ${parseResult.column || "?"}`,
+    );
   }
 
   if (verifyOnly) {
@@ -368,12 +389,17 @@ export async function fixConfig(args: string[]): Promise<void> {
     // Partial parsing failed, continue with regex extraction
   }
 
-  const { config: recoveredConfig, result } = buildRecoveredConfig(rawContent, parsedPartial);
+  const { config: recoveredConfig, result } = buildRecoveredConfig(
+    rawContent,
+    parsedPartial,
+  );
 
   // Report results
   console.log("Recovery analysis:");
   if (result.recovered.length > 0) {
-    console.log(`\x1b[32m  Recoverable sections (${result.recovered.length}):\x1b[0m`);
+    console.log(
+      `\x1b[32m  Recoverable sections (${result.recovered.length}):\x1b[0m`,
+    );
     result.recovered.forEach((section) => console.log(`    ✓ ${section}`));
   }
   if (result.reset.length > 0) {

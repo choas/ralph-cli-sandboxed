@@ -197,6 +197,7 @@ The messages file stores a direct JSON array (no wrapper object):
 ```
 
 Fields:
+
 - `from`: `"sandbox"` or `"host"`
 - `args`: optional string array
 - `status`: `"pending"` or `"done"`
@@ -204,21 +205,21 @@ Fields:
 
 ## Git Diff Keywords
 
-| Keyword | Git Command | Description |
-|---------|-------------|-------------|
-| `diff` / `changes` | `git diff` | Unstaged changes |
-| `staged` | `git diff --cached` | Staged changes |
-| `last` / `last commit` | `git show HEAD --stat --patch` | Last commit |
-| `all` | `git diff HEAD` | All uncommitted |
-| `HEAD~N` | `git show HEAD~N --stat --patch` | N commits ago |
+| Keyword                | Git Command                      | Description      |
+| ---------------------- | -------------------------------- | ---------------- |
+| `diff` / `changes`     | `git diff`                       | Unstaged changes |
+| `staged`               | `git diff --cached`              | Staged changes   |
+| `last` / `last commit` | `git show HEAD --stat --patch`   | Last commit      |
+| `all`                  | `git diff HEAD`                  | All uncommitted  |
+| `HEAD~N`               | `git show HEAD~N --stat --patch` | N commits ago    |
 
 ## Responder Types
 
-| Type | Description | Example Trigger |
-|------|-------------|-----------------|
-| `llm` | Send to LLM (Anthropic/OpenAI/Ollama) | `@qa`, `@review` |
-| `claude-code` | Spawn Claude Code CLI | `@code` |
-| `cli` | Run shell command | `!lint` |
+| Type          | Description                           | Example Trigger  |
+| ------------- | ------------------------------------- | ---------------- |
+| `llm`         | Send to LLM (Anthropic/OpenAI/Ollama) | `@qa`, `@review` |
+| `claude-code` | Spawn Claude Code CLI                 | `@code`          |
+| `cli`         | Run shell command                     | `!lint`          |
 
 ## Configuration
 

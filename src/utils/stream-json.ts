@@ -31,7 +31,10 @@ abstract class BaseStreamParser implements StreamJsonParser {
     }
   }
 
-  protected truncateOutput(output: string | unknown, maxLength: number = 500): string {
+  protected truncateOutput(
+    output: string | unknown,
+    maxLength: number = 500,
+  ): string {
     if (typeof output === "string") {
       return output.length > maxLength
         ? output.substring(0, maxLength) + "... (truncated)"
@@ -195,7 +198,9 @@ export class ClaudeStreamParser extends BaseStreamParser {
     if (json.output && typeof json.output === "string") return json.output;
 
     if (this.debug) {
-      this.debugLog(`unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`);
+      this.debugLog(
+        `unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`,
+      );
     }
     return "";
   }
@@ -296,7 +301,9 @@ export class GeminiStreamParser extends BaseStreamParser {
     if (json.content && typeof json.content === "string") return json.content;
 
     if (this.debug) {
-      this.debugLog(`unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`);
+      this.debugLog(
+        `unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`,
+      );
     }
     return "";
   }
@@ -375,7 +382,8 @@ export class OpenCodeStreamParser extends BaseStreamParser {
           return "";
 
         case "tool_response": {
-          const toolRespOutput = json.output || json.result || json.content || "";
+          const toolRespOutput =
+            json.output || json.result || json.content || "";
           const truncated = this.truncateOutput(toolRespOutput);
           return `── Tool Result ──\n${truncated}\n`;
         }
@@ -440,7 +448,9 @@ export class OpenCodeStreamParser extends BaseStreamParser {
     if (json.content && typeof json.content === "string") return json.content;
 
     if (this.debug) {
-      this.debugLog(`unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`);
+      this.debugLog(
+        `unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`,
+      );
     }
     return "";
   }
@@ -559,7 +569,9 @@ export class CodexStreamParser extends BaseStreamParser {
     if (json.content && typeof json.content === "string") return json.content;
 
     if (this.debug) {
-      this.debugLog(`unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`);
+      this.debugLog(
+        `unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`,
+      );
     }
     return "";
   }
@@ -618,7 +630,9 @@ export class AiderStreamParser extends BaseStreamParser {
             if (json.arguments || json.args) {
               const args = json.arguments || json.args;
               toolOutput +=
-                typeof args === "string" ? args + "\n" : JSON.stringify(args, null, 2) + "\n";
+                typeof args === "string"
+                  ? args + "\n"
+                  : JSON.stringify(args, null, 2) + "\n";
             }
             return toolOutput;
           }
@@ -662,7 +676,9 @@ export class AiderStreamParser extends BaseStreamParser {
     if (json.message && typeof json.message === "string") return json.message;
 
     if (this.debug) {
-      this.debugLog(`unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`);
+      this.debugLog(
+        `unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`,
+      );
     }
     return "";
   }
@@ -689,7 +705,9 @@ export class DefaultStreamParser extends BaseStreamParser {
       if (json.output && typeof json.output === "string") return json.output;
 
       if (this.debug && type) {
-        this.debugLog(`unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`);
+        this.debugLog(
+          `unhandled type: ${type}, keys: ${Object.keys(json).join(", ")}`,
+        );
       }
       return "";
     } catch (e) {

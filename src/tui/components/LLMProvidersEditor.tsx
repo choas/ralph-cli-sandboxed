@@ -1,7 +1,11 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import type { LLMProvidersConfig, LLMProviderConfig, LLMProviderType } from "../../utils/config.js";
+import type {
+  LLMProvidersConfig,
+  LLMProviderConfig,
+  LLMProviderType,
+} from "../../utils/config.js";
 
 /**
  * Provider type options for dropdown.
@@ -21,7 +25,11 @@ const DEFAULT_MODELS: Record<LLMProviderType, string> = {
  * Model suggestions for each provider type.
  */
 const MODEL_SUGGESTIONS: Record<LLMProviderType, string[]> = {
-  anthropic: ["claude-sonnet-4-20250514", "claude-opus-4-20250514", "claude-3-5-haiku-20241022"],
+  anthropic: [
+    "claude-sonnet-4-20250514",
+    "claude-opus-4-20250514",
+    "claude-3-5-haiku-20241022",
+  ],
   openai: ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo", "o1-preview", "o1-mini"],
   ollama: ["llama3", "llama3.1", "mistral", "codellama", "mixtral", "phi"],
 };
@@ -68,23 +76,32 @@ export function LLMProvidersEditor({
   isFocused = true,
   maxHeight = 15,
 }: LLMProvidersEditorProps): React.ReactElement {
-  const [editProviders, setEditProviders] = useState<LLMProvidersConfig>({ ...providers });
+  const [editProviders, setEditProviders] = useState<LLMProvidersConfig>({
+    ...providers,
+  });
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [mode, setMode] = useState<EditorMode>("list");
   const [editText, setEditText] = useState("");
-  const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(null);
+  const [editingProvider, setEditingProvider] =
+    useState<EditingProvider | null>(null);
   const [typeIndex, setTypeIndex] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
 
   // Get sorted provider names
-  const providerNames = useMemo(() => Object.keys(editProviders).sort(), [editProviders]);
+  const providerNames = useMemo(
+    () => Object.keys(editProviders).sort(),
+    [editProviders],
+  );
   // Total options includes all providers plus "+ Add provider" option
   const totalOptions = providerNames.length + 1;
 
   // Calculate visible range for scrolling
   const visibleCount = Math.min(maxHeight - 6, totalOptions); // Reserve lines for header, footer, hints
   const visibleProviders = useMemo(() => {
-    const endIndex = Math.min(scrollOffset + visibleCount, providerNames.length);
+    const endIndex = Math.min(
+      scrollOffset + visibleCount,
+      providerNames.length,
+    );
     return providerNames.slice(scrollOffset, endIndex);
   }, [scrollOffset, visibleCount, providerNames]);
 
@@ -186,7 +203,8 @@ export function LLMProvidersEditor({
   // Handle model submission
   const handleModelSubmit = useCallback(() => {
     if (editingProvider) {
-      const trimmedModel = editText.trim() || DEFAULT_MODELS[editingProvider.config.type];
+      const trimmedModel =
+        editText.trim() || DEFAULT_MODELS[editingProvider.config.type];
       setEditingProvider({
         ...editingProvider,
         config: {
@@ -288,9 +306,13 @@ export function LLMProvidersEditor({
       if (!isFocused || mode !== "select-type") return;
 
       if (input === "j" || key.downArrow) {
-        setTypeIndex((prev) => (prev < PROVIDER_TYPES.length - 1 ? prev + 1 : 0));
+        setTypeIndex((prev) =>
+          prev < PROVIDER_TYPES.length - 1 ? prev + 1 : 0,
+        );
       } else if (input === "k" || key.upArrow) {
-        setTypeIndex((prev) => (prev > 0 ? prev - 1 : PROVIDER_TYPES.length - 1));
+        setTypeIndex((prev) =>
+          prev > 0 ? prev - 1 : PROVIDER_TYPES.length - 1,
+        );
       } else if (key.return) {
         handleTypeSelect();
       } else if (key.escape) {
@@ -303,7 +325,12 @@ export function LLMProvidersEditor({
   // Handle keyboard input for text editing modes
   useInput(
     (_input, key) => {
-      if (!isFocused || mode === "list" || mode === "select-type" || mode === "edit-provider")
+      if (
+        !isFocused ||
+        mode === "list" ||
+        mode === "select-type" ||
+        mode === "edit-provider"
+      )
         return;
 
       if (key.escape) {
@@ -311,7 +338,11 @@ export function LLMProvidersEditor({
       }
     },
     {
-      isActive: isFocused && mode !== "list" && mode !== "select-type" && mode !== "edit-provider",
+      isActive:
+        isFocused &&
+        mode !== "list" &&
+        mode !== "select-type" &&
+        mode !== "edit-provider",
     },
   );
 
@@ -362,19 +393,28 @@ export function LLMProvidersEditor({
   // Render type selection mode
   if (mode === "select-type") {
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Select Provider Type
           </Text>
-          {editingProvider && <Text dimColor> for "{editingProvider.name}"</Text>}
+          {editingProvider && (
+            <Text dimColor> for "{editingProvider.name}"</Text>
+          )}
         </Box>
 
         {PROVIDER_TYPES.map((type, index) => {
           const isHighlighted = index === typeIndex;
           return (
             <Box key={type}>
-              <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
+              <Text color={isHighlighted ? "cyan" : undefined}>
+                {isHighlighted ? "▸ " : "  "}
+              </Text>
               <Text
                 bold={isHighlighted}
                 color={isHighlighted ? "cyan" : undefined}
@@ -405,7 +445,12 @@ export function LLMProvidersEditor({
   // Render name input mode
   if (mode === "add-name") {
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Add New LLM Provider
@@ -424,7 +469,9 @@ export function LLMProvidersEditor({
         </Box>
 
         <Box marginTop={1}>
-          <Text dimColor>Common names: anthropic, openai, ollama, claude, gpt4, local</Text>
+          <Text dimColor>
+            Common names: anthropic, openai, ollama, claude, gpt4, local
+          </Text>
         </Box>
 
         <Box marginTop={1}>
@@ -438,7 +485,12 @@ export function LLMProvidersEditor({
   if (mode === "edit-model" && editingProvider) {
     const suggestions = MODEL_SUGGESTIONS[editingProvider.config.type] || [];
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Enter Model Name
@@ -475,9 +527,16 @@ export function LLMProvidersEditor({
   // Render API key input mode
   if (mode === "edit-apikey" && editingProvider) {
     const envVar =
-      editingProvider.config.type === "anthropic" ? "ANTHROPIC_API_KEY" : "OPENAI_API_KEY";
+      editingProvider.config.type === "anthropic"
+        ? "ANTHROPIC_API_KEY"
+        : "OPENAI_API_KEY";
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Enter API Key
@@ -509,9 +568,15 @@ export function LLMProvidersEditor({
 
   // Render base URL input mode
   if (mode === "edit-baseurl" && editingProvider) {
-    const defaultUrl = editingProvider.config.type === "ollama" ? "http://localhost:11434" : "";
+    const defaultUrl =
+      editingProvider.config.type === "ollama" ? "http://localhost:11434" : "";
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Enter Base URL
@@ -553,7 +618,12 @@ export function LLMProvidersEditor({
   if (mode === "edit-provider" && editingProvider) {
     const config = editingProvider.config;
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         <Box marginBottom={1}>
           <Text bold color="cyan">
             Edit Provider: {editingProvider.name}
@@ -594,7 +664,12 @@ export function LLMProvidersEditor({
 
   // Render list mode
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="cyan"
+      paddingX={1}
+    >
       {/* Header */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
@@ -651,7 +726,10 @@ export function LLMProvidersEditor({
       {/* Down scroll indicator */}
       {hasOverflow && (
         <Box>
-          <Text color={canScrollDown ? "cyan" : "gray"} dimColor={!canScrollDown}>
+          <Text
+            color={canScrollDown ? "cyan" : "gray"}
+            dimColor={!canScrollDown}
+          >
             {canScrollDown ? "  ▼ more" : ""}
           </Text>
         </Box>
@@ -659,7 +737,11 @@ export function LLMProvidersEditor({
 
       {/* Add provider option */}
       <Box>
-        <Text color={highlightedIndex === providerNames.length ? "green" : undefined}>
+        <Text
+          color={
+            highlightedIndex === providerNames.length ? "green" : undefined
+          }
+        >
           {highlightedIndex === providerNames.length ? "▸ " : "  "}
         </Text>
         <Text

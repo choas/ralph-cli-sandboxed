@@ -19,6 +19,7 @@ Ralph supports **Claude Code**, **Aider**, **Codex**, **Gemini CLI**, **OpenCode
 ### What's the difference between `ralph once` and `ralph run`?
 
 `ralph once` runs a single iteration inside the container. `ralph run` supports multiple modes:
+
 - `ralph run 5` — run 5 iterations
 - `ralph run --all` — run until all PRD items pass
 - `ralph run --loop` — run indefinitely, polling for new items every 30 seconds
@@ -26,6 +27,7 @@ Ralph supports **Claude Code**, **Aider**, **Codex**, **Gemini CLI**, **OpenCode
 ### When does Ralph stop running?
 
 Ralph stops when:
+
 - All PRD items are marked `passes: true`
 - The requested number of iterations is reached
 - 3 consecutive failures with the same exit code occur (likely a config error)
@@ -46,6 +48,7 @@ Pass `--model <name>` to `ralph run`, e.g. `ralph run --model claude-sonnet-4-5-
 ### What's the PRD format?
 
 PRD files (`.ralph/prd.yaml` or `.ralph/prd.json`) contain an array of items with:
+
 - `category` — one of: ui, feature, bugfix, setup, development, testing, docs
 - `description` — single sentence, imperative verb (e.g. "Add login page")
 - `steps` — concrete actions including verification steps
@@ -109,6 +112,7 @@ Ralph supports **ntfy** (recommended — no install needed, just HTTP) and **com
 ### Ralph keeps failing after a few iterations
 
 If you see "CLI failed N times with exit code X", it's likely a configuration issue. Check:
+
 1. Your API key is set correctly (environment variable or mounted credentials)
 2. The CLI provider is installed and working outside Ralph
 3. Network connectivity — the firewall may be blocking required domains
@@ -116,6 +120,7 @@ If you see "CLI failed N times with exit code X", it's likely a configuration is
 ### Ralph seems stuck with "no progress"
 
 "No progress" means no PRD items were completed **and** no new items were added across 3 consecutive iterations. This usually means:
+
 - PRD steps are too vague for the AI to verify completion
 - The task is too large for a single iteration — break it into smaller items
 - The AI is hitting an error it can't resolve — check `.ralph/progress.txt` for details

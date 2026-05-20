@@ -255,14 +255,14 @@ Conflicts are a normal part of branching. They occur when both the branch and th
 
 ## Persistence and Safety
 
-| What | Where | Persists across container restarts? |
-|------|-------|-------------------------------------|
-| Master `prd.yaml` | `/workspace/.ralph/prd.yaml` (host) | Yes |
-| `config.json` | `/workspace/.ralph/config.json` (host) | Yes |
-| Worktree source files | `/worktrees/<branch>/` (host) | Yes |
-| Branch-specific `progress.txt` | `/worktrees/<branch>/.ralph/progress.txt` (host) | Yes |
-| Git branches and commits | `/workspace/.git/` (host) | Yes |
-| Worktree metadata | `/workspace/.git/worktrees/` (host) | Yes |
+| What                           | Where                                            | Persists across container restarts? |
+| ------------------------------ | ------------------------------------------------ | ----------------------------------- |
+| Master `prd.yaml`              | `/workspace/.ralph/prd.yaml` (host)              | Yes                                 |
+| `config.json`                  | `/workspace/.ralph/config.json` (host)           | Yes                                 |
+| Worktree source files          | `/worktrees/<branch>/` (host)                    | Yes                                 |
+| Branch-specific `progress.txt` | `/worktrees/<branch>/.ralph/progress.txt` (host) | Yes                                 |
+| Git branches and commits       | `/workspace/.git/` (host)                        | Yes                                 |
+| Worktree metadata              | `/workspace/.git/worktrees/` (host)              | Yes                                 |
 
 Everything lives on the host filesystem. Container restarts lose nothing.
 

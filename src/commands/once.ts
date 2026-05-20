@@ -9,7 +9,10 @@ import {
   getCliConfig,
   requireContainer,
 } from "../utils/config.js";
-import { resolvePromptVariables, getCliProviders } from "../templates/prompts.js";
+import {
+  resolvePromptVariables,
+  getCliProviders,
+} from "../templates/prompts.js";
 import { getStreamJsonParser } from "../utils/stream-json.js";
 import { sendNotificationWithDaemonEvents } from "../utils/notification.js";
 import { runOnceViaPty } from "./once-pty.js";
@@ -69,12 +72,16 @@ export async function once(args: string[]): Promise<void> {
   // Get provider-specific streamJsonArgs (empty array if not defined)
   // This allows providers without JSON streaming to still have output displayed
   const providers = getCliProviders();
-  const providerConfig = config.cliProvider ? providers[config.cliProvider] : providers["claude"];
+  const providerConfig = config.cliProvider
+    ? providers[config.cliProvider]
+    : providers["claude"];
   const streamJsonArgs = providerConfig?.streamJsonArgs ?? [];
 
   console.log("Starting single ralph iteration...");
   if (streamJsonEnabled) {
-    console.log("Stream JSON output enabled - displaying formatted Claude output");
+    console.log(
+      "Stream JSON output enabled - displaying formatted Claude output",
+    );
     if (saveRawJson) {
       console.log(`Raw JSON logs will be saved to: ${outputDir}/`);
     }
@@ -114,7 +121,10 @@ export async function once(args: string[]): Promise<void> {
       if (!existsSync(fullOutputDir)) {
         mkdirSync(fullOutputDir, { recursive: true });
       }
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, 19);
       jsonLogPath = join(fullOutputDir, `ralph-once-${timestamp}.jsonl`);
     }
   }
@@ -224,21 +234,35 @@ export async function once(args: string[]): Promise<void> {
         if (code !== 0) {
           console.error(`\n${cliConfig.command} exited with code ${code}`);
           const errorMessage = `Iteration failed with exit code ${code}`;
-          await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, {
-            ...notifyOptions,
-            errorMessage,
-          });
+          await sendNotificationWithDaemonEvents(
+            "error",
+            `Ralph: ${errorMessage}`,
+            {
+              ...notifyOptions,
+              errorMessage,
+            },
+          );
         } else if (output.includes("<promise>COMPLETE</promise>")) {
-          await sendNotificationWithDaemonEvents("prd_complete", undefined, notifyOptions);
+          await sendNotificationWithDaemonEvents(
+            "prd_complete",
+            undefined,
+            notifyOptions,
+          );
         } else {
-          await sendNotificationWithDaemonEvents("iteration_complete", undefined, notifyOptions);
+          await sendNotificationWithDaemonEvents(
+            "iteration_complete",
+            undefined,
+            notifyOptions,
+          );
         }
 
         resolve();
       });
 
       proc.on("error", (err) => {
-        reject(new Error(`Failed to start ${cliConfig.command}: ${err.message}`));
+        reject(
+          new Error(`Failed to start ${cliConfig.command}: ${err.message}`),
+        );
       });
     } else {
       // Standard mode: capture stdout while passing through
@@ -257,21 +281,35 @@ export async function once(args: string[]): Promise<void> {
         if (code !== 0) {
           console.error(`\n${cliConfig.command} exited with code ${code}`);
           const errorMessage = `Iteration failed with exit code ${code}`;
-          await sendNotificationWithDaemonEvents("error", `Ralph: ${errorMessage}`, {
-            ...notifyOptions,
-            errorMessage,
-          });
+          await sendNotificationWithDaemonEvents(
+            "error",
+            `Ralph: ${errorMessage}`,
+            {
+              ...notifyOptions,
+              errorMessage,
+            },
+          );
         } else if (output.includes("<promise>COMPLETE</promise>")) {
-          await sendNotificationWithDaemonEvents("prd_complete", undefined, notifyOptions);
+          await sendNotificationWithDaemonEvents(
+            "prd_complete",
+            undefined,
+            notifyOptions,
+          );
         } else {
-          await sendNotificationWithDaemonEvents("iteration_complete", undefined, notifyOptions);
+          await sendNotificationWithDaemonEvents(
+            "iteration_complete",
+            undefined,
+            notifyOptions,
+          );
         }
 
         resolve();
       });
 
       proc.on("error", (err) => {
-        reject(new Error(`Failed to start ${cliConfig.command}: ${err.message}`));
+        reject(
+          new Error(`Failed to start ${cliConfig.command}: ${err.message}`),
+        );
       });
     }
   });

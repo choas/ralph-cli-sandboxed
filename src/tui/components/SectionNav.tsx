@@ -20,7 +20,14 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
     id: "basic",
     label: "Basic",
     icon: "⚙",
-    fields: ["language", "checkCommand", "testCommand", "imageName", "technologies", "javaVersion"],
+    fields: [
+      "language",
+      "checkCommand",
+      "testCommand",
+      "imageName",
+      "technologies",
+      "javaVersion",
+    ],
   },
   {
     id: "cli",
@@ -205,7 +212,12 @@ export function SectionNav({
   const hasOverflow = totalSections > maxHeight;
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="gray"
+      paddingX={1}
+    >
       <Box marginBottom={1}>
         <Text bold color="cyan">
           Sections
@@ -223,14 +235,18 @@ export function SectionNav({
 
       {/* Visible sections */}
       {visibleSections.map((section) => {
-        const actualIndex = CONFIG_SECTIONS.findIndex((s) => s.id === section.id);
+        const actualIndex = CONFIG_SECTIONS.findIndex(
+          (s) => s.id === section.id,
+        );
         const isHighlighted = actualIndex === highlightedIndex;
         const isSelected = section.id === selectedSection;
 
         return (
           <Box key={section.id}>
             {/* Selection indicator */}
-            <Text color={isHighlighted ? "cyan" : undefined}>{isHighlighted ? "▸ " : "  "}</Text>
+            <Text color={isHighlighted ? "cyan" : undefined}>
+              {isHighlighted ? "▸ " : "  "}
+            </Text>
             {/* Section label */}
             <Text
               bold={isSelected}
@@ -246,7 +262,10 @@ export function SectionNav({
       {/* Down scroll indicator */}
       {hasOverflow && (
         <Box>
-          <Text color={canScrollDown ? "cyan" : "gray"} dimColor={!canScrollDown}>
+          <Text
+            color={canScrollDown ? "cyan" : "gray"}
+            dimColor={!canScrollDown}
+          >
             {canScrollDown ? "  ▼ more" : ""}
           </Text>
         </Box>

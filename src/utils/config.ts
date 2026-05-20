@@ -1,6 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, basename } from "path";
-import { getCliProviders, DEFAULT_PRD_YAML, DEFAULT_PROGRESS } from "../templates/prompts.js";
+import {
+  getCliProviders,
+  DEFAULT_PRD_YAML,
+  DEFAULT_PROGRESS,
+} from "../templates/prompts.js";
 
 export interface CliConfig {
   command: string;
@@ -483,7 +487,10 @@ export function isRunningInContainer(): boolean {
   }
 
   // Check for container environment variables set by various container runtimes
-  if (process.env.container === "podman" || process.env.container === "docker") {
+  if (
+    process.env.container === "podman" ||
+    process.env.container === "docker"
+  ) {
     return true;
   }
 
@@ -495,14 +502,18 @@ export function isRunningInContainer(): boolean {
  */
 export function requireContainer(commandName: string): void {
   if (!isRunningInContainer()) {
-    console.error(`Error: 'ralph ${commandName}' must be run inside a Docker/Podman container.`);
+    console.error(
+      `Error: 'ralph ${commandName}' must be run inside a Docker/Podman container.`,
+    );
     console.error("");
     console.error(
       "For security, ralph executes AI agents only in isolated container environments.",
     );
     console.error("");
     console.error("To set up a container:");
-    console.error("  ralph docker init    # Generate Docker configuration files");
+    console.error(
+      "  ralph docker init    # Generate Docker configuration files",
+    );
     console.error("  ralph docker build   # Build the container image");
     console.error("  ralph docker run     # Run ralph inside the container");
     process.exit(1);
@@ -536,7 +547,9 @@ export const DEFAULT_LLM_PROVIDERS: LLMProvidersConfig = {
  * Get the API key for an LLM provider.
  * First checks the provider config, then falls back to environment variables.
  */
-export function getLLMProviderApiKey(provider: LLMProviderConfig): string | undefined {
+export function getLLMProviderApiKey(
+  provider: LLMProviderConfig,
+): string | undefined {
   // Use explicit API key if provided
   if (provider.apiKey) {
     return provider.apiKey;
@@ -594,7 +607,10 @@ export function getLLMProviders(config: RalphConfig): LLMProvidersConfig {
  * Used during `ralph run` to persist which branch is being worked on,
  * so that work can resume after interruption.
  */
-export function saveBranchState(baseBranch: string, currentBranch: string): void {
+export function saveBranchState(
+  baseBranch: string,
+  currentBranch: string,
+): void {
   const configPath = join(getRalphDir(), CONFIG_FILE);
   if (!existsSync(configPath)) return;
 
@@ -615,7 +631,11 @@ export function loadBranchState(): BranchState | null {
   try {
     const content = readFileSync(configPath, "utf-8");
     const config: RalphConfig = JSON.parse(content);
-    if (config.branch && config.branch.baseBranch && config.branch.currentBranch) {
+    if (
+      config.branch &&
+      config.branch.baseBranch &&
+      config.branch.currentBranch
+    ) {
       return config.branch;
     }
   } catch {

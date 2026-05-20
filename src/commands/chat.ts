@@ -3,7 +3,13 @@
  * Allows ralph to receive commands and send notifications via chat services.
  */
 
-import { existsSync, readFileSync, writeFileSync, watch, type FSWatcher } from "fs";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  watch,
+  type FSWatcher,
+} from "fs";
 import { join, basename, extname } from "path";
 import { execSync, spawn } from "child_process";
 import YAML from "yaml";
@@ -128,7 +134,11 @@ function parsePrdContent(filePath: string, content: string): PrdItem[] | null {
 /**
  * Get PRD status (completed/total tasks).
  */
-function getPrdStatus(): { complete: number; total: number; incomplete: number } {
+function getPrdStatus(): {
+  complete: number;
+  total: number;
+  incomplete: number;
+} {
   const prdFiles = getPrdFiles();
 
   if (prdFiles.none) {
@@ -269,14 +279,20 @@ async function handleBranchList(
 ): Promise<void> {
   const prdFiles = getPrdFiles();
   if (prdFiles.none || !prdFiles.primary) {
-    await client.sendMessage(chatId, `${state.projectName}: No PRD file found.`);
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: No PRD file found.`,
+    );
     return;
   }
 
   const content = readFileSync(prdFiles.primary, "utf-8");
   const items = parsePrdContent(prdFiles.primary, content);
   if (!Array.isArray(items) || items.length === 0) {
-    await client.sendMessage(chatId, `${state.projectName}: No PRD items found.`);
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: No PRD items found.`,
+    );
     return;
   }
 
@@ -297,7 +313,10 @@ async function handleBranchList(
   }
 
   if (branchGroups.size === 0 && noBranchItems.length === 0) {
-    await client.sendMessage(chatId, `${state.projectName}: No PRD items found.`);
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: No PRD items found.`,
+    );
     return;
   }
 
@@ -338,7 +357,9 @@ async function handleBranchPr(
   const branchName = args[0];
   if (!branchName) {
     const usage =
-      client.provider === "slack" ? "/ralph branch pr <branch-name>" : "/branch pr <branch-name>";
+      client.provider === "slack"
+        ? "/ralph branch pr <branch-name>"
+        : "/branch pr <branch-name>";
     await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
     return;
   }
@@ -347,7 +368,10 @@ async function handleBranchPr(
   try {
     execSync("gh --version", { stdio: "pipe" });
   } catch {
-    await client.sendMessage(chatId, `${state.projectName}: Error: 'gh' CLI is not installed.`);
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: Error: 'gh' CLI is not installed.`,
+    );
     return;
   }
 
@@ -378,7 +402,10 @@ async function handleBranchPr(
       .split("\n")[0];
     if (!remote) throw new Error("no remote");
   } catch {
-    await client.sendMessage(chatId, `${state.projectName}: Error: No git remote configured.`);
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: Error: No git remote configured.`,
+    );
     return;
   }
 
@@ -387,10 +414,16 @@ async function handleBranchPr(
 
   // Auto-push: if branch has no upstream tracking, push it
   try {
-    execSync(`git rev-parse --abbrev-ref "${branchName}@{upstream}"`, { stdio: "pipe", cwd });
+    execSync(`git rev-parse --abbrev-ref "${branchName}@{upstream}"`, {
+      stdio: "pipe",
+      cwd,
+    });
   } catch {
     try {
-      execSync(`git push -u "${remote}" "${branchName}"`, { stdio: "pipe", cwd });
+      execSync(`git push -u "${remote}" "${branchName}"`, {
+        stdio: "pipe",
+        cwd,
+      });
     } catch {
       await client.sendMessage(
         chatId,
@@ -423,10 +456,13 @@ async function handleBranchPr(
 
   // Commits section
   try {
-    const log = execSync(`git log "${baseBranch}..${branchName}" --oneline --no-decorate`, {
-      encoding: "utf-8",
-      cwd,
-    }).trim();
+    const log = execSync(
+      `git log "${baseBranch}..${branchName}" --oneline --no-decorate`,
+      {
+        encoding: "utf-8",
+        cwd,
+      },
+    ).trim();
     if (log) {
       bodyParts.push("## Commits\n");
       bodyParts.push(log);
@@ -449,10 +485,16 @@ async function handleBranchPr(
         cwd,
       },
     ).trim();
-    await client.sendMessage(chatId, `${state.projectName}: PR created: ${prUrl}`);
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: PR created: ${prUrl}`,
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    await client.sendMessage(chatId, `${state.projectName}: Failed to create PR: ${message}`);
+    await client.sendMessage(
+      chatId,
+      `${state.projectName}: Failed to create PR: ${message}`,
+    );
   }
 }
 
@@ -497,7 +539,10 @@ async function handleBranchMerge(
     // Check for merge conflicts
     let conflictingFiles: string[] = [];
     try {
-      const status = execSync("git status --porcelain", { encoding: "utf-8", cwd });
+      const status = execSync("git status --porcelain", {
+        encoding: "utf-8",
+        cwd,
+      });
       conflictingFiles = status
         .split("\n")
         .filter(
@@ -548,7 +593,10 @@ async function handleBranchMerge(
     const worktreePath = join(worktreesPath, dirName);
     if (existsSync(worktreePath)) {
       try {
-        execSync(`git worktree remove "${worktreePath}"`, { stdio: "pipe", cwd });
+        execSync(`git worktree remove "${worktreePath}"`, {
+          stdio: "pipe",
+          cwd,
+        });
       } catch {
         // Non-critical, ignore
       }
@@ -595,7 +643,10 @@ async function handleBranchDelete(
     const worktreePath = join(worktreesPath, dirName);
     if (existsSync(worktreePath)) {
       try {
-        execSync(`git worktree remove "${worktreePath}" --force`, { stdio: "pipe", cwd });
+        execSync(`git worktree remove "${worktreePath}" --force`, {
+          stdio: "pipe",
+          cwd,
+        });
         results.push("Worktree removed.");
       } catch {
         results.push("Warning: Could not remove worktree.");
@@ -631,7 +682,10 @@ async function handleBranchDelete(
         if (ext === ".yaml" || ext === ".yml") {
           writeFileSync(prdFiles.primary, YAML.stringify(updatedItems));
         } else {
-          writeFileSync(prdFiles.primary, JSON.stringify(updatedItems, null, 2) + "\n");
+          writeFileSync(
+            prdFiles.primary,
+            JSON.stringify(updatedItems, null, 2) + "\n",
+          );
         }
         results.push(`${taggedCount} PRD item(s) untagged.`);
       }
@@ -647,7 +701,9 @@ async function handleBranchDelete(
 /**
  * Execute a shell command and return the output.
  */
-async function executeCommand(command: string): Promise<{ success: boolean; output: string }> {
+async function executeCommand(
+  command: string,
+): Promise<{ success: boolean; output: string }> {
   return new Promise((resolve) => {
     const proc = spawn("sh", ["-c", command], {
       stdio: ["ignore", "pipe", "pipe"],
@@ -669,7 +725,10 @@ async function executeCommand(command: string): Promise<{ success: boolean; outp
       if (code === 0) {
         resolve({ success: true, output: stdout.trim() || "(no output)" });
       } else {
-        resolve({ success: false, output: stderr.trim() || stdout.trim() || `Exit code: ${code}` });
+        resolve({
+          success: false,
+          output: stderr.trim() || stdout.trim() || `Exit code: ${code}`,
+        });
       }
     });
 
@@ -777,14 +836,23 @@ async function handleCommand(
 
     case "stop": {
       // Stop a running ralph run process in the sandbox
-      await client.sendMessage(chatId, `${state.projectName}: Stopping ralph run...`);
+      await client.sendMessage(
+        chatId,
+        `${state.projectName}: Stopping ralph run...`,
+      );
 
       const response = await sendToSandbox("stop", [], debug, 10000);
       if (response) {
         if (response.success) {
-          await client.sendMessage(chatId, `${state.projectName}: ${response.output}`);
+          await client.sendMessage(
+            chatId,
+            `${state.projectName}: ${response.output}`,
+          );
         } else {
-          await client.sendMessage(chatId, `${state.projectName}: ${response.error}`);
+          await client.sendMessage(
+            chatId,
+            `${state.projectName}: ${response.error}`,
+          );
         }
       } else {
         await client.sendMessage(
@@ -832,8 +900,13 @@ async function handleCommand(
     case "add": {
       if (args.length === 0) {
         const usage =
-          client.provider === "slack" ? "/ralph add [task description]" : "/add [task description]";
-        await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
+          client.provider === "slack"
+            ? "/ralph add [task description]"
+            : "/add [task description]";
+        await client.sendMessage(
+          chatId,
+          `${state.projectName}: Usage: ${usage}`,
+        );
         return;
       }
 
@@ -841,7 +914,10 @@ async function handleCommand(
       const success = addPrdTask(description);
 
       if (success) {
-        await client.sendMessage(chatId, `${state.projectName}: Added task: "${description}"`);
+        await client.sendMessage(
+          chatId,
+          `${state.projectName}: Added task: "${description}"`,
+        );
       } else {
         await client.sendMessage(
           chatId,
@@ -853,8 +929,14 @@ async function handleCommand(
 
     case "exec": {
       if (args.length === 0) {
-        const usage = client.provider === "slack" ? "/ralph exec [command]" : "/exec [command]";
-        await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
+        const usage =
+          client.provider === "slack"
+            ? "/ralph exec [command]"
+            : "/exec [command]";
+        await client.sendMessage(
+          chatId,
+          `${state.projectName}: Usage: ${usage}`,
+        );
         return;
       }
 
@@ -889,7 +971,10 @@ async function handleCommand(
 
       if (args.length === 0) {
         // List available actions
-        const usage = client.provider === "slack" ? "/ralph action <name>" : "/action <name>";
+        const usage =
+          client.provider === "slack"
+            ? "/ralph action <name>"
+            : "/action <name>";
         if (actionNames.length === 0) {
           await client.sendMessage(
             chatId,
@@ -922,7 +1007,10 @@ async function handleCommand(
         return;
       }
 
-      await client.sendMessage(chatId, `${state.projectName}: Running '${actionName}'...`);
+      await client.sendMessage(
+        chatId,
+        `${state.projectName}: Running '${actionName}'...`,
+      );
 
       // Execute the script
       const result = await executeCommand(action.command);
@@ -954,8 +1042,12 @@ async function handleCommand(
 
     case "claude": {
       if (args.length === 0) {
-        const usage = client.provider === "slack" ? "/ralph <prompt>" : "/claude [prompt]";
-        await client.sendMessage(chatId, `${state.projectName}: Usage: ${usage}`);
+        const usage =
+          client.provider === "slack" ? "/ralph <prompt>" : "/claude [prompt]";
+        await client.sendMessage(
+          chatId,
+          `${state.projectName}: Usage: ${usage}`,
+        );
         return;
       }
 
@@ -1067,7 +1159,10 @@ async function handleCommand(
     }
 
     default:
-      await client.sendMessage(chatId, `${state.projectName}: Unknown command: /${cmd}. Try /help`);
+      await client.sendMessage(
+        chatId,
+        `${state.projectName}: Unknown command: /${cmd}. Try /help`,
+      );
   }
 }
 
@@ -1085,13 +1180,17 @@ function createChatClient(
     if (!config.chat?.slack?.botToken) {
       console.error("Error: Slack bot token not configured");
       console.error("Set chat.slack.botToken in .ralph/config.json");
-      console.error("Get a token from your Slack app settings: https://api.slack.com/apps");
+      console.error(
+        "Get a token from your Slack app settings: https://api.slack.com/apps",
+      );
       process.exit(1);
     }
     if (!config.chat?.slack?.appToken) {
       console.error("Error: Slack app token not configured");
       console.error("Set chat.slack.appToken in .ralph/config.json");
-      console.error("Enable Socket Mode in your Slack app and generate an app token");
+      console.error(
+        "Enable Socket Mode in your Slack app and generate an app token",
+      );
       process.exit(1);
     }
     if (!config.chat?.slack?.signingSecret) {
@@ -1101,7 +1200,9 @@ function createChatClient(
       process.exit(1);
     }
     if (config.chat.slack.enabled === false) {
-      console.error("Error: Slack is disabled in config (slack.enabled = false)");
+      console.error(
+        "Error: Slack is disabled in config (slack.enabled = false)",
+      );
       process.exit(1);
     }
 
@@ -1131,7 +1232,9 @@ function createChatClient(
       process.exit(1);
     }
     if (config.chat.discord.enabled === false) {
-      console.error("Error: Discord is disabled in config (discord.enabled = false)");
+      console.error(
+        "Error: Discord is disabled in config (discord.enabled = false)",
+      );
       process.exit(1);
     }
 
@@ -1157,7 +1260,9 @@ function createChatClient(
     process.exit(1);
   }
   if (config.chat.telegram.enabled === false) {
-    console.error("Error: Telegram is disabled in config (telegram.enabled = false)");
+    console.error(
+      "Error: Telegram is disabled in config (telegram.enabled = false)",
+    );
     process.exit(1);
   }
 
@@ -1188,20 +1293,32 @@ async function processSandboxMessage(
   const { action, args } = message;
 
   if (debug) {
-    console.log(`[chat] Processing sandbox message: ${action} ${args?.join(" ") || ""}`);
+    console.log(
+      `[chat] Processing sandbox message: ${action} ${args?.join(" ") || ""}`,
+    );
   }
 
   // Handle notification actions
-  if (action === "slack_notify" || action === "telegram_notify" || action === "discord_notify") {
+  if (
+    action === "slack_notify" ||
+    action === "telegram_notify" ||
+    action === "discord_notify"
+  ) {
     const notifyMessage = args?.join(" ") || "Ralph notification";
 
     // Check if this notification is for our provider
     const expectedProvider =
-      action === "slack_notify" ? "slack" : action === "telegram_notify" ? "telegram" : "discord";
+      action === "slack_notify"
+        ? "slack"
+        : action === "telegram_notify"
+          ? "telegram"
+          : "discord";
 
     if (client.provider !== expectedProvider) {
       if (debug) {
-        console.log(`[chat] Ignoring ${action} - current provider is ${client.provider}`);
+        console.log(
+          `[chat] Ignoring ${action} - current provider is ${client.provider}`,
+        );
       }
       respondToMessage(messagesPath, message.id, {
         success: false,
@@ -1224,7 +1341,9 @@ async function processSandboxMessage(
         await client.sendMessage(chatId, notifyMessage);
       }
       if (debug) {
-        console.log(`[chat] Sent notification to ${allowedChatIds.length} chat(s)`);
+        console.log(
+          `[chat] Sent notification to ${allowedChatIds.length} chat(s)`,
+        );
       }
       respondToMessage(messagesPath, message.id, {
         success: true,
@@ -1291,7 +1410,11 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
     );
 
     const providerName =
-      provider === "slack" ? "Slack" : provider === "discord" ? "Discord" : "Telegram";
+      provider === "slack"
+        ? "Slack"
+        : provider === "discord"
+          ? "Discord"
+          : "Telegram";
     console.log(`Connected to ${providerName}!`);
     console.log("");
     console.log(`Commands (send in ${providerName}):`);
@@ -1324,13 +1447,17 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
           await client.sendMessage(chatId, `${projectName} connected`);
         } catch (err) {
           if (debug) {
-            console.error(`[chat] Failed to send connected message to ${chatId}: ${err}`);
+            console.error(
+              `[chat] Failed to send connected message to ${chatId}: ${err}`,
+            );
           }
         }
       }
     }
   } catch (err) {
-    console.error(`Failed to connect: ${err instanceof Error ? err.message : err}`);
+    console.error(
+      `Failed to connect: ${err instanceof Error ? err.message : err}`,
+    );
     process.exit(1);
   }
 
@@ -1354,7 +1481,13 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
           msg.action === "telegram_notify" ||
           msg.action === "discord_notify"
         ) {
-          await processSandboxMessage(msg, client, allowedChatIds, messagesPath, debug);
+          await processSandboxMessage(
+            msg,
+            client,
+            allowedChatIds,
+            messagesPath,
+            debug,
+          );
         }
       }
 
@@ -1374,18 +1507,24 @@ async function startChat(config: RalphConfig, debug: boolean): Promise<void> {
 
   // Watch the .ralph directory for changes
   if (existsSync(ralphDir)) {
-    sandboxWatcher = watch(ralphDir, { persistent: true }, (eventType, filename) => {
-      if (filename === "messages.json") {
-        checkSandboxMessages();
-      }
-    });
+    sandboxWatcher = watch(
+      ralphDir,
+      { persistent: true },
+      (eventType, filename) => {
+        if (filename === "messages.json") {
+          checkSandboxMessages();
+        }
+      },
+    );
   }
 
   // Also poll periodically as backup
   sandboxPollInterval = setInterval(checkSandboxMessages, 1000);
 
   if (debug) {
-    console.log(`[chat] Watching for sandbox notifications at: ${messagesPath}`);
+    console.log(
+      `[chat] Watching for sandbox notifications at: ${messagesPath}`,
+    );
   }
 
   // Handle shutdown
@@ -1445,7 +1584,9 @@ function showStatus(config: RalphConfig): void {
       console.log(`Last Activity: ${state.lastActivity}`);
     }
   } else {
-    console.log("State: not initialized (run 'ralph chat start' to initialize)");
+    console.log(
+      "State: not initialized (run 'ralph chat start' to initialize)",
+    );
   }
 
   console.log("");
@@ -1457,8 +1598,13 @@ function showStatus(config: RalphConfig): void {
       config.chat.slack?.signingSecret
     ) {
       console.log("Slack: configured");
-      if (config.chat.slack.allowedChannelIds && config.chat.slack.allowedChannelIds.length > 0) {
-        console.log(`Allowed channels: ${config.chat.slack.allowedChannelIds.join(", ")}`);
+      if (
+        config.chat.slack.allowedChannelIds &&
+        config.chat.slack.allowedChannelIds.length > 0
+      ) {
+        console.log(
+          `Allowed channels: ${config.chat.slack.allowedChannelIds.join(", ")}`,
+        );
       } else {
         console.log("Allowed channels: all (no restrictions)");
       }
@@ -1472,8 +1618,13 @@ function showStatus(config: RalphConfig): void {
   } else if (config.chat.provider === "discord") {
     if (config.chat.discord?.botToken) {
       console.log("Discord: configured");
-      if (config.chat.discord.allowedGuildIds && config.chat.discord.allowedGuildIds.length > 0) {
-        console.log(`Allowed guilds: ${config.chat.discord.allowedGuildIds.join(", ")}`);
+      if (
+        config.chat.discord.allowedGuildIds &&
+        config.chat.discord.allowedGuildIds.length > 0
+      ) {
+        console.log(
+          `Allowed guilds: ${config.chat.discord.allowedGuildIds.join(", ")}`,
+        );
       } else {
         console.log("Allowed guilds: all (no restrictions)");
       }
@@ -1481,7 +1632,9 @@ function showStatus(config: RalphConfig): void {
         config.chat.discord.allowedChannelIds &&
         config.chat.discord.allowedChannelIds.length > 0
       ) {
-        console.log(`Allowed channels: ${config.chat.discord.allowedChannelIds.join(", ")}`);
+        console.log(
+          `Allowed channels: ${config.chat.discord.allowedChannelIds.join(", ")}`,
+        );
       } else {
         console.log("Allowed channels: all (no restrictions)");
       }
@@ -1491,8 +1644,13 @@ function showStatus(config: RalphConfig): void {
   } else if (config.chat.provider === "telegram") {
     if (config.chat.telegram?.botToken) {
       console.log("Telegram: configured");
-      if (config.chat.telegram.allowedChatIds && config.chat.telegram.allowedChatIds.length > 0) {
-        console.log(`Allowed chats: ${config.chat.telegram.allowedChatIds.join(", ")}`);
+      if (
+        config.chat.telegram.allowedChatIds &&
+        config.chat.telegram.allowedChatIds.length > 0
+      ) {
+        console.log(
+          `Allowed chats: ${config.chat.telegram.allowedChatIds.join(", ")}`,
+        );
       } else {
         console.log("Allowed chats: all (no restrictions)");
       }
@@ -1529,9 +1687,13 @@ async function testChat(config: RalphConfig, chatId?: string): Promise<void> {
 
     targetChatId = chatId || config.chat.slack.allowedChannelIds?.[0];
     if (!targetChatId) {
-      console.error("Error: No channel ID specified and no allowed channel IDs configured");
+      console.error(
+        "Error: No channel ID specified and no allowed channel IDs configured",
+      );
       console.error("Usage: ralph chat test <channel_id>");
-      console.error("Or add channel IDs to chat.slack.allowedChannelIds in config.json");
+      console.error(
+        "Or add channel IDs to chat.slack.allowedChannelIds in config.json",
+      );
       process.exit(1);
     }
 
@@ -1549,9 +1711,13 @@ async function testChat(config: RalphConfig, chatId?: string): Promise<void> {
 
     targetChatId = chatId || config.chat.discord.allowedChannelIds?.[0];
     if (!targetChatId) {
-      console.error("Error: No channel ID specified and no allowed channel IDs configured");
+      console.error(
+        "Error: No channel ID specified and no allowed channel IDs configured",
+      );
       console.error("Usage: ralph chat test <channel_id>");
-      console.error("Or add channel IDs to chat.discord.allowedChannelIds in config.json");
+      console.error(
+        "Or add channel IDs to chat.discord.allowedChannelIds in config.json",
+      );
       process.exit(1);
     }
 
@@ -1569,9 +1735,13 @@ async function testChat(config: RalphConfig, chatId?: string): Promise<void> {
 
     targetChatId = chatId || config.chat.telegram.allowedChatIds?.[0];
     if (!targetChatId) {
-      console.error("Error: No chat ID specified and no allowed chat IDs configured");
+      console.error(
+        "Error: No chat ID specified and no allowed chat IDs configured",
+      );
       console.error("Usage: ralph chat test <chat_id>");
-      console.error("Or add chat IDs to chat.telegram.allowedChatIds in config.json");
+      console.error(
+        "Or add chat IDs to chat.telegram.allowedChatIds in config.json",
+      );
       process.exit(1);
     }
 
@@ -1592,7 +1762,10 @@ async function testChat(config: RalphConfig, chatId?: string): Promise<void> {
     const state = loadChatState();
     const projectId = state?.projectId || "???";
 
-    await client.sendMessage(targetChatId, `Test message from ${projectName} (${projectId})`);
+    await client.sendMessage(
+      targetChatId,
+      `Test message from ${projectName} (${projectId})`,
+    );
 
     console.log("Test message sent successfully!");
 
@@ -1612,7 +1785,12 @@ export async function chat(args: string[]): Promise<void> {
   const subArgs = args.filter((a) => a !== "--debug" && a !== "-d").slice(1);
 
   // Show help
-  if (subcommand === "help" || subcommand === "--help" || subcommand === "-h" || !subcommand) {
+  if (
+    subcommand === "help" ||
+    subcommand === "--help" ||
+    subcommand === "-h" ||
+    !subcommand
+  ) {
     console.log(`
 ralph chat - Chat client integration (Telegram, Slack, Discord)
 
@@ -1771,7 +1949,9 @@ EXAMPLES:
   const ralphDir = getRalphDir();
 
   if (!existsSync(ralphDir)) {
-    console.error("Error: .ralph/ directory not found. Run 'ralph init' first.");
+    console.error(
+      "Error: .ralph/ directory not found. Run 'ralph init' first.",
+    );
     process.exit(1);
   }
 
@@ -1781,8 +1961,12 @@ EXAMPLES:
     case "start":
       // Chat daemon should run on host, not in container
       if (isRunningInContainer()) {
-        console.error("Error: 'ralph chat' should run on the host, not inside a container.");
-        console.error("The chat daemon provides external communication for the sandbox.");
+        console.error(
+          "Error: 'ralph chat' should run on the host, not inside a container.",
+        );
+        console.error(
+          "The chat daemon provides external communication for the sandbox.",
+        );
         process.exit(1);
       }
       await startChat(config, debug);

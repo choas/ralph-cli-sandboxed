@@ -30,7 +30,10 @@ interface JsonParseError {
 /**
  * Parse JSON with detailed error information including line and column.
  */
-function parseJsonWithLineInfo(jsonStr: string): { value?: unknown; error?: JsonParseError } {
+function parseJsonWithLineInfo(jsonStr: string): {
+  value?: unknown;
+  error?: JsonParseError;
+} {
   try {
     const value = JSON.parse(jsonStr);
     return { value };
@@ -94,7 +97,11 @@ function validateJsonStructure(value: unknown, label: string): string[] {
   }
 
   // MCP Servers validation
-  if (label.toLowerCase().includes("mcp") && typeof value === "object" && !Array.isArray(value)) {
+  if (
+    label.toLowerCase().includes("mcp") &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  ) {
     const servers = value as Record<string, unknown>;
     for (const [name, config] of Object.entries(servers)) {
       if (typeof config !== "object" || config === null) {
@@ -110,7 +117,8 @@ function validateJsonStructure(value: unknown, label: string): string[] {
       }
       if (
         serverConfig.env &&
-        (typeof serverConfig.env !== "object" || Array.isArray(serverConfig.env))
+        (typeof serverConfig.env !== "object" ||
+          Array.isArray(serverConfig.env))
       ) {
         warnings.push(`Server "${name}": "env" should be an object`);
       }
@@ -148,22 +156,39 @@ function validateJsonStructure(value: unknown, label: string): string[] {
       if (!skillConfig.name || typeof skillConfig.name !== "string") {
         warnings.push(`Skill [${i}]: missing or invalid "name" field`);
       }
-      if (!skillConfig.description || typeof skillConfig.description !== "string") {
+      if (
+        !skillConfig.description ||
+        typeof skillConfig.description !== "string"
+      ) {
         warnings.push(`Skill [${i}]: missing or invalid "description" field`);
       }
-      if (!skillConfig.instructions || typeof skillConfig.instructions !== "string") {
+      if (
+        !skillConfig.instructions ||
+        typeof skillConfig.instructions !== "string"
+      ) {
         warnings.push(`Skill [${i}]: missing or invalid "instructions" field`);
       }
     }
   }
 
   // Daemon Events validation
-  if (label.toLowerCase().includes("event") && typeof value === "object" && !Array.isArray(value)) {
-    const validEventTypes = ["task_complete", "ralph_complete", "iteration_complete", "error"];
+  if (
+    label.toLowerCase().includes("event") &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  ) {
+    const validEventTypes = [
+      "task_complete",
+      "ralph_complete",
+      "iteration_complete",
+      "error",
+    ];
     const events = value as Record<string, unknown>;
     for (const [eventType, handlers] of Object.entries(events)) {
       if (!validEventTypes.includes(eventType)) {
-        warnings.push(`Unknown event type: "${eventType}". Valid: ${validEventTypes.join(", ")}`);
+        warnings.push(
+          `Unknown event type: "${eventType}". Valid: ${validEventTypes.join(", ")}`,
+        );
       }
       if (!Array.isArray(handlers)) {
         warnings.push(`Event "${eventType}": handlers should be an array`);
@@ -177,7 +202,9 @@ function validateJsonStructure(value: unknown, label: string): string[] {
         }
         const eventConfig = handler as Record<string, unknown>;
         if (!eventConfig.action || typeof eventConfig.action !== "string") {
-          warnings.push(`Event "${eventType}"[${i}]: missing or invalid "action" field`);
+          warnings.push(
+            `Event "${eventType}"[${i}]: missing or invalid "action" field`,
+          );
         }
       }
     }
@@ -319,7 +346,10 @@ function highlightJson(
   if (hasMore) {
     elements.push(
       <Box key="more">
-        <Text dimColor> ... ({lines.length - scrollOffset - maxLines} more lines)</Text>
+        <Text dimColor>
+          {" "}
+          ... ({lines.length - scrollOffset - maxLines} more lines)
+        </Text>
       </Box>,
     );
   }
@@ -427,7 +457,9 @@ export function JsonSnippetEditor({
   }, []);
 
   const handleScrollDown = useCallback(() => {
-    setScrollOffset((prev) => Math.min(contentLines - previewMaxLines, prev + 1));
+    setScrollOffset((prev) =>
+      Math.min(contentLines - previewMaxLines, prev + 1),
+    );
   }, [contentLines, previewMaxLines]);
 
   const handlePageUp = useCallback(() => {
@@ -435,7 +467,9 @@ export function JsonSnippetEditor({
   }, [previewMaxLines]);
 
   const handlePageDown = useCallback(() => {
-    setScrollOffset((prev) => Math.min(contentLines - previewMaxLines, prev + previewMaxLines));
+    setScrollOffset((prev) =>
+      Math.min(contentLines - previewMaxLines, prev + previewMaxLines),
+    );
   }, [contentLines, previewMaxLines]);
 
   // Handle keyboard input for view mode
@@ -485,7 +519,12 @@ export function JsonSnippetEditor({
   // Render edit mode with text input
   if (mode === "edit") {
     return (
-      <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor="cyan"
+        paddingX={1}
+      >
         {/* Header */}
         <Box marginBottom={1}>
           <Text bold color="cyan">
@@ -548,10 +587,20 @@ export function JsonSnippetEditor({
   // Render view mode with syntax-highlighted preview
   // Account for border (2) and padding (2) when calculating preview width
   const previewWidth = Math.max(40, maxWidth - 4);
-  const previewLines = highlightJson(editText, previewMaxLines, previewWidth, scrollOffset);
+  const previewLines = highlightJson(
+    editText,
+    previewMaxLines,
+    previewWidth,
+    scrollOffset,
+  );
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="cyan"
+      paddingX={1}
+    >
       {/* Header */}
       <Box marginBottom={1} justifyContent="space-between">
         <Text bold color="cyan">
@@ -588,7 +637,9 @@ export function JsonSnippetEditor({
                 - {w}
               </Text>
             ))}
-            {warningCount > 3 && <Text dimColor> ... and {warningCount - 3} more</Text>}
+            {warningCount > 3 && (
+              <Text dimColor> ... and {warningCount - 3} more</Text>
+            )}
           </Box>
         ) : (
           <Text color="green">Valid JSON</Text>

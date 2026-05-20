@@ -143,7 +143,10 @@ export async function waitForResponse(
 /**
  * Get pending messages for a recipient.
  */
-export function getPendingMessages(messagesPath: string, from: "sandbox" | "host"): Message[] {
+export function getPendingMessages(
+  messagesPath: string,
+  from: "sandbox" | "host",
+): Message[] {
   const messages = readMessages(messagesPath);
   return messages.filter((m) => m.from === from && m.status === "pending");
 }
@@ -172,7 +175,10 @@ export function respondToMessage(
 /**
  * Clean up old messages (older than maxAge milliseconds).
  */
-export function cleanupOldMessages(messagesPath: string, maxAge: number = 60000): number {
+export function cleanupOldMessages(
+  messagesPath: string,
+  maxAge: number = 60000,
+): number {
   const messages = readMessages(messagesPath);
   const now = Date.now();
   const remaining = messages.filter((m) => now - m.timestamp < maxAge);

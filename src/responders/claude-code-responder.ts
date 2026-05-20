@@ -54,8 +54,10 @@ export async function executeClaudeCodeResponder(
   responderConfig: ResponderConfig,
   options?: ClaudeCodeResponderOptions,
 ): Promise<ResponderResult> {
-  const timeout = options?.timeout ?? responderConfig.timeout ?? DEFAULT_TIMEOUT;
-  const maxLength = options?.maxLength ?? responderConfig.maxLength ?? DEFAULT_MAX_LENGTH;
+  const timeout =
+    options?.timeout ?? responderConfig.timeout ?? DEFAULT_TIMEOUT;
+  const maxLength =
+    options?.maxLength ?? responderConfig.maxLength ?? DEFAULT_MAX_LENGTH;
   const cwd = options?.cwd ?? process.cwd();
   const onProgress = options?.onProgress;
 
@@ -75,7 +77,12 @@ export async function executeClaudeCodeResponder(
     }
 
     // Build the command arguments
-    const args = ["-p", effectivePrompt, "--dangerously-skip-permissions", "--print"];
+    const args = [
+      "-p",
+      effectivePrompt,
+      "--dangerously-skip-permissions",
+      "--print",
+    ];
 
     // Spawn claude process
     let proc: ChildProcess;
@@ -127,9 +134,12 @@ export async function executeClaudeCodeResponder(
         if (now - lastProgressSent >= PROGRESS_INTERVAL && stdout.length > 0) {
           // Send a progress indicator
           const lines = stdout.split("\n");
-          const lastLine = lines[lines.length - 1] || lines[lines.length - 2] || "";
+          const lastLine =
+            lines[lines.length - 1] || lines[lines.length - 2] || "";
           const truncatedLine =
-            lastLine.length > 100 ? lastLine.substring(0, 100) + "..." : lastLine;
+            lastLine.length > 100
+              ? lastLine.substring(0, 100) + "..."
+              : lastLine;
           onProgress(`⏳ Working... ${truncatedLine}`);
           lastProgressSent = now;
         }
@@ -163,7 +173,10 @@ export async function executeClaudeCodeResponder(
         if (responderConfig.successPattern) {
           const pattern = new RegExp(responderConfig.successPattern, "i");
           if (!pattern.test(output)) {
-            const { text, truncated, originalLength } = truncateResponse(output, maxLength);
+            const { text, truncated, originalLength } = truncateResponse(
+              output,
+              maxLength,
+            );
             resolve({
               success: false,
               response: text,
@@ -175,7 +188,10 @@ export async function executeClaudeCodeResponder(
           }
         }
 
-        const { text, truncated, originalLength } = truncateResponse(output, maxLength);
+        const { text, truncated, originalLength } = truncateResponse(
+          output,
+          maxLength,
+        );
 
         resolve({
           success: true,
@@ -185,7 +201,8 @@ export async function executeClaudeCodeResponder(
         });
       } else {
         // Failure
-        const errorMsg = stderr.trim() || `Claude Code exited with code ${code}`;
+        const errorMsg =
+          stderr.trim() || `Claude Code exited with code ${code}`;
         resolve({
           success: false,
           response: stdout,
@@ -247,8 +264,14 @@ function formatClaudeCodeOutput(output: string): string {
  */
 export function createClaudeCodeResponder(
   responderConfig: ResponderConfig,
-): (prompt: string, options?: ClaudeCodeResponderOptions) => Promise<ResponderResult> {
-  return async (prompt: string, options?: ClaudeCodeResponderOptions): Promise<ResponderResult> => {
+): (
+  prompt: string,
+  options?: ClaudeCodeResponderOptions,
+) => Promise<ResponderResult> {
+  return async (
+    prompt: string,
+    options?: ClaudeCodeResponderOptions,
+  ): Promise<ResponderResult> => {
     return executeClaudeCodeResponder(prompt, responderConfig, options);
   };
 }
@@ -259,7 +282,9 @@ export function createClaudeCodeResponder(
  * @param responderConfig The responder configuration to validate
  * @returns An error message if invalid, or null if valid
  */
-export function validateClaudeCodeResponder(responderConfig: ResponderConfig): string | null {
+export function validateClaudeCodeResponder(
+  responderConfig: ResponderConfig,
+): string | null {
   if (responderConfig.type !== "claude-code") {
     return `Responder type is "${responderConfig.type}", expected "claude-code"`;
   }

@@ -1,7 +1,11 @@
 import { isRunningInContainer } from "../utils/config.js";
 import { sendNotification, NotificationEvent } from "../utils/notification.js";
 import { loadConfig } from "../utils/config.js";
-import { getMessagesPath, sendMessage, waitForResponse } from "../utils/message-queue.js";
+import {
+  getMessagesPath,
+  sendMessage,
+  waitForResponse,
+} from "../utils/message-queue.js";
 import { existsSync } from "fs";
 
 /**
@@ -56,13 +60,20 @@ export async function notify(args: string[]): Promise<void> {
       const ralphDir = "/workspace/.ralph";
       if (!existsSync(ralphDir)) {
         console.error("Error: .ralph directory not mounted in container.");
-        console.error("Make sure the container is started with 'ralph docker run'.");
+        console.error(
+          "Make sure the container is started with 'ralph docker run'.",
+        );
         process.exit(1);
       }
     }
 
     // Send message via file queue
-    const messageId = sendMessage(messagesPath, "sandbox", action, message ? [message] : undefined);
+    const messageId = sendMessage(
+      messagesPath,
+      "sandbox",
+      action,
+      message ? [message] : undefined,
+    );
 
     if (debug) {
       console.log(`[notify] Sent message: ${messageId}`);
@@ -103,10 +114,14 @@ export async function notify(args: string[]): Promise<void> {
     try {
       const config = loadConfig();
       if (config.notifyCommand) {
-        await sendNotification("iteration_complete" as NotificationEvent, message, {
-          command: config.notifyCommand,
-          debug,
-        });
+        await sendNotification(
+          "iteration_complete" as NotificationEvent,
+          message,
+          {
+            command: config.notifyCommand,
+            debug,
+          },
+        );
         console.log("Notification sent directly.");
       } else {
         console.error("No notifyCommand configured.");

@@ -19,7 +19,9 @@ export interface UseConfigResult {
  */
 export function useConfig(): UseConfigResult {
   const [config, setConfig] = useState<RalphConfig | null>(null);
-  const [originalConfig, setOriginalConfig] = useState<RalphConfig | null>(null);
+  const [originalConfig, setOriginalConfig] = useState<RalphConfig | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -32,7 +34,9 @@ export function useConfig(): UseConfigResult {
       const paths = getPaths();
 
       if (!existsSync(paths.config)) {
-        throw new Error(".ralph/config.json not found. Run 'ralph init' first.");
+        throw new Error(
+          ".ralph/config.json not found. Run 'ralph init' first.",
+        );
       }
 
       const content = readFileSync(paths.config, "utf-8");
@@ -42,7 +46,8 @@ export function useConfig(): UseConfigResult {
       setOriginalConfig(JSON.parse(content) as RalphConfig); // Deep copy for comparison
       setHasChanges(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error loading config";
+      const message =
+        err instanceof Error ? err.message : "Unknown error loading config";
       setError(message);
       setConfig(null);
       setOriginalConfig(null);
@@ -68,20 +73,24 @@ export function useConfig(): UseConfigResult {
       setError(null);
       return true;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error saving config";
+      const message =
+        err instanceof Error ? err.message : "Unknown error saving config";
       setError(message);
       return false;
     }
   }, [config]);
 
-  const updateConfig = useCallback((updater: (config: RalphConfig) => RalphConfig) => {
-    setConfig((currentConfig) => {
-      if (!currentConfig) return null;
-      const newConfig = updater(currentConfig);
-      return newConfig;
-    });
-    setHasChanges(true);
-  }, []);
+  const updateConfig = useCallback(
+    (updater: (config: RalphConfig) => RalphConfig) => {
+      setConfig((currentConfig) => {
+        if (!currentConfig) return null;
+        const newConfig = updater(currentConfig);
+        return newConfig;
+      });
+      setHasChanges(true);
+    },
+    [],
+  );
 
   const resetChanges = useCallback(() => {
     if (originalConfig) {

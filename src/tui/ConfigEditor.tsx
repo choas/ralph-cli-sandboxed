@@ -3,7 +3,11 @@ import { Box, Text, useApp, useInput } from "ink";
 import { useConfig } from "./hooks/useConfig.js";
 import { useTerminalSize } from "./hooks/useTerminalSize.js";
 import { SectionNav } from "./components/SectionNav.js";
-import { EditorPanel, getValueAtPath, inferFieldType } from "./components/EditorPanel.js";
+import {
+  EditorPanel,
+  getValueAtPath,
+  inferFieldType,
+} from "./components/EditorPanel.js";
 import { StringEditor } from "./components/StringEditor.js";
 import { BooleanToggle } from "./components/BooleanToggle.js";
 import { ArrayEditor } from "./components/ArrayEditor.js";
@@ -15,9 +19,17 @@ import { RespondersEditor } from "./components/RespondersEditor.js";
 import { Preview } from "./components/Preview.js";
 import { HelpPanel } from "./components/HelpPanel.js";
 import { PresetSelector } from "./components/PresetSelector.js";
-import type { RalphConfig, LLMProvidersConfig, RespondersConfig } from "../utils/config.js";
+import type {
+  RalphConfig,
+  LLMProvidersConfig,
+  RespondersConfig,
+} from "../utils/config.js";
 import { validateConfig, type ValidationError } from "./utils/validation.js";
-import { sectionHasPresets, applyPreset, type ConfigPreset } from "./utils/presets.js";
+import {
+  sectionHasPresets,
+  applyPreset,
+  type ConfigPreset,
+} from "./utils/presets.js";
 
 /**
  * Focus state for the two-panel layout.
@@ -27,7 +39,11 @@ type FocusPane = "nav" | "editor" | "field-editor" | "preset-selector";
 /**
  * Set a value at a dot-notation path in an object (immutably).
  */
-function setValueAtPath<T extends object>(obj: T, path: string, value: unknown): T {
+function setValueAtPath<T extends object>(
+  obj: T,
+  path: string,
+  value: unknown,
+): T {
   const parts = path.split(".");
   const result = JSON.parse(JSON.stringify(obj)) as T;
 
@@ -53,7 +69,8 @@ function setValueAtPath<T extends object>(obj: T, path: string, value: unknown):
 export function ConfigEditor(): React.ReactElement {
   const { exit } = useApp();
   const terminalSize = useTerminalSize();
-  const { config, loading, error, hasChanges, saveConfig, updateConfig } = useConfig();
+  const { config, loading, error, hasChanges, saveConfig, updateConfig } =
+    useConfig();
 
   // Calculate available height for scrollable content
   // Reserve lines for: header (2), status message (1), footer (2), borders (2)
@@ -65,7 +82,9 @@ export function ConfigEditor(): React.ReactElement {
 
   // Navigation state
   const [selectedSection, setSelectedSection] = useState("basic");
-  const [selectedField, setSelectedField] = useState<string | undefined>(undefined);
+  const [selectedField, setSelectedField] = useState<string | undefined>(
+    undefined,
+  );
   const [focusPane, setFocusPane] = useState<FocusPane>("nav");
 
   // Preview panel visibility
@@ -81,7 +100,9 @@ export function ConfigEditor(): React.ReactElement {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Track which sections have shown preset selector (to avoid repeat prompts)
-  const [visitedSections, setVisitedSections] = useState<Set<string>>(new Set(["basic"]));
+  const [visitedSections, setVisitedSections] = useState<Set<string>>(
+    new Set(["basic"]),
+  );
 
   // Validation errors
   const validationErrors = useMemo((): ValidationError[] => {
@@ -162,11 +183,14 @@ export function ConfigEditor(): React.ReactElement {
   }, []);
 
   // Handle field selection
-  const handleSelectField = useCallback((fieldPath: string, useJsonEditor = false) => {
-    setSelectedField(fieldPath);
-    setJsonEditMode(useJsonEditor);
-    setFocusPane("field-editor");
-  }, []);
+  const handleSelectField = useCallback(
+    (fieldPath: string, useJsonEditor = false) => {
+      setSelectedField(fieldPath);
+      setJsonEditMode(useJsonEditor);
+      setFocusPane("field-editor");
+    },
+    [],
+  );
 
   // Handle going back from editor to nav
   const handleBack = useCallback(() => {
@@ -215,7 +239,9 @@ export function ConfigEditor(): React.ReactElement {
     const validation = validateConfig(config);
     if (!validation.valid) {
       const errorCount = validation.errors.length;
-      setStatusMessage(`Validation failed: ${errorCount} error${errorCount > 1 ? "s" : ""} found`);
+      setStatusMessage(
+        `Validation failed: ${errorCount} error${errorCount > 1 ? "s" : ""} found`,
+      );
       setTimeout(() => setStatusMessage(null), 3000);
       return;
     }
@@ -248,7 +274,8 @@ export function ConfigEditor(): React.ReactElement {
   useInput(
     (input, key) => {
       // Only handle global shortcuts when not in field editor or preset selector
-      if (focusPane === "field-editor" || focusPane === "preset-selector") return;
+      if (focusPane === "field-editor" || focusPane === "preset-selector")
+        return;
 
       // ? key toggles help panel (takes priority when help is visible)
       if (input === "?") {
@@ -283,7 +310,9 @@ export function ConfigEditor(): React.ReactElement {
         }
       }
     },
-    { isActive: focusPane !== "field-editor" && focusPane !== "preset-selector" },
+    {
+      isActive: focusPane !== "field-editor" && focusPane !== "preset-selector",
+    },
   );
 
   // Render loading state
@@ -305,7 +334,9 @@ export function ConfigEditor(): React.ReactElement {
         <Text color="cyan" bold>
           ralph config
         </Text>
-        <Text color="red">Error: {error || "Failed to load configuration"}</Text>
+        <Text color="red">
+          Error: {error || "Failed to load configuration"}
+        </Text>
         <Box marginTop={1}>
           <Text dimColor>Press Q to quit</Text>
         </Box>
@@ -424,7 +455,8 @@ export function ConfigEditor(): React.ReactElement {
 
         // Check if this is a chat provider config field
         const isChatProvider =
-          selectedField && (selectedField === "chat.slack" || selectedField === "chat.telegram");
+          selectedField &&
+          (selectedField === "chat.slack" || selectedField === "chat.telegram");
 
         if (isNotificationProvider || isChatProvider) {
           // Extract provider name from field path
@@ -526,7 +558,8 @@ export function ConfigEditor(): React.ReactElement {
         <Box marginBottom={1}>
           <Text
             color={
-              statusMessage.includes("Failed") || statusMessage.includes("Validation")
+              statusMessage.includes("Failed") ||
+              statusMessage.includes("Validation")
                 ? "red"
                 : "green"
             }
@@ -577,7 +610,11 @@ export function ConfigEditor(): React.ReactElement {
           </Box>
 
           {/* Right panel: JSON Preview (toggle with Tab) */}
-          <Preview config={config} selectedSection={selectedSection} visible={previewVisible} />
+          <Preview
+            config={config}
+            selectedSection={selectedSection}
+            visible={previewVisible}
+          />
         </Box>
       )}
 
@@ -589,7 +626,8 @@ export function ConfigEditor(): React.ReactElement {
           {focusPane === "editor" &&
             "j/k: navigate | Enter: edit | J: JSON | h/←: nav | Tab: preview | p: presets"}
           {focusPane === "field-editor" && "Follow editor hints"}
-          {focusPane === "preset-selector" && "j/k: navigate | Enter: select | Esc: back"}
+          {focusPane === "preset-selector" &&
+            "j/k: navigate | Enter: select | Esc: back"}
         </Text>
       </Box>
     </Box>

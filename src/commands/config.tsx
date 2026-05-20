@@ -15,7 +15,9 @@ export async function config(args: string[]): Promise<void> {
   // Check if .ralph/config.json exists
   const paths = getPaths();
   if (!existsSync(paths.config)) {
-    console.error("Error: .ralph/config.json not found. Run 'ralph init' first.");
+    console.error(
+      "Error: .ralph/config.json not found. Run 'ralph init' first.",
+    );
     process.exit(1);
   }
 

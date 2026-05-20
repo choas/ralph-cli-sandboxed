@@ -20,9 +20,5 @@
     "no-constant-condition": "warn",
     "no-empty-pattern": "warn"
   },
-  "ignorePatterns": [
-    "dist/**",
-    "node_modules/**",
-    "*.d.ts"
-  ]
+  "ignorePatterns": ["dist/**", "node_modules/**", "*.d.ts"]
 }

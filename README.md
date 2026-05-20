@@ -32,25 +32,25 @@ ralph docker run
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `ralph init` | Initialize ralph in current project (config + Docker files) |
-| `ralph once` | Run a single automation iteration |
-| `ralph run [n]` | Run automation iterations (default: all tasks) |
-| `ralph add` | Add a new PRD entry (interactive) |
-| `ralph list` | List all PRD entries |
-| `ralph status` | Show PRD completion status |
-| `ralph toggle <n>` | Toggle passes status for entry n |
-| `ralph clean` | Remove all passing entries from PRD |
-| `ralph reset` | Reset all PRD entries to passes: false |
-| `ralph fix-prd [opts]` | Validate and recover corrupted PRD file |
-| `ralph prompt [opts]` | Display resolved prompt |
-| `ralph progress <sub>` | Manage progress file (summarize) |
-| `ralph branch <sub>` | Manage PRD branches (list, merge, pr, delete) |
-| `ralph docker <sub>` | Manage Docker sandbox environment |
-| `ralph daemon <sub>` | Manage host daemon for sandbox notifications |
-| `ralph notify [msg]` | Send notification (from sandbox to host) |
-| `ralph help` | Show help message |
+| Command                | Description                                                 |
+| ---------------------- | ----------------------------------------------------------- |
+| `ralph init`           | Initialize ralph in current project (config + Docker files) |
+| `ralph once`           | Run a single automation iteration                           |
+| `ralph run [n]`        | Run automation iterations (default: all tasks)              |
+| `ralph add`            | Add a new PRD entry (interactive)                           |
+| `ralph list`           | List all PRD entries                                        |
+| `ralph status`         | Show PRD completion status                                  |
+| `ralph toggle <n>`     | Toggle passes status for entry n                            |
+| `ralph clean`          | Remove all passing entries from PRD                         |
+| `ralph reset`          | Reset all PRD entries to passes: false                      |
+| `ralph fix-prd [opts]` | Validate and recover corrupted PRD file                     |
+| `ralph prompt [opts]`  | Display resolved prompt                                     |
+| `ralph progress <sub>` | Manage progress file (summarize)                            |
+| `ralph branch <sub>`   | Manage PRD branches (list, merge, pr, delete)               |
+| `ralph docker <sub>`   | Manage Docker sandbox environment                           |
+| `ralph daemon <sub>`   | Manage host daemon for sandbox notifications                |
+| `ralph notify [msg]`   | Send notification (from sandbox to host)                    |
+| `ralph help`           | Show help message                                           |
 
 > **Note:** `ralph prd <subcommand>` still works for compatibility (e.g., `ralph prd add`).
 
@@ -108,13 +108,14 @@ Ralph can send notifications when events occur during automation. Configure noti
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `provider` | Set to `"ntfy"` for ntfy notifications |
-| `ntfy.topic` | Your unique topic name (required) |
+| Field         | Description                                  |
+| ------------- | -------------------------------------------- |
+| `provider`    | Set to `"ntfy"` for ntfy notifications       |
+| `ntfy.topic`  | Your unique topic name (required)            |
 | `ntfy.server` | ntfy server URL (default: `https://ntfy.sh`) |
 
 To receive notifications:
+
 1. Subscribe to your topic on your phone ([ntfy app](https://ntfy.sh/)) or browser (`https://ntfy.sh/your-topic`)
 2. Run `ralph docker run` - you'll get notifications on completion
 
@@ -133,22 +134,22 @@ For other notification tools, use the `command` provider:
 
 The message is appended as the last argument to your command. Supported tools include:
 
-| Tool | Example Command | Description |
-|------|----------------|-------------|
-| notify-send (Linux) | `notify-send Ralph` | Desktop notifications on Linux |
+| Tool                      | Example Command                           | Description                    |
+| ------------------------- | ----------------------------------------- | ------------------------------ |
+| notify-send (Linux)       | `notify-send Ralph`                       | Desktop notifications on Linux |
 | terminal-notifier (macOS) | `terminal-notifier -title Ralph -message` | Desktop notifications on macOS |
-| Custom script | `/path/to/notify.sh` | Your own notification script |
+| Custom script             | `/path/to/notify.sh`                      | Your own notification script   |
 
 #### Notification Events
 
 Ralph sends notifications for these events:
 
-| Event | Message | When |
-|-------|---------|------|
-| PRD Complete | "Ralph: PRD Complete! All tasks finished." | All PRD tasks are marked as passing |
-| Iteration Complete | "Ralph: Iteration complete." | Single `ralph once` iteration finishes |
-| Run Stopped | "Ralph: Run stopped..." | `ralph run` stops due to no progress or max failures |
-| Error | "Ralph: An error occurred." | CLI fails repeatedly |
+| Event              | Message                                    | When                                                 |
+| ------------------ | ------------------------------------------ | ---------------------------------------------------- |
+| PRD Complete       | "Ralph: PRD Complete! All tasks finished." | All PRD tasks are marked as passing                  |
+| Iteration Complete | "Ralph: Iteration complete."               | Single `ralph once` iteration finishes               |
+| Run Stopped        | "Ralph: Run stopped..."                    | `ralph run` stops due to no progress or max failures |
+| Error              | "Ralph: An error occurred."                | CLI fails repeatedly                                 |
 
 #### Sandbox-to-Host Notifications (Daemon)
 
@@ -205,16 +206,17 @@ You can define custom actions that the sandbox can trigger. This example logs ta
 }
 ```
 
-| Event | When Triggered |
-|-------|----------------|
-| `task_complete` | After each PRD task is marked as passing |
-| `ralph_complete` | When all PRD tasks are complete |
-| `iteration_complete` | After each `ralph once` iteration |
-| `error` | When an error occurs |
+| Event                | When Triggered                           |
+| -------------------- | ---------------------------------------- |
+| `task_complete`      | After each PRD task is marked as passing |
+| `ralph_complete`     | When all PRD tasks are complete          |
+| `iteration_complete` | After each `ralph once` iteration        |
+| `error`              | When an error occurs                     |
 
 The `{{task}}` placeholder is replaced with the task description. Events can trigger multiple actions - for example, `ralph_complete` above both logs to file and sends a notification.
 
 Example `log.txt` output:
+
 ```
 2024-01-15 14:23:01 - Task completed: Add user authentication
 2024-01-15 14:45:32 - Task completed: Implement JWT tokens
@@ -225,42 +227,42 @@ Example `log.txt` output:
 
 Ralph supports 18 programming languages with pre-configured build/test commands:
 
-| Language | Check Command | Test Command |
-|----------|--------------|--------------|
-| Bun (TypeScript) | `bun check` | `bun test` |
-| Node.js (TypeScript) | `npm run typecheck` | `npm test` |
-| Python | `mypy .` | `pytest` |
-| Go | `go build ./...` | `go test ./...` |
-| Rust | `cargo check` | `cargo test` |
-| Java | `mvn compile` | `mvn test` |
-| Kotlin | `gradle build` | `gradle test` |
-| C#/.NET | `dotnet build` | `dotnet test` |
-| Ruby | `bundle exec rubocop --fail-level error` | `bundle exec rspec` |
-| PHP | `composer validate && php -l` | `vendor/bin/phpunit` |
-| Swift | `swift build` | `swift test` |
-| Elixir | `mix compile --warnings-as-errors` | `mix test` |
-| Scala | `sbt compile` | `sbt test` |
-| Zig | `zig build` | `zig build test` |
-| Haskell | `stack build` | `stack test` |
-| Clojure | `lein check` | `lein test` |
-| Deno (TypeScript) | `deno check **/*.ts` | `deno test` |
-| Custom | User-defined | User-defined |
+| Language             | Check Command                            | Test Command         |
+| -------------------- | ---------------------------------------- | -------------------- |
+| Bun (TypeScript)     | `bun check`                              | `bun test`           |
+| Node.js (TypeScript) | `npm run typecheck`                      | `npm test`           |
+| Python               | `mypy .`                                 | `pytest`             |
+| Go                   | `go build ./...`                         | `go test ./...`      |
+| Rust                 | `cargo check`                            | `cargo test`         |
+| Java                 | `mvn compile`                            | `mvn test`           |
+| Kotlin               | `gradle build`                           | `gradle test`        |
+| C#/.NET              | `dotnet build`                           | `dotnet test`        |
+| Ruby                 | `bundle exec rubocop --fail-level error` | `bundle exec rspec`  |
+| PHP                  | `composer validate && php -l`            | `vendor/bin/phpunit` |
+| Swift                | `swift build`                            | `swift test`         |
+| Elixir               | `mix compile --warnings-as-errors`       | `mix test`           |
+| Scala                | `sbt compile`                            | `sbt test`           |
+| Zig                  | `zig build`                              | `zig build test`     |
+| Haskell              | `stack build`                            | `stack test`         |
+| Clojure              | `lein check`                             | `lein test`          |
+| Deno (TypeScript)    | `deno check **/*.ts`                     | `deno test`          |
+| Custom               | User-defined                             | User-defined         |
 
 ### Supported CLI Providers
 
 Ralph supports multiple AI CLI tools. Select your provider during `ralph init`:
 
-| CLI | Status | Environment Variables | Notes |
-|-----|--------|----------------------|-------|
-| [Claude Code](https://github.com/anthropics/claude-code) | Working | `ANTHROPIC_API_KEY` | Default provider. Also supports ~/.claude OAuth credentials |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Working | `GEMINI_API_KEY`, `GOOGLE_API_KEY` | |
-| [OpenCode](https://github.com/anomalyco/opencode) | Working | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` | No autonomous/yolo mode yet. Requires [PR #9073](https://github.com/anomalyco/opencode/pull/9073) |
-| [Aider](https://github.com/paul-gauthier/aider) | Working | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | |
-| [Goose](https://github.com/block/goose) | Working | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | Block's AI coding agent |
-| [Ollama](https://ollama.com/) | Working | (none) | Local LLM server |
-| [Codex CLI](https://github.com/openai/codex) | Testers wanted | `OPENAI_API_KEY` | Sponsors welcome |
-| [AMP](https://ampcode.com/) | Testers wanted | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | Sponsors welcome |
-| Custom | - | User-defined | Configure your own CLI |
+| CLI                                                       | Status         | Environment Variables                                                 | Notes                                                                                             |
+| --------------------------------------------------------- | -------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [Claude Code](https://github.com/anthropics/claude-code)  | Working        | `ANTHROPIC_API_KEY`                                                   | Default provider. Also supports ~/.claude OAuth credentials                                       |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Working        | `GEMINI_API_KEY`, `GOOGLE_API_KEY`                                    |                                                                                                   |
+| [OpenCode](https://github.com/anomalyco/opencode)         | Working        | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` | No autonomous/yolo mode yet. Requires [PR #9073](https://github.com/anomalyco/opencode/pull/9073) |
+| [Aider](https://github.com/paul-gauthier/aider)           | Working        | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`                                 |                                                                                                   |
+| [Goose](https://github.com/block/goose)                   | Working        | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`                                 | Block's AI coding agent                                                                           |
+| [Ollama](https://ollama.com/)                             | Working        | (none)                                                                | Local LLM server                                                                                  |
+| [Codex CLI](https://github.com/openai/codex)              | Testers wanted | `OPENAI_API_KEY`                                                      | Sponsors welcome                                                                                  |
+| [AMP](https://ampcode.com/)                               | Testers wanted | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`                                 | Sponsors welcome                                                                                  |
+| Custom                                                    | -              | User-defined                                                          | Configure your own CLI                                                                            |
 
 ### CLI Configuration
 
@@ -305,11 +307,11 @@ Configure skills in `.ralph/config.json`:
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `name` | Unique skill identifier (kebab-case) |
-| `description` | Brief description shown during selection |
-| `instructions` | Full instructions injected into Claude's prompt |
+| Field           | Description                                                    |
+| --------------- | -------------------------------------------------------------- |
+| `name`          | Unique skill identifier (kebab-case)                           |
+| `description`   | Brief description shown during selection                       |
+| `instructions`  | Full instructions injected into Claude's prompt                |
 | `userInvocable` | If `true`, user can invoke via `/skill-name` (default: `true`) |
 
 During `ralph init`, you can select built-in skills for your chosen language. See [docs/SKILLS.md](docs/SKILLS.md) for detailed configuration, custom skills, and best practices.
@@ -339,6 +341,7 @@ Configure stream-json in `.ralph/config.json`:
 ```
 
 Configuration options:
+
 - `enabled`: Enable stream-json output mode (default: `false`)
 - `saveRawJson`: Save raw JSON output to `.jsonl` files (default: `true` when enabled)
 - `outputDir`: Directory for recordings and logs (default: `.recordings`)
@@ -347,17 +350,17 @@ Configuration options:
 
 Not all CLI providers support stream-json output. Here's the compatibility matrix:
 
-| CLI Provider | Stream-JSON Support | Arguments Used |
-|--------------|---------------------|----------------|
-| Claude Code | ✅ Yes | `--output-format stream-json --verbose --print` |
-| Gemini CLI | ✅ Yes | `--output-format json` |
-| OpenCode | ✅ Yes | `--format json` |
-| Codex CLI | ✅ Yes | `--json` |
-| Goose | ✅ Yes | `--output-format stream-json` |
-| Aider | ❌ No | - |
-| AMP | ❌ No | - |
-| Ollama | ❌ No | - |
-| Custom | ❌ No* | *Add `streamJsonArgs` to your custom config |
+| CLI Provider | Stream-JSON Support | Arguments Used                                  |
+| ------------ | ------------------- | ----------------------------------------------- |
+| Claude Code  | ✅ Yes              | `--output-format stream-json --verbose --print` |
+| Gemini CLI   | ✅ Yes              | `--output-format json`                          |
+| OpenCode     | ✅ Yes              | `--format json`                                 |
+| Codex CLI    | ✅ Yes              | `--json`                                        |
+| Goose        | ✅ Yes              | `--output-format stream-json`                   |
+| Aider        | ❌ No               | -                                               |
+| AMP          | ❌ No               | -                                               |
+| Ollama       | ❌ No               | -                                               |
+| Custom       | ❌ No\*             | \*Add `streamJsonArgs` to your custom config    |
 
 Each provider uses different command-line arguments and output formats. Ralph automatically selects the correct parser based on your configured provider.
 
@@ -365,13 +368,14 @@ Each provider uses different command-line arguments and output formats. Ralph au
 
 When stream-json is enabled, Ralph creates the following files in the `.recordings/` directory (configurable via `outputDir`):
 
-| File Type | Pattern | Description |
-|-----------|---------|-------------|
-| `.jsonl` | `ralph-run-YYYYMMDD-HHMMSS.jsonl` | Raw JSON Lines log from `ralph run` |
-| `.jsonl` | `ralph-once-YYYYMMDD-HHMMSS.jsonl` | Raw JSON Lines log from `ralph once` |
-| `.cast` | `session-YYYYMMDD-HHMMSS.cast` | Asciinema terminal recording (when asciinema enabled) |
+| File Type | Pattern                            | Description                                           |
+| --------- | ---------------------------------- | ----------------------------------------------------- |
+| `.jsonl`  | `ralph-run-YYYYMMDD-HHMMSS.jsonl`  | Raw JSON Lines log from `ralph run`                   |
+| `.jsonl`  | `ralph-once-YYYYMMDD-HHMMSS.jsonl` | Raw JSON Lines log from `ralph once`                  |
+| `.cast`   | `session-YYYYMMDD-HHMMSS.cast`     | Asciinema terminal recording (when asciinema enabled) |
 
 The `.jsonl` files contain one JSON object per line with the raw streaming events from the AI provider. These files are useful for:
+
 - Debugging AI responses
 - Replaying sessions
 - Analyzing tool calls and outputs
@@ -380,27 +384,32 @@ The `.jsonl` files contain one JSON object per line with the raw streaming event
 #### Troubleshooting Stream-JSON
 
 **Stream-JSON not working:**
+
 1. Verify your CLI provider supports stream-json (see compatibility matrix above)
 2. Check that `streamJson.enabled` is set to `true` in config
 3. Ensure your CLI provider is correctly installed and accessible
 
 **No output appearing:**
+
 - Stream-json parsing extracts human-readable text from JSON events
 - Some providers emit different event types; Ralph handles the most common ones
 - Use `--debug` flag with ralph commands to see raw parsing output: `[stream-json]` prefixed lines go to stderr
 
 **Missing .jsonl files:**
+
 - Verify `saveRawJson` is `true` (or not set, as it defaults to `true`)
 - Check that the `outputDir` directory is writable
 - Files are created at command start; check for permission errors
 
 **Parser not recognizing events:**
+
 - Each provider has a specific parser (ClaudeStreamParser, GeminiStreamParser, etc.)
 - Unknown event types are handled by a default parser that extracts common fields
 - If you see raw JSON in output, the parser may not support that event type yet
 
 **Custom CLI provider:**
 To add stream-json support for a custom CLI provider, add `streamJsonArgs` to your CLI config:
+
 ```json
 {
   "cli": {
@@ -470,11 +479,13 @@ Ralph includes automatic PRD protection to handle cases where the LLM corrupts t
 ### When PRD Corruption Happens
 
 LLMs sometimes modify the PRD file incorrectly, such as:
+
 - Converting the array to an object
 - Adding invalid JSON syntax
 - Changing the structure entirely
 
 If you see an error like:
+
 ```
 Error: prd.json is corrupted - expected an array of items.
 The file may have been modified incorrectly by an LLM.
@@ -493,6 +504,7 @@ ralph fix-prd backup.json  # Restore from a specific backup file
 ```
 
 **What fix-prd does:**
+
 1. Validates JSON syntax and structure
 2. Checks that all required fields exist (category, description, steps, passes)
 3. Attempts to recover `passes: true` flags from corrupted files
@@ -517,6 +529,7 @@ ralph docker run
 > **Note:** `ralph init` auto-creates Docker files in `.ralph/docker/`. Use `ralph docker init` to regenerate them if needed.
 
 Features:
+
 - Based on [Claude Code devcontainer](https://github.com/anthropics/claude-code/tree/main/.devcontainer)
 - Network sandboxing (firewall allows only GitHub, npm, Anthropic API, plus language-specific domains — e.g., `deno.land`, `jsr.io`, `esm.sh` for Deno projects)
 - Your `~/.claude` credentials mounted automatically (Pro/Max OAuth)
@@ -532,6 +545,7 @@ Ralph can be controlled via chat platforms (Slack, Telegram, Discord) and includ
 ### Chat Commands
 
 Control Ralph remotely via chat:
+
 - `/ralph run` - Start ralph automation
 - `/ralph status` - Check PRD status
 - `/ralph stop` - Stop running automation
@@ -540,14 +554,15 @@ Control Ralph remotely via chat:
 
 Responders handle messages and can answer questions about your codebase:
 
-| Trigger | Type | Description |
-|---------|------|-------------|
-| `@qa` | LLM | Answer questions about the codebase |
-| `@review` | LLM | Review code changes (supports `@review diff`, `@review last`) |
-| `@code` | Claude Code | Make file modifications |
-| `!lint` | CLI | Run custom commands |
+| Trigger   | Type        | Description                                                   |
+| --------- | ----------- | ------------------------------------------------------------- |
+| `@qa`     | LLM         | Answer questions about the codebase                           |
+| `@review` | LLM         | Review code changes (supports `@review diff`, `@review last`) |
+| `@code`   | Claude Code | Make file modifications                                       |
+| `!lint`   | CLI         | Run custom commands                                           |
 
 **Features:**
+
 - **Automatic file detection**: Mention file paths (e.g., `src/config.ts:42`) and they're automatically included in context
 - **Git diff keywords**: Use `diff`, `staged`, `last`, `HEAD~N` to include git changes
 - **Multi-turn conversations**: Continue discussions in Slack/Discord threads

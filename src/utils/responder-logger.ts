@@ -124,13 +124,19 @@ export function logResponderCallToConsole(entry: ResponderLogEntry): void {
   }
   if (entry.filesRead && entry.filesRead.length > 0) {
     console.log(`[responder] Files read: ${entry.filesRead.join(", ")}`);
-    console.log(`[responder] Files total: ${entry.filesTotalLength || 0} chars`);
+    console.log(
+      `[responder] Files total: ${entry.filesTotalLength || 0} chars`,
+    );
   }
   if (entry.filesNotFound && entry.filesNotFound.length > 0) {
-    console.log(`[responder] Files not found: ${entry.filesNotFound.join(", ")}`);
+    console.log(
+      `[responder] Files not found: ${entry.filesNotFound.join(", ")}`,
+    );
   }
   if (entry.threadContextLength) {
-    console.log(`[responder] Thread context: ${entry.threadContextLength} chars`);
+    console.log(
+      `[responder] Thread context: ${entry.threadContextLength} chars`,
+    );
   }
   console.log(`[responder] Total message: ${entry.messageLength} chars`);
   console.log(`[responder] Log file: ${getLogFilePath()}`);
