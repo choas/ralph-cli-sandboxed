@@ -271,7 +271,7 @@ export function LLMProvidersEditor({
         handleNavigateUp();
       } else if (key.return || input === "e") {
         handleStartEdit();
-      } else if (input === "d" || key.delete) {
+      } else if (input === "d" || key.delete || key.backspace) {
         handleDelete();
       } else if (key.escape) {
         onCancel();
