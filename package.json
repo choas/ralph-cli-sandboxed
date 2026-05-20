@@ -15,10 +15,10 @@
     "README.md"
   ],
   "scripts": {
-    "build": "npx tsc && npm run copy-config",
+    "build": "tsc && npm run copy-config",
     "copy-config": "mkdir -p dist/config && cp src/config/*.json dist/config/",
-    "dev": "npx tsx src/index.ts",
-    "typecheck": "npx tsc --noEmit",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
     "lint": "oxlint src/",
     "format": "oxfmt src/",
     "format:check": "oxfmt --check src/",
@@ -28,29 +28,29 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.82.0",
-    "@modelcontextprotocol/sdk": "^1.26.0",
-    "@slack/bolt": "^4.6.0",
-    "@slack/web-api": "^7.15.0",
-    "discord.js": "^14.16.0",
-    "ink": "^6.8.0",
-    "ink-text-input": "^6.0.0",
-    "openai": "^6.33.0",
-    "react": "^19.2.4",
-    "yaml": "^2.8.3",
-    "zod": "^3.25.76"
+    "@anthropic-ai/sdk": "0.82.0",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@slack/bolt": "4.7.2",
+    "@slack/web-api": "7.16.0",
+    "discord.js": "14.26.4",
+    "ink": "6.8.0",
+    "ink-text-input": "6.0.0",
+    "openai": "6.38.0",
+    "react": "19.2.6",
+    "yaml": "2.9.0",
+    "zod": "3.25.76"
   },
   "optionalDependencies": {
     "node-pty": "^1.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^19.2.14",
-    "oxfmt": "^0.42.0",
-    "oxlint": "^1.57.0",
-    "tsx": "^4.0.0",
-    "typescript": "^6.0.2",
-    "vitest": "^4.1.2"
+    "@types/node": "20.19.41",
+    "@types/react": "19.2.15",
+    "oxfmt": "0.42.0",
+    "oxlint": "1.66.0",
+    "tsx": "4.22.3",
+    "typescript": "6.0.3",
+    "vitest": "4.1.6"
   },
   "keywords": [
     "cli",
