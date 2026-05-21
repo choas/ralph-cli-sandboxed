@@ -196,6 +196,9 @@ ENV TZ=\${TZ}
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Install system dependencies
+# python3 / make / g++ are required so node-pty can compile its native
+# binding from source on platforms without matching prebuilt binaries
+# (e.g. linux-arm64 under some npm/node-pty version combinations).
 RUN apt-get update && apt-get install -y \\
     git \\
     curl \\
@@ -216,6 +219,9 @@ RUN apt-get update && apt-get install -y \\
     dnsutils \\
     ripgrep \\
     zsh \\
+    python3 \\
+    make \\
+    g++ \\
 ${customPackages}    && rm -rf /var/lib/apt/lists/*
 
 # Setup zsh with oh-my-zsh and plugins (no theme, we set custom prompt)
@@ -256,7 +262,10 @@ RALPH_BANNER
 ${cliSnippet}
 ${ollamaModelPull}
 # Install ralph-cli-sandboxed from npm registry
-RUN npm install -g ralph-cli-sandboxed
+# Force node-pty to build its native binding from source so it matches
+# the container's libc/arch — prebuilds sometimes resolve to a missing
+# variant on linux-arm64 and the runtime then fails to load pty.node.
+RUN npm install -g --build-from-source=node-pty ralph-cli-sandboxed
 RUN ralph logo
 ${languageSnippet}
 # Setup sudo only for firewall script (no general sudo for security)

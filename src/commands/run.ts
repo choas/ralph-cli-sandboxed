@@ -37,6 +37,7 @@ import {
 } from "../utils/prd-validator.js";
 import { getStreamJsonParser, StreamJsonParser } from "../utils/stream-json.js";
 import { sendNotificationWithDaemonEvents } from "../utils/notification.js";
+import { runViaPty } from "./once-pty.js";
 
 /**
  * Stream JSON configuration for clean output display
@@ -743,6 +744,7 @@ export async function run(args: string[]): Promise<void> {
   let loopMode = false;
   let allModeExplicit = false;
   let debug = false;
+  let usePty = false;
   const filteredArgs: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -779,6 +781,8 @@ export async function run(args: string[]): Promise<void> {
       allModeExplicit = true;
     } else if (args[i] === "--debug" || args[i] === "-d") {
       debug = true;
+    } else if (args[i] === "--pty") {
+      usePty = true;
     } else {
       filteredArgs.push(args[i]);
     }
@@ -898,11 +902,16 @@ export async function run(args: string[]): Promise<void> {
       process.exit(1);
     }
   }
-  if (streamJson?.enabled) {
+  if (usePty) {
+    console.log("PTY mode enabled - driving Claude Code TUI interactively");
+  }
+  if (streamJson?.enabled && !usePty) {
     console.log("Stream JSON output enabled - displaying formatted Claude output");
     if (streamJson.saveRawJson) {
       console.log(`Raw JSON logs will be saved to: ${streamJson.outputDir}/`);
     }
+  } else if (streamJson?.enabled && usePty) {
+    console.log("Note: stream-json config ignored in PTY mode (TUI does not emit JSON)");
   }
   console.log();
 
@@ -1020,41 +1029,64 @@ export async function run(args: string[]): Promise<void> {
     }
 
     try {
-      let { exitCode, output, stderr } = await runIteration(
-        prompt,
-        iterPaths,
-        sandboxed,
-        iterFilteredPrdPath,
-        cliConfig,
-        debug,
-        model,
-        streamJson,
-      );
+      let exitCode: number;
+      let output: string;
+      let stderr = "";
 
-      // Check for model not found error and retry with suggestion
-      if (exitCode !== 0 && stderr) {
-        const modelError = parseModelNotFoundError(stderr);
-        if (modelError) {
-          console.log(
-            `\n\x1b[33mModel "${modelError.modelID}" not found. Retrying with suggested model "${modelError.suggestion}"...\x1b[0m`,
-          );
-          console.log(
-            `\x1b[90mTip: Add "modelArgs": ["--model"], and use "ralph run --model ${modelError.suggestion}" or configure in config.json\x1b[0m\n`,
-          );
+      if (usePty) {
+        // PTY mode mirrors how `runIteration` builds the prompt for
+        // Claude (embedded @file references). PTY is Claude-specific —
+        // the TUI parsing is keyed on Claude Code markers.
+        const promptValue = `@${iterFilteredPrdPath} @${iterPaths.progress} ${prompt}`;
+        const result = await runViaPty({
+          command: cliConfig.command,
+          cwd: targetDir,
+          prompt: promptValue,
+          model,
+          debug,
+        });
+        exitCode = result.exitCode;
+        output = result.output;
+      } else {
+        const result = await runIteration(
+          prompt,
+          iterPaths,
+          sandboxed,
+          iterFilteredPrdPath,
+          cliConfig,
+          debug,
+          model,
+          streamJson,
+        );
+        exitCode = result.exitCode;
+        output = result.output;
+        stderr = result.stderr;
 
-          const retryResult = await runIteration(
-            prompt,
-            iterPaths,
-            sandboxed,
-            iterFilteredPrdPath,
-            cliConfig,
-            debug,
-            modelError.suggestion,
-            streamJson,
-          );
-          exitCode = retryResult.exitCode;
-          output = retryResult.output;
-          stderr = retryResult.stderr;
+        // Check for model not found error and retry with suggestion
+        if (exitCode !== 0 && stderr) {
+          const modelError = parseModelNotFoundError(stderr);
+          if (modelError) {
+            console.log(
+              `\n\x1b[33mModel "${modelError.modelID}" not found. Retrying with suggested model "${modelError.suggestion}"...\x1b[0m`,
+            );
+            console.log(
+              `\x1b[90mTip: Add "modelArgs": ["--model"], and use "ralph run --model ${modelError.suggestion}" or configure in config.json\x1b[0m\n`,
+            );
+
+            const retryResult = await runIteration(
+              prompt,
+              iterPaths,
+              sandboxed,
+              iterFilteredPrdPath,
+              cliConfig,
+              debug,
+              modelError.suggestion,
+              streamJson,
+            );
+            exitCode = retryResult.exitCode;
+            output = retryResult.output;
+            stderr = retryResult.stderr;
+          }
         }
       }
 
