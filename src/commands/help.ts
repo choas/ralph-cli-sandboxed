@@ -40,6 +40,7 @@ RUN OPTIONS:
   <n>                        Run exactly n iterations (overrides default --all behavior)
   --all, -a                  Run until all tasks are complete (default behavior)
   --loop, -l                 Run continuously, waiting for new items when complete
+  --pty                      Drive Claude Code TUI via a PTY (Claude-only)
   --category, -c <category>  Filter PRD items by category
                              Valid: ui, feature, bugfix, setup, development, testing, docs
 
