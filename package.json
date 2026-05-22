@@ -28,14 +28,14 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.97.1",
+    "@anthropic-ai/sdk": "0.98.0",
     "@modelcontextprotocol/sdk": "1.29.0",
     "@slack/bolt": "4.7.2",
     "@slack/web-api": "7.16.0",
     "discord.js": "14.26.4",
     "ink": "7.0.3",
     "ink-text-input": "6.0.0",
-    "openai": "6.38.0",
+    "openai": "6.39.0",
     "react": "19.2.6",
     "yaml": "2.9.0",
     "zod": "4.4.3"
@@ -50,7 +50,7 @@
     "oxlint": "1.66.0",
     "tsx": "4.22.3",
     "typescript": "6.0.3",
-    "vitest": "4.1.6"
+    "vitest": "4.1.7"
   },
   "keywords": [
     "cli",
