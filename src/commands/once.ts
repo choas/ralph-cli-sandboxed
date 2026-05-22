@@ -72,7 +72,7 @@ export async function once(args: string[]): Promise<void> {
   const providerConfig = config.cliProvider ? providers[config.cliProvider] : providers["claude"];
   const streamJsonArgs = providerConfig?.streamJsonArgs ?? [];
 
-  console.log("Starting single ralph iteration...");
+  console.log("Starting single ralph iteration (standard mode)...");
   if (streamJsonEnabled) {
     console.log("Stream JSON output enabled - displaying formatted Claude output");
     if (saveRawJson) {
