@@ -222,7 +222,7 @@ ralph branch pr <name>         # Create a GitHub PR from the branch
 
 ### Format
 
-```
+```text
 [Imperative verb] [specific what] [where/context] (Reference)
 ```
 
@@ -255,7 +255,7 @@ Steps tell the AI **how** to implement and **how** to verify.
 
 1. **Action Steps** - What to do
 
-   ```
+   ```text
    "Create internal/auth/jwt.go with JWT token functions"
    "Add login endpoint POST /api/auth/login in routes.go"
    ```

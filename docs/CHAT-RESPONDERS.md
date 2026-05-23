@@ -242,7 +242,7 @@ LLM responders automatically detect file paths mentioned in messages and include
 
 **Example:**
 
-```
+```text
 @qa What does the loadConfig function do in src/utils/config.ts:50?
 ```
 
