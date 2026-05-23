@@ -140,10 +140,14 @@ function ensureWorktree(branch: string, worktreesBase: string): string {
 
   try {
     if (branchExists) {
-      execFileSync("git", ["worktree", "add", worktreePath, branch], { stdio: "pipe" });
+      execFileSync("git", ["worktree", "add", worktreePath, branch], {
+        stdio: "pipe",
+      });
     } else {
       // Create new branch from current HEAD
-      execFileSync("git", ["worktree", "add", "-b", branch, worktreePath], { stdio: "pipe" });
+      execFileSync("git", ["worktree", "add", "-b", branch, worktreePath], {
+        stdio: "pipe",
+      });
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -671,7 +675,11 @@ function validateAndRecoverPrd(
     if (newItems.length > 0) {
       console.log(`Preserved ${newItems.length} newly-added item(s).`);
     }
-    return { recovered: true, itemsUpdated: 0, newItemsPreserved: newItems.length };
+    return {
+      recovered: true,
+      itemsUpdated: 0,
+      newItemsPreserved: newItems.length,
+    };
   }
 
   // Validate the structure
@@ -1017,7 +1025,12 @@ export async function run(args: string[]): Promise<void> {
     iterValidPrd: PrdEntry[],
     targetDir: string,
     branchLabel?: string,
-  ): Promise<{ exitCode: number; output: string; stderr: string; syncResult: SyncResult }> {
+  ): Promise<{
+    exitCode: number;
+    output: string;
+    stderr: string;
+    syncResult: SyncResult;
+  }> {
     // Change to target directory
     if (targetDir !== workspaceCwd) {
       process.chdir(targetDir);

@@ -43,6 +43,7 @@ ralph init
 ```
 
 This creates:
+
 - `.ralph/config.json` with macOS development actions
 - `scripts/gen_xcode.sh` for Xcode project generation
 - `scripts/fastlane/` (if Fastlane selected) for deployment automation
@@ -73,6 +74,7 @@ ralph action gen_xcode
 ```
 
 The daemon executes `./scripts/gen_xcode.sh` on the host, which:
+
 1. Generates `Info.plist` and entitlements if missing
 2. Creates `project.yml` for xcodegen (or uses `swift package generate-xcodeproj`)
 3. Outputs `YourProject.xcodeproj`
@@ -104,6 +106,7 @@ ralph action gen_xcode
 ```
 
 Output:
+
 ```
 Executing action: gen_xcode
 Waiting for daemon response...
@@ -145,19 +148,19 @@ open MyApp.xcodeproj
 
 When you initialize a Swift + SwiftUI project, Ralph automatically configures these daemon actions:
 
-| Action | Command | Description |
-|--------|---------|-------------|
-| `gen_xcode` | `./scripts/gen_xcode.sh` | Generate Xcode project from Swift package |
-| `build` | `xcodebuild ... Debug build` | Build the project in Debug mode |
-| `test` | `xcodebuild ... test` | Run tests via xcodebuild |
+| Action      | Command                      | Description                               |
+| ----------- | ---------------------------- | ----------------------------------------- |
+| `gen_xcode` | `./scripts/gen_xcode.sh`     | Generate Xcode project from Swift package |
+| `build`     | `xcodebuild ... Debug build` | Build the project in Debug mode           |
+| `test`      | `xcodebuild ... test`        | Run tests via xcodebuild                  |
 
 If you selected Fastlane technology, additional actions are available:
 
-| Action | Command | Description |
-|--------|---------|-------------|
-| `fastlane_init` | `cd scripts/fastlane && fastlane init` | Initialize Fastlane credentials |
-| `fastlane_beta` | `cd scripts/fastlane && fastlane beta` | Deploy to TestFlight |
-| `fastlane_release` | `cd scripts/fastlane && fastlane release` | Submit to App Store |
+| Action             | Command                                   | Description                     |
+| ------------------ | ----------------------------------------- | ------------------------------- |
+| `fastlane_init`    | `cd scripts/fastlane && fastlane init`    | Initialize Fastlane credentials |
+| `fastlane_beta`    | `cd scripts/fastlane && fastlane beta`    | Deploy to TestFlight            |
+| `fastlane_release` | `cd scripts/fastlane && fastlane release` | Submit to App Store             |
 
 ### Listing Actions
 
@@ -243,6 +246,7 @@ See [scripts/fastlane/README.md](../scripts/fastlane/README.md) for Fastlane set
 **Symptom:** `ralph action gen_xcode` hangs or times out.
 
 **Solution:**
+
 1. Ensure the daemon is running on the host:
    ```bash
    ralph daemon status
@@ -255,6 +259,7 @@ See [scripts/fastlane/README.md](../scripts/fastlane/README.md) for Fastlane set
 **Symptom:** gen_xcode.sh fails with "Package.swift not found in project root"
 
 **Solution:** Create a Swift package manifest:
+
 ```swift
 // Package.swift
 // swift-tools-version: 5.9
@@ -278,6 +283,7 @@ let package = Package(
 1. **Automatic signing:** Open the project in Xcode and enable "Automatically manage signing"
 
 2. **Set Team ID in project.yml:**
+
    ```yaml
    settings:
      base:
@@ -291,6 +297,7 @@ let package = Package(
 **Symptom:** gen_xcode.sh uses deprecated `swift package generate-xcodeproj`
 
 **Solution:** Install xcodegen on the host:
+
 ```bash
 brew install xcodegen
 ```
@@ -300,7 +307,9 @@ brew install xcodegen
 **Symptom:** App builds but crashes or shows blank window.
 
 **Checklist:**
+
 1. Ensure `@main` App struct exists:
+
    ```swift
    @main
    struct MyAppApp: App {
@@ -313,6 +322,7 @@ brew install xcodegen
    ```
 
 2. Check Info.plist has correct principal class:
+
    ```xml
    <key>NSPrincipalClass</key>
    <string>NSApplication</string>
@@ -331,6 +341,7 @@ brew install xcodegen
 **Solutions:**
 
 1. **Clean build folder:**
+
    ```bash
    # On host
    rm -rf DerivedData/
@@ -338,6 +349,7 @@ brew install xcodegen
    ```
 
 2. **Reset package cache:**
+
    ```bash
    swift package reset
    swift package resolve
@@ -381,6 +393,7 @@ brew install xcodegen
 ```
 
 After modifying entitlements, regenerate the project:
+
 ```bash
 ralph action gen_xcode
 ```

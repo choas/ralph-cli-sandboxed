@@ -32,11 +32,15 @@ export interface DaemonResponse {
 }
 
 // Telegram client for sending messages (lazy loaded)
-let telegramClient: { sendMessage: (chatId: string, text: string) => Promise<void> } | null = null;
+let telegramClient: {
+  sendMessage: (chatId: string, text: string) => Promise<void>;
+} | null = null;
 let telegramConfig: { botToken: string; allowedChatIds?: string[] } | null = null;
 
 // Slack client for sending messages (lazy loaded)
-let slackClient: { sendMessage: (channelId: string, text: string) => Promise<void> } | null = null;
+let slackClient: {
+  sendMessage: (channelId: string, text: string) => Promise<void>;
+} | null = null;
 let slackConfig: {
   botToken: string;
   appToken: string;
@@ -45,8 +49,9 @@ let slackConfig: {
 } | null = null;
 
 // Discord client for sending messages (lazy loaded)
-let discordClient: { sendMessage: (channelId: string, text: string) => Promise<void> } | null =
-  null;
+let discordClient: {
+  sendMessage: (channelId: string, text: string) => Promise<void>;
+} | null = null;
 let discordConfig: {
   botToken: string;
   allowedGuildIds?: string[];
@@ -140,7 +145,10 @@ async function sendTelegramMessage(message: string): Promise<{ success: boolean;
     }
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
   }
 }
 
@@ -164,7 +172,10 @@ async function sendSlackMessage(message: string): Promise<{ success: boolean; er
     }
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
   }
 }
 
@@ -188,7 +199,10 @@ async function sendDiscordMessage(message: string): Promise<{ success: boolean; 
     }
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
   }
 }
 

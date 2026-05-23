@@ -314,7 +314,11 @@ export class SlackChatClient implements ChatClient {
           responder: match.responder,
           messages: [
             { role: "user", content: userMessage, timestamp: messageTs || "" },
-            { role: "assistant", content: result.response, timestamp: new Date().toISOString() },
+            {
+              role: "assistant",
+              content: result.response,
+              timestamp: new Date().toISOString(),
+            },
           ],
           createdAt: new Date(),
         });
@@ -370,8 +374,16 @@ export class SlackChatClient implements ChatClient {
 
       // Add messages to conversation history
       conversation.messages.push(
-        { role: "user", content: userMessage, timestamp: new Date().toISOString() },
-        { role: "assistant", content: result.response, timestamp: new Date().toISOString() },
+        {
+          role: "user",
+          content: userMessage,
+          timestamp: new Date().toISOString(),
+        },
+        {
+          role: "assistant",
+          content: result.response,
+          timestamp: new Date().toISOString(),
+        },
       );
 
       // Limit conversation history to prevent token overflow (keep last 20 messages)

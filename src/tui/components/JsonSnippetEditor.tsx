@@ -30,7 +30,10 @@ interface JsonParseError {
 /**
  * Parse JSON with detailed error information including line and column.
  */
-function parseJsonWithLineInfo(jsonStr: string): { value?: unknown; error?: JsonParseError } {
+function parseJsonWithLineInfo(jsonStr: string): {
+  value?: unknown;
+  error?: JsonParseError;
+} {
   try {
     const value = JSON.parse(jsonStr);
     return { value };

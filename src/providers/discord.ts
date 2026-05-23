@@ -287,7 +287,11 @@ export class DiscordChatClient implements ChatClient {
         argDesc: "Shell command to run",
         required: true,
       },
-      { name: "stop", description: "Stop running ralph process", hasArgs: false },
+      {
+        name: "stop",
+        description: "Stop running ralph process",
+        hasArgs: false,
+      },
       { name: "help", description: "Show help", hasArgs: false },
       {
         name: "action",

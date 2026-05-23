@@ -20,38 +20,40 @@ Each PRD entry is a YAML object with four fields:
 
 Use consistent categories to organize your PRD:
 
-| Category | Use for |
-|----------|---------|
-| `ui` | User interface changes |
-| `feature` | New functionality |
-| `bugfix` | Fixing broken behavior |
-| `setup` | Initial project configuration, build verification |
-| `development` | Code improvements, refactoring, configuration |
-| `testing` | Adding or updating tests |
-| `docs` | Documentation updates |
+| Category      | Use for                                           |
+| ------------- | ------------------------------------------------- |
+| `ui`          | User interface changes                            |
+| `feature`     | New functionality                                 |
+| `bugfix`      | Fixing broken behavior                            |
+| `setup`       | Initial project configuration, build verification |
+| `development` | Code improvements, refactoring, configuration     |
+| `testing`     | Adding or updating tests                          |
+| `docs`        | Documentation updates                             |
 
 ## Writing Good Descriptions
 
 The description should be a **single sentence** that clearly states what needs to be done.
 
 ### Do
+
 - Start with an **imperative verb** (Add, Implement, Fix, Update, Remove)
 - Be specific about **what** and **where**
 - Include context if needed in parentheses
 
 ### Don't
+
 - Use vague language ("improve", "enhance", "handle")
 - Write multiple sentences
 - Include implementation details (save those for steps)
 
 ### Examples
 
-| Bad | Good |
-|-----|------|
-| "version flag" | "Implement --version flag that displays CLI name and version" |
-| "fix the bug with containers" | "Fix --dangerously-skip-permissions flag not being set in container environment" |
-| "add a pamatere to prd to clean" | "Add `ralph prd clean` command to remove completed items" |
-| "make docker better" | "Ensure Docker builds always pull latest Claude Code version" |
+| Bad                              | Good                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| "version flag"                   | "Implement --version flag that displays CLI name and version"                    |
+| "fix the bug with containers"    | "Fix --dangerously-skip-permissions flag not being set in container environment" |
+| "add a pamatere to prd to clean" | "Add `ralph prd clean` command to remove completed items"                        |
+| "make docker better"             | "Ensure Docker builds always pull latest Claude Code version"                    |
 
 ## Writing Good Steps
 
@@ -68,6 +70,7 @@ Steps tell the AI agent exactly **how** to verify or implement the requirement.
 ### Step Patterns
 
 **For features:**
+
 ```yaml
 steps:
   - Implement X in src/path/file.ts
@@ -76,6 +79,7 @@ steps:
 ```
 
 **For bug fixes:**
+
 ```yaml
 steps:
   - Identify the cause of X in src/path/file.ts
@@ -84,6 +88,7 @@ steps:
 ```
 
 **For documentation:**
+
 ```yaml
 steps:
   - Add section 'X' to README.md
@@ -92,6 +97,7 @@ steps:
 ```
 
 **For releases:**
+
 ```yaml
 steps:
   - Update version in package.json to 'X.Y.Z'
@@ -102,6 +108,7 @@ steps:
 ## Anti-Patterns to Avoid
 
 ### Vague Steps
+
 ```yaml
 # Bad
 steps:
@@ -117,6 +124,7 @@ steps:
 ```
 
 ### Steps That Require Human Judgment
+
 ```yaml
 # Bad
 steps:
@@ -132,6 +140,7 @@ steps:
 ```
 
 ### Missing Verification
+
 ```yaml
 # Bad
 steps:
@@ -149,6 +158,7 @@ steps:
 Ralph processes PRD items from top to bottom. Place higher-priority items first in the array.
 
 Recommended ordering:
+
 1. Setup/infrastructure items
 2. Bug fixes (blocking issues)
 3. Core features

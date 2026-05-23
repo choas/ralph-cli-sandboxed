@@ -8,19 +8,19 @@ Responders are message handlers that process incoming chat messages based on tri
 
 ### Responder Types
 
-| Type | Description | Use Case |
-|------|-------------|----------|
-| `llm` | Send message to an LLM provider (Anthropic, OpenAI, Ollama) | Q&A, code review, explanations |
-| `claude-code` | Run Claude Code CLI with the message as prompt | File modifications, complex tasks |
-| `cli` | Execute a custom CLI command | Run aider, linters, custom scripts |
+| Type          | Description                                                 | Use Case                           |
+| ------------- | ----------------------------------------------------------- | ---------------------------------- |
+| `llm`         | Send message to an LLM provider (Anthropic, OpenAI, Ollama) | Q&A, code review, explanations     |
+| `claude-code` | Run Claude Code CLI with the message as prompt              | File modifications, complex tasks  |
+| `cli`         | Execute a custom CLI command                                | Run aider, linters, custom scripts |
 
 ### Trigger Patterns
 
-| Pattern | Example | Matches |
-|---------|---------|---------|
-| `@mention` | `@qa` | Messages starting with `@qa what does this function do?` |
-| `keyword` | `!lint` | Messages starting with `!lint src/index.ts` |
-| (none) | - | Default responder for messages that don't match any trigger |
+| Pattern    | Example | Matches                                                     |
+| ---------- | ------- | ----------------------------------------------------------- |
+| `@mention` | `@qa`   | Messages starting with `@qa what does this function do?`    |
+| `keyword`  | `!lint` | Messages starting with `!lint src/index.ts`                 |
+| (none)     | -       | Default responder for messages that don't match any trigger |
 
 ---
 
@@ -51,6 +51,7 @@ Add your LLM provider credentials to `.ralph/config.json`:
 ```
 
 API keys can be set via environment variables:
+
 - `ANTHROPIC_API_KEY` for Anthropic
 - `OPENAI_API_KEY` for OpenAI
 - Ollama doesn't require an API key
@@ -96,6 +97,7 @@ ralph chat start
 ```
 
 Now you can message your bot:
+
 - `@qa What does the config loader do?` - Get an LLM-powered answer
 - `@code Add error handling to the login function` - Claude Code modifies files
 - `!lint src/` - Run the linter
@@ -122,6 +124,7 @@ The recommended provider for high-quality responses.
 **Environment variable:** `ANTHROPIC_API_KEY`
 
 **Available models:**
+
 - `claude-sonnet-4-20250514` (recommended - fast and capable)
 - `claude-opus-4-20250514` (most capable, slower)
 
@@ -141,6 +144,7 @@ The recommended provider for high-quality responses.
 **Environment variable:** `OPENAI_API_KEY`
 
 **Available models:**
+
 - `gpt-4o` (recommended)
 - `gpt-4o-mini` (faster, cheaper)
 - `gpt-4-turbo`
@@ -162,11 +166,13 @@ Run models locally without API keys.
 ```
 
 **Setup:**
+
 1. Install Ollama: https://ollama.ai
 2. Pull a model: `ollama pull llama3`
 3. Start Ollama: `ollama serve`
 
 **Popular models:**
+
 - `llama3` - General purpose
 - `codellama` - Code-focused
 - `mistral` - Fast and capable
@@ -209,16 +215,17 @@ Send messages to an LLM and return the response.
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `type` | string | Yes | - | Must be `"llm"` |
-| `trigger` | string | No | - | Trigger pattern (`@mention` or `keyword`) |
-| `provider` | string | No | `"anthropic"` | LLM provider name from `llmProviders` config |
-| `systemPrompt` | string | No | - | System prompt (supports `{{project}}` placeholder) |
-| `timeout` | number | No | `60000` | Timeout in milliseconds |
-| `maxLength` | number | No | `2000` | Max response length in characters |
+| Field          | Type   | Required | Default       | Description                                        |
+| -------------- | ------ | -------- | ------------- | -------------------------------------------------- |
+| `type`         | string | Yes      | -             | Must be `"llm"`                                    |
+| `trigger`      | string | No       | -             | Trigger pattern (`@mention` or `keyword`)          |
+| `provider`     | string | No       | `"anthropic"` | LLM provider name from `llmProviders` config       |
+| `systemPrompt` | string | No       | -             | System prompt (supports `{{project}}` placeholder) |
+| `timeout`      | number | No       | `60000`       | Timeout in milliseconds                            |
+| `maxLength`    | number | No       | `2000`        | Max response length in characters                  |
 
 **System Prompt Placeholder:**
+
 - `{{project}}` - Replaced with the project directory name
 
 #### Automatic File Detection
@@ -226,6 +233,7 @@ Send messages to an LLM and return the response.
 LLM responders automatically detect file paths mentioned in messages and include their contents in the context. This allows you to ask questions about specific files without manually copying code.
 
 **Supported formats:**
+
 - `src/utils/config.ts` - Full file path
 - `src/utils/config.ts:42` - File with line number (shows context around that line)
 - `./relative/path.js` - Relative paths
@@ -233,13 +241,15 @@ LLM responders automatically detect file paths mentioned in messages and include
 - `Dockerfile`, `Makefile`, `.gitignore`, `.env` - Config files without extensions
 
 **Example:**
-```
+
+```text
 @qa What does the loadConfig function do in src/utils/config.ts:50?
 ```
 
 The responder will automatically read the file, extract ~20 lines around line 50, and include it in the LLM context.
 
 **Limits:**
+
 - Max 15KB total file content per message
 - Max 8KB per individual file
 - Files larger than 100KB are skipped
@@ -249,15 +259,16 @@ The responder will automatically read the file, extract ~20 lines around line 50
 
 LLM responders recognize git-related keywords and automatically include relevant diffs:
 
-| Keyword | Git Command | Description |
-|---------|-------------|-------------|
-| `diff` / `changes` | `git diff` | Unstaged changes |
-| `staged` | `git diff --cached` | Staged changes |
-| `last` / `last commit` | `git show HEAD` | Last commit |
-| `all` | `git diff HEAD` | All uncommitted changes |
-| `HEAD~N` | `git show HEAD~N` | Specific commit (e.g., `HEAD~2`) |
+| Keyword                | Git Command         | Description                      |
+| ---------------------- | ------------------- | -------------------------------- |
+| `diff` / `changes`     | `git diff`          | Unstaged changes                 |
+| `staged`               | `git diff --cached` | Staged changes                   |
+| `last` / `last commit` | `git show HEAD`     | Last commit                      |
+| `all`                  | `git diff HEAD`     | All uncommitted changes          |
+| `HEAD~N`               | `git show HEAD~N`   | Specific commit (e.g., `HEAD~2`) |
 
 **Examples:**
+
 ```
 @review diff           # Review unstaged changes
 @review last           # Review the last commit
@@ -275,12 +286,14 @@ When using Slack or Discord, responders support multi-turn conversations within 
 4. The responder maintains context from previous messages (up to 20 messages)
 
 **How it works:**
+
 - Thread replies don't need the trigger prefix
 - The same responder handles all messages in a thread
 - Conversation history is included in each LLM call
 - History is stored in memory (cleared on restart)
 
 **Example thread:**
+
 ```
 User: @review diff
 Bot: [Reviews the diff, identifies potential issues]
@@ -307,12 +320,12 @@ Run Claude Code CLI to make file modifications or perform complex coding tasks.
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `type` | string | Yes | - | Must be `"claude-code"` |
-| `trigger` | string | No | - | Trigger pattern |
-| `timeout` | number | No | `300000` | Timeout in milliseconds (5 minutes) |
-| `maxLength` | number | No | `2000` | Max response length in characters |
+| Field       | Type   | Required | Default  | Description                         |
+| ----------- | ------ | -------- | -------- | ----------------------------------- |
+| `type`      | string | Yes      | -        | Must be `"claude-code"`             |
+| `trigger`   | string | No       | -        | Trigger pattern                     |
+| `timeout`   | number | No       | `300000` | Timeout in milliseconds (5 minutes) |
+| `maxLength` | number | No       | `2000`   | Max response length in characters   |
 
 **Note:** Claude Code runs with `--dangerously-skip-permissions` for autonomous operation. Use with caution and only in trusted environments.
 
@@ -332,15 +345,16 @@ Execute custom CLI commands with the user's message.
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `type` | string | Yes | - | Must be `"cli"` |
-| `trigger` | string | No | - | Trigger pattern |
-| `command` | string | Yes | - | Command to execute |
-| `timeout` | number | No | `120000` | Timeout in milliseconds (2 minutes) |
-| `maxLength` | number | No | `2000` | Max response length in characters |
+| Field       | Type   | Required | Default  | Description                         |
+| ----------- | ------ | -------- | -------- | ----------------------------------- |
+| `type`      | string | Yes      | -        | Must be `"cli"`                     |
+| `trigger`   | string | No       | -        | Trigger pattern                     |
+| `command`   | string | Yes      | -        | Command to execute                  |
+| `timeout`   | number | No       | `120000` | Timeout in milliseconds (2 minutes) |
+| `maxLength` | number | No       | `2000`   | Max response length in characters   |
 
 **Command Placeholder:**
+
 - `{{message}}` - Replaced with the user's message (properly escaped)
 - If no placeholder is present, the message is appended as a quoted argument
 
@@ -425,25 +439,26 @@ Ralph includes preset responder configurations for common use cases. Select pres
 
 ### Available Presets
 
-| Preset | Trigger | Type | Description |
-|--------|---------|------|-------------|
-| `qa` | `@qa` | LLM | Q&A about the codebase |
-| `reviewer` | `@review` | LLM | Code review feedback |
-| `architect` | `@arch` | LLM | Architecture discussions |
-| `explain` | `@explain` | LLM | Detailed code explanations |
-| `code` | `@code` | Claude Code | File modifications |
+| Preset      | Trigger    | Type        | Description                |
+| ----------- | ---------- | ----------- | -------------------------- |
+| `qa`        | `@qa`      | LLM         | Q&A about the codebase     |
+| `reviewer`  | `@review`  | LLM         | Code review feedback       |
+| `architect` | `@arch`    | LLM         | Architecture discussions   |
+| `explain`   | `@explain` | LLM         | Detailed code explanations |
+| `code`      | `@code`    | Claude Code | File modifications         |
 
 ### Preset Bundles
 
-| Bundle | Presets | Description |
-|--------|---------|-------------|
+| Bundle     | Presets            | Description                   |
+| ---------- | ------------------ | ----------------------------- |
 | `standard` | qa, reviewer, code | Common workflow (recommended) |
-| `full` | All presets | Complete feature set |
-| `minimal` | qa, code | Just the essentials |
+| `full`     | All presets        | Complete feature set          |
+| `minimal`  | qa, code           | Just the essentials           |
 
 ### Using Presets
 
 **During initialization:**
+
 ```bash
 ralph init
 # Answer "Yes" when asked about chat responders
@@ -632,7 +647,8 @@ Make sure the provider name in the responder matches a key in `llmProviders`:
 ```json
 {
   "llmProviders": {
-    "my-claude": {  // This name...
+    "my-claude": {
+      // This name...
       "type": "anthropic",
       "model": "claude-sonnet-4-20250514"
     }
@@ -641,7 +657,7 @@ Make sure the provider name in the responder matches a key in `llmProviders`:
     "responders": {
       "qa": {
         "type": "llm",
-        "provider": "my-claude"  // ...must match here
+        "provider": "my-claude" // ...must match here
       }
     }
   }
@@ -693,7 +709,7 @@ Increase `timeout` in the responder config:
 {
   "code": {
     "type": "claude-code",
-    "timeout": 600000  // 10 minutes
+    "timeout": 600000 // 10 minutes
   }
 }
 ```
@@ -724,7 +740,7 @@ Increase the timeout for complex tasks:
 {
   "code": {
     "type": "claude-code",
-    "timeout": 600000  // 10 minutes
+    "timeout": 600000 // 10 minutes
   }
 }
 ```
@@ -735,20 +751,22 @@ Increase the timeout for complex tasks:
 
 When a chat provider (Slack, Telegram, or Discord) is configured and enabled, Ralph automatically sends notifications about `ralph run` progress to your chat:
 
-| Event | Message |
-|-------|---------|
-| Task Complete | "Task completed: [description]" |
-| Iteration Complete | "Iteration complete" |
-| PRD Complete | "All PRD tasks complete!" |
-| Run Stopped | "Run stopped: [reason]" |
-| Error | "Error: [message]" |
+| Event              | Message                         |
+| ------------------ | ------------------------------- |
+| Task Complete      | "Task completed: [description]" |
+| Iteration Complete | "Iteration complete"            |
+| PRD Complete       | "All PRD tasks complete!"       |
+| Run Stopped        | "Run stopped: [reason]"         |
+| Error              | "Error: [message]"              |
 
 **Requirements:**
+
 - Chat provider must be configured in `.ralph/config.json`
 - `chat.enabled` must be `true`
 - Bot must have permission to send messages to the configured channel/chat
 
 **Example config:**
+
 ```json
 {
   "chat": {

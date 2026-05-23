@@ -164,7 +164,6 @@ export function ArrayEditor({
         // Enter or 'e' to edit/add
         handleStartEdit();
       } else if (input === "d" || key.delete) {
-        // 'd' or Delete to remove
         handleDelete();
       } else if (input === "K" || (key.shift && key.upArrow)) {
         // Shift+K or Shift+Up to move up
@@ -328,7 +327,8 @@ export function ArrayEditor({
       <Box marginTop={1} flexDirection="column">
         <Text dimColor>j/k: navigate | Enter/e: edit | d: delete</Text>
         <Text dimColor>
-          J/K: reorder | s: save | Esc: cancel{hasOverflow && " | PgUp/Dn: scroll"}
+          J/K: reorder | s: save | Esc: cancel
+          {hasOverflow && " | PgUp/Dn: scroll"}
         </Text>
       </Box>
     </Box>

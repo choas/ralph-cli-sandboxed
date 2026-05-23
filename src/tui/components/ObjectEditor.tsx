@@ -33,7 +33,9 @@ export function ObjectEditor({
   isFocused = true,
   maxHeight = 10,
 }: ObjectEditorProps): React.ReactElement {
-  const [editEntries, setEditEntries] = useState<Record<string, string>>({ ...entries });
+  const [editEntries, setEditEntries] = useState<Record<string, string>>({
+    ...entries,
+  });
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
   const [mode, setMode] = useState<EditorMode>("list");
@@ -194,7 +196,6 @@ export function ObjectEditor({
         // Enter or 'e' to edit/add
         handleStartEdit();
       } else if (input === "d" || key.delete) {
-        // 'd' or Delete to remove
         handleDelete();
       } else if (key.tab || input === " ") {
         // Tab or Space to expand/collapse value

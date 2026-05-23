@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, writeFileSync, watch, type FSWatcher } from "fs";
 import { join, basename, extname } from "path";
-import { execSync, spawn } from "child_process";
+import { execSync, execFileSync, spawn } from "child_process";
 import YAML from "yaml";
 import { robustYamlParse } from "../utils/prd-validator.js";
 import {
@@ -128,7 +128,11 @@ function parsePrdContent(filePath: string, content: string): PrdItem[] | null {
 /**
  * Get PRD status (completed/total tasks).
  */
-function getPrdStatus(): { complete: number; total: number; incomplete: number } {
+function getPrdStatus(): {
+  complete: number;
+  total: number;
+  incomplete: number;
+} {
   const prdFiles = getPrdFiles();
 
   if (prdFiles.none) {
@@ -241,7 +245,7 @@ function getBaseBranch(): string {
  */
 function branchExists(branch: string): boolean {
   try {
-    execSync(`git rev-parse --verify "${branch}"`, {
+    execFileSync("git", ["rev-parse", "--verify", branch], {
       stdio: "pipe",
       cwd: process.cwd(),
     });
@@ -387,10 +391,16 @@ async function handleBranchPr(
 
   // Auto-push: if branch has no upstream tracking, push it
   try {
-    execSync(`git rev-parse --abbrev-ref "${branchName}@{upstream}"`, { stdio: "pipe", cwd });
+    execFileSync("git", ["rev-parse", "--abbrev-ref", `${branchName}@{upstream}`], {
+      stdio: "pipe",
+      cwd,
+    });
   } catch {
     try {
-      execSync(`git push -u "${remote}" "${branchName}"`, { stdio: "pipe", cwd });
+      execFileSync("git", ["push", "-u", remote, branchName], {
+        stdio: "pipe",
+        cwd,
+      });
     } catch {
       await client.sendMessage(
         chatId,
@@ -423,10 +433,14 @@ async function handleBranchPr(
 
   // Commits section
   try {
-    const log = execSync(`git log "${baseBranch}..${branchName}" --oneline --no-decorate`, {
-      encoding: "utf-8",
-      cwd,
-    }).trim();
+    const log = execFileSync(
+      "git",
+      ["log", `${baseBranch}..${branchName}`, "--oneline", "--no-decorate"],
+      {
+        encoding: "utf-8",
+        cwd,
+      },
+    ).trim();
     if (log) {
       bodyParts.push("## Commits\n");
       bodyParts.push(log);
@@ -441,8 +455,20 @@ async function handleBranchPr(
 
   // Create the PR
   try {
-    const prUrl = execSync(
-      `gh pr create --base "${baseBranch}" --head "${branchName}" --title "${prTitle.replace(/"/g, '\\"')}" --body-file -`,
+    const prUrl = execFileSync(
+      "gh",
+      [
+        "pr",
+        "create",
+        "--base",
+        baseBranch,
+        "--head",
+        branchName,
+        "--title",
+        prTitle,
+        "--body-file",
+        "-",
+      ],
       {
         encoding: "utf-8",
         input: prBody,
@@ -488,7 +514,7 @@ async function handleBranchMerge(
   const cwd = process.cwd();
 
   try {
-    execSync(`git merge "${branchName}" --no-edit`, { stdio: "pipe", cwd });
+    execFileSync("git", ["merge", branchName, "--no-edit"], { stdio: "pipe", cwd });
     await client.sendMessage(
       chatId,
       `${state.projectName}: Merged "${branchName}" into "${baseBranch}".`,
@@ -497,7 +523,10 @@ async function handleBranchMerge(
     // Check for merge conflicts
     let conflictingFiles: string[] = [];
     try {
-      const status = execSync("git status --porcelain", { encoding: "utf-8", cwd });
+      const status = execSync("git status --porcelain", {
+        encoding: "utf-8",
+        cwd,
+      });
       conflictingFiles = status
         .split("\n")
         .filter(
@@ -548,7 +577,10 @@ async function handleBranchMerge(
     const worktreePath = join(worktreesPath, dirName);
     if (existsSync(worktreePath)) {
       try {
-        execSync(`git worktree remove "${worktreePath}"`, { stdio: "pipe", cwd });
+        execFileSync("git", ["worktree", "remove", worktreePath], {
+          stdio: "pipe",
+          cwd,
+        });
       } catch {
         // Non-critical, ignore
       }
@@ -595,7 +627,10 @@ async function handleBranchDelete(
     const worktreePath = join(worktreesPath, dirName);
     if (existsSync(worktreePath)) {
       try {
-        execSync(`git worktree remove "${worktreePath}" --force`, { stdio: "pipe", cwd });
+        execFileSync("git", ["worktree", "remove", worktreePath, "--force"], {
+          stdio: "pipe",
+          cwd,
+        });
         results.push("Worktree removed.");
       } catch {
         results.push("Warning: Could not remove worktree.");
@@ -605,7 +640,7 @@ async function handleBranchDelete(
 
   // Step 2: Delete the git branch
   try {
-    execSync(`git branch -D "${branchName}"`, { stdio: "pipe", cwd });
+    execFileSync("git", ["branch", "-D", branchName], { stdio: "pipe", cwd });
     results.push("Branch deleted.");
   } catch {
     results.push("Warning: Could not delete git branch.");
@@ -669,7 +704,10 @@ async function executeCommand(command: string): Promise<{ success: boolean; outp
       if (code === 0) {
         resolve({ success: true, output: stdout.trim() || "(no output)" });
       } else {
-        resolve({ success: false, output: stderr.trim() || stdout.trim() || `Exit code: ${code}` });
+        resolve({
+          success: false,
+          output: stderr.trim() || stdout.trim() || `Exit code: ${code}`,
+        });
       }
     });
 

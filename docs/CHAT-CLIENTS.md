@@ -4,11 +4,11 @@ Ralph supports multiple chat providers for remote control and notifications. You
 
 ## Supported Providers
 
-| Provider | Status | Use Case |
-|----------|--------|----------|
-| Telegram | ✅ Supported | Personal use, simple setup |
-| Slack | ✅ Supported | Team collaboration, workspace integration |
-| Discord | ✅ Supported | Community servers, gaming-style interaction |
+| Provider | Status       | Use Case                                    |
+| -------- | ------------ | ------------------------------------------- |
+| Telegram | ✅ Supported | Personal use, simple setup                  |
+| Slack    | ✅ Supported | Team collaboration, workspace integration   |
+| Discord  | ✅ Supported | Community servers, gaming-style interaction |
 
 ## Quick Start
 
@@ -69,18 +69,18 @@ The bot will respond to commands in the allowed chats.
 
 ### Telegram Commands
 
-| Command | Description |
-|---------|-------------|
-| `/run` | Start ralph automation |
-| `/run feature` | Run only feature tasks |
-| `/status` | Show PRD progress |
-| `/add Fix the login bug` | Add a new task |
-| `/exec npm test` | Execute a shell command |
-| `/stop` | Stop running ralph process |
-| `/action build` | Execute a daemon action |
-| `/claude Fix the CSS` | Run Claude Code with a prompt |
-| `/branch list` | List branches and their status |
-| `/help` | Show available commands |
+| Command                  | Description                    |
+| ------------------------ | ------------------------------ |
+| `/run`                   | Start ralph automation         |
+| `/run feature`           | Run only feature tasks         |
+| `/status`                | Show PRD progress              |
+| `/add Fix the login bug` | Add a new task                 |
+| `/exec npm test`         | Execute a shell command        |
+| `/stop`                  | Stop running ralph process     |
+| `/action build`          | Execute a daemon action        |
+| `/claude Fix the CSS`    | Run Claude Code with a prompt  |
+| `/branch list`           | List branches and their status |
+| `/help`                  | Show available commands        |
 
 ---
 
@@ -138,8 +138,8 @@ Socket Mode allows the bot to receive events without a public URL.
 1. Go to **Slash Commands**
 2. Click **Create New Command**:
 
-| Command | Request URL | Description |
-|---------|-------------|-------------|
+| Command  | Request URL                   | Description                                                                |
+| -------- | ----------------------------- | -------------------------------------------------------------------------- |
 | `/ralph` | (leave empty for Socket Mode) | Ralph unified command (use subcommands like `/ralph run`, `/ralph status`) |
 
 ### Step 7: Get Channel IDs
@@ -183,16 +183,16 @@ ralph chat start
 
 Use the `/ralph` slash command with subcommands, or message the bot directly:
 
-| Command | Description |
-|---------|-------------|
-| `/ralph run` or `/ralph run feature` | Start automation |
-| `/ralph status` | Show PRD progress |
-| `/ralph add Fix the bug` | Add a task |
-| `/ralph exec npm test` | Execute command |
-| `/ralph stop` | Stop ralph |
-| `/ralph action build` | Execute action |
-| `/ralph branch list` | Manage branches |
-| `/ralph Fix CSS` | Run Claude Code (any unrecognized subcommand) |
+| Command                              | Description                                   |
+| ------------------------------------ | --------------------------------------------- |
+| `/ralph run` or `/ralph run feature` | Start automation                              |
+| `/ralph status`                      | Show PRD progress                             |
+| `/ralph add Fix the bug`             | Add a task                                    |
+| `/ralph exec npm test`               | Execute command                               |
+| `/ralph stop`                        | Stop ralph                                    |
+| `/ralph action build`                | Execute action                                |
+| `/ralph branch list`                 | Manage branches                               |
+| `/ralph Fix CSS`                     | Run Claude Code (any unrecognized subcommand) |
 
 ---
 
@@ -271,16 +271,16 @@ The first time the bot connects, it will register slash commands with Discord. T
 
 Use slash commands (type `/` to see available commands):
 
-| Command | Description |
-|---------|-------------|
-| `/run` | Start automation |
-| `/run category:feature` | Run specific category |
-| `/status` | Show PRD progress |
-| `/add description:Fix the bug` | Add a task |
-| `/exec command:npm test` | Execute command |
-| `/stop` | Stop ralph |
-| `/action name:build` | Execute action |
-| `/claude prompt:Fix CSS` | Run Claude Code |
+| Command                        | Description           |
+| ------------------------------ | --------------------- |
+| `/run`                         | Start automation      |
+| `/run category:feature`        | Run specific category |
+| `/status`                      | Show PRD progress     |
+| `/add description:Fix the bug` | Add a task            |
+| `/exec command:npm test`       | Execute command       |
+| `/stop`                        | Stop ralph            |
+| `/action name:build`           | Execute action        |
+| `/claude prompt:Fix CSS`       | Run Claude Code       |
 
 ---
 
@@ -317,37 +317,37 @@ Use slash commands (type `/` to see available commands):
 
 ### Config Options
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `chat.enabled` | boolean | Enable/disable chat integration |
-| `chat.provider` | string | Active provider: `"telegram"`, `"slack"`, or `"discord"` |
+| Field           | Type    | Description                                              |
+| --------------- | ------- | -------------------------------------------------------- |
+| `chat.enabled`  | boolean | Enable/disable chat integration                          |
+| `chat.provider` | string  | Active provider: `"telegram"`, `"slack"`, or `"discord"` |
 
 #### Telegram Settings
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `telegram.enabled` | boolean | No | Enable/disable (default: true if botToken set) |
-| `telegram.botToken` | string | Yes | Bot API token from @BotFather |
-| `telegram.allowedChatIds` | string[] | No | Restrict to specific chat IDs |
+| Field                     | Type     | Required | Description                                    |
+| ------------------------- | -------- | -------- | ---------------------------------------------- |
+| `telegram.enabled`        | boolean  | No       | Enable/disable (default: true if botToken set) |
+| `telegram.botToken`       | string   | Yes      | Bot API token from @BotFather                  |
+| `telegram.allowedChatIds` | string[] | No       | Restrict to specific chat IDs                  |
 
 #### Slack Settings
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `slack.enabled` | boolean | No | Enable/disable (default: true if tokens set) |
-| `slack.botToken` | string | Yes | Bot User OAuth Token (xoxb-...) |
-| `slack.appToken` | string | Yes | App-Level Token for Socket Mode (xapp-...) |
-| `slack.signingSecret` | string | Yes | Signing Secret for request verification |
-| `slack.allowedChannelIds` | string[] | No | Restrict to specific channel IDs |
+| Field                     | Type     | Required | Description                                  |
+| ------------------------- | -------- | -------- | -------------------------------------------- |
+| `slack.enabled`           | boolean  | No       | Enable/disable (default: true if tokens set) |
+| `slack.botToken`          | string   | Yes      | Bot User OAuth Token (xoxb-...)              |
+| `slack.appToken`          | string   | Yes      | App-Level Token for Socket Mode (xapp-...)   |
+| `slack.signingSecret`     | string   | Yes      | Signing Secret for request verification      |
+| `slack.allowedChannelIds` | string[] | No       | Restrict to specific channel IDs             |
 
 #### Discord Settings
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `discord.enabled` | boolean | No | Enable/disable (default: true if botToken set) |
-| `discord.botToken` | string | Yes | Bot token from Developer Portal |
-| `discord.allowedGuildIds` | string[] | No | Restrict to specific server IDs |
-| `discord.allowedChannelIds` | string[] | No | Restrict to specific channel IDs |
+| Field                       | Type     | Required | Description                                    |
+| --------------------------- | -------- | -------- | ---------------------------------------------- |
+| `discord.enabled`           | boolean  | No       | Enable/disable (default: true if botToken set) |
+| `discord.botToken`          | string   | Yes      | Bot token from Developer Portal                |
+| `discord.allowedGuildIds`   | string[] | No       | Restrict to specific server IDs                |
+| `discord.allowedChannelIds` | string[] | No       | Restrict to specific channel IDs               |
 
 ---
 
@@ -394,6 +394,7 @@ You can also configure the daemon to send notifications to chat when events occu
 ```
 
 Built-in notification actions (available when daemon is running):
+
 - `telegram_notify` - Send via Telegram
 - `slack_notify` - Send via Slack
 - `discord_notify` - Send via Discord
@@ -407,11 +408,13 @@ Built-in notification actions (available when daemon is running):
 #### "Chat daemon not responding"
 
 1. Check that the daemon is running:
+
    ```bash
    ralph chat status
    ```
 
 2. Start the daemon if it's not running:
+
    ```bash
    ralph chat start
    ```
@@ -421,6 +424,7 @@ Built-in notification actions (available when daemon is running):
 #### "Command not recognized"
 
 Make sure you're using the correct command format:
+
 - Telegram: `/run`, `/status`, etc.
 - Slack: `/run` or message the bot
 - Discord: `/run` (slash commands)
@@ -488,6 +492,7 @@ Make sure **Message Content Intent** is enabled in the Discord Developer Portal 
 #### "Missing Access" errors
 
 Ensure the bot has permissions in the channel:
+
 1. Right-click the channel → Edit Channel
 2. Go to Permissions
 3. Add the bot role with Send Messages and Read Message History

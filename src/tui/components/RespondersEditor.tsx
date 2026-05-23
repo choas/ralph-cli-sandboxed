@@ -75,7 +75,9 @@ export function RespondersEditor({
   isFocused = true,
   maxHeight = 15,
 }: RespondersEditorProps): React.ReactElement {
-  const [editResponders, setEditResponders] = useState<RespondersConfig>({ ...responders });
+  const [editResponders, setEditResponders] = useState<RespondersConfig>({
+    ...responders,
+  });
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [mode, setMode] = useState<EditorMode>("list");
   const [editText, setEditText] = useState("");

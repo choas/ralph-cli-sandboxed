@@ -238,7 +238,11 @@ describe("getLLMProviders", () => {
       llmProviders: {
         "my-gpt": { type: "openai", model: "gpt-4o-mini" },
         "my-claude": { type: "anthropic", model: "claude-haiku-4-5-20251001" },
-        "local-llm": { type: "ollama", model: "codellama", baseUrl: "http://gpu-server:11434" },
+        "local-llm": {
+          type: "ollama",
+          model: "codellama",
+          baseUrl: "http://gpu-server:11434",
+        },
       },
     };
     const result = getLLMProviders(config);

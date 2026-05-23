@@ -91,9 +91,17 @@ interface GitDiffPattern {
 
 const GIT_DIFF_PATTERNS: GitDiffPattern[] = [
   // "diff" or "changes" - show unstaged changes
-  { pattern: /^(diff|changes)$/i, command: "git diff", description: "unstaged changes" },
+  {
+    pattern: /^(diff|changes)$/i,
+    command: "git diff",
+    description: "unstaged changes",
+  },
   // "staged" - show staged changes
-  { pattern: /^staged$/i, command: "git diff --cached", description: "staged changes" },
+  {
+    pattern: /^staged$/i,
+    command: "git diff --cached",
+    description: "staged changes",
+  },
   // "last" or "last commit" - show last commit
   {
     pattern: /^(last|last\s*commit)$/i,
@@ -101,9 +109,17 @@ const GIT_DIFF_PATTERNS: GitDiffPattern[] = [
     description: "last commit",
   },
   // "HEAD~N" - show specific commit
-  { pattern: /^HEAD~(\d+)$/i, command: "git show HEAD~$1 --stat --patch", description: "commit" },
+  {
+    pattern: /^HEAD~(\d+)$/i,
+    command: "git show HEAD~$1 --stat --patch",
+    description: "commit",
+  },
   // "all" - show all uncommitted changes (staged + unstaged)
-  { pattern: /^all$/i, command: "git diff HEAD", description: "all uncommitted changes" },
+  {
+    pattern: /^all$/i,
+    command: "git diff HEAD",
+    description: "all uncommitted changes",
+  },
 ];
 
 /**

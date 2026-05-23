@@ -496,7 +496,10 @@ export class PtySession {
     }
     if (currentConfirmation !== this.activeConfirmation) {
       if (currentConfirmation) {
-        this.emit({ type: "tui_tool_confirmation", message: currentConfirmation });
+        this.emit({
+          type: "tui_tool_confirmation",
+          message: currentConfirmation,
+        });
       }
       this.activeConfirmation = currentConfirmation;
     }

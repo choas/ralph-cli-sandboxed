@@ -18,7 +18,10 @@ export interface ProviderHint {
 export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
   ntfy: [
     { key: "topic", description: "ntfy topic name", required: true },
-    { key: "server", description: "ntfy server URL (default: https://ntfy.sh)" },
+    {
+      key: "server",
+      description: "ntfy server URL (default: https://ntfy.sh)",
+    },
     { key: "priority", description: "Message priority (1-5)" },
     { key: "tags", description: "Comma-separated tags/emojis" },
   ],
@@ -51,12 +54,22 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
       description: "Slack Signing Secret from Basic Information > App Credentials",
       required: true,
     },
-    { key: "allowedChannelIds", description: "Only respond in these channel IDs (security)" },
+    {
+      key: "allowedChannelIds",
+      description: "Only respond in these channel IDs (security)",
+    },
     { key: "enabled", description: "Enable/disable Slack integration" },
   ],
   telegram: [
-    { key: "botToken", description: "Telegram Bot API token from @BotFather", required: true },
-    { key: "allowedChatIds", description: "Only respond in these chat IDs (security)" },
+    {
+      key: "botToken",
+      description: "Telegram Bot API token from @BotFather",
+      required: true,
+    },
+    {
+      key: "allowedChatIds",
+      description: "Only respond in these chat IDs (security)",
+    },
     { key: "enabled", description: "Enable/disable Telegram integration" },
   ],
   discord: [
@@ -65,8 +78,14 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
       description: "Discord Bot Token from Developer Portal > Bot > Token",
       required: true,
     },
-    { key: "allowedGuildIds", description: "Only respond in these server/guild IDs (security)" },
-    { key: "allowedChannelIds", description: "Only respond in these channel IDs (security)" },
+    {
+      key: "allowedGuildIds",
+      description: "Only respond in these server/guild IDs (security)",
+    },
+    {
+      key: "allowedChannelIds",
+      description: "Only respond in these channel IDs (security)",
+    },
     { key: "enabled", description: "Enable/disable Discord integration" },
   ],
   // LLM provider hints
@@ -77,7 +96,10 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
       description: "Model name (e.g., claude-sonnet-4-20250514, claude-opus-4-20250514)",
       required: true,
     },
-    { key: "apiKey", description: "API key (defaults to ANTHROPIC_API_KEY env var)" },
+    {
+      key: "apiKey",
+      description: "API key (defaults to ANTHROPIC_API_KEY env var)",
+    },
     { key: "baseUrl", description: "Custom API base URL (optional)" },
   ],
   openai: [
@@ -87,19 +109,39 @@ export const PROVIDER_HINTS: Record<string, ProviderHint[]> = {
       description: "Model name (e.g., gpt-4o, gpt-4-turbo, gpt-3.5-turbo)",
       required: true,
     },
-    { key: "apiKey", description: "API key (defaults to OPENAI_API_KEY env var)" },
-    { key: "baseUrl", description: "Custom API base URL (for OpenAI-compatible services)" },
+    {
+      key: "apiKey",
+      description: "API key (defaults to OPENAI_API_KEY env var)",
+    },
+    {
+      key: "baseUrl",
+      description: "Custom API base URL (for OpenAI-compatible services)",
+    },
   ],
   ollama: [
     { key: "type", description: "Provider type (ollama)", required: true },
-    { key: "model", description: "Model name (e.g., llama3, mistral, codellama)", required: true },
-    { key: "baseUrl", description: "Ollama server URL (default: http://localhost:11434)" },
+    {
+      key: "model",
+      description: "Model name (e.g., llama3, mistral, codellama)",
+      required: true,
+    },
+    {
+      key: "baseUrl",
+      description: "Ollama server URL (default: http://localhost:11434)",
+    },
   ],
   // Generic LLM provider hint for unknown providers
   llmprovider: [
-    { key: "type", description: "Provider type (anthropic, openai, or ollama)", required: true },
+    {
+      key: "type",
+      description: "Provider type (anthropic, openai, or ollama)",
+      required: true,
+    },
     { key: "model", description: "Model name", required: true },
-    { key: "apiKey", description: "API key (optional, uses env var if not set)" },
+    {
+      key: "apiKey",
+      description: "API key (optional, uses env var if not set)",
+    },
     { key: "baseUrl", description: "Custom API base URL (optional)" },
   ],
 };
@@ -133,7 +175,9 @@ export function KeyValueEditor({
   isFocused = true,
   providerName,
 }: KeyValueEditorProps): React.ReactElement {
-  const [editEntries, setEditEntries] = useState<Record<string, string>>({ ...entries });
+  const [editEntries, setEditEntries] = useState<Record<string, string>>({
+    ...entries,
+  });
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [mode, setMode] = useState<EditorMode>("list");
   const [editText, setEditText] = useState("");
@@ -297,7 +341,6 @@ export function KeyValueEditor({
         // Enter or 'e' to edit/add
         handleStartEdit();
       } else if (input === "d" || key.delete) {
-        // 'd' or Delete to remove
         handleDelete();
       } else if (key.tab || input === " ") {
         // Tab or Space to expand/collapse value

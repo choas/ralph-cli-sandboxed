@@ -52,7 +52,10 @@ export function replaceMessagePlaceholder(command: string, message: string): str
  * Parses a command string into command and arguments.
  * Handles quoted strings and basic shell syntax.
  */
-export function parseCommand(commandString: string): { command: string; args: string[] } {
+export function parseCommand(commandString: string): {
+  command: string;
+  args: string[];
+} {
   const tokens: string[] = [];
   let current = "";
   let inSingleQuote = false;

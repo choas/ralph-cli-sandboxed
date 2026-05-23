@@ -512,9 +512,11 @@ export class TelegramChatClient implements ChatClient {
 
     // Verify bot token by calling getMe and store bot info
     try {
-      const me = await this.apiRequest<{ id: number; first_name: string; username?: string }>(
-        "getMe",
-      );
+      const me = await this.apiRequest<{
+        id: number;
+        first_name: string;
+        username?: string;
+      }>("getMe");
       this.botUserId = me.id;
       this.botUsername = me.username || null;
       if (this.debug) {

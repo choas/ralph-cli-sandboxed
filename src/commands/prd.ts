@@ -480,7 +480,10 @@ export async function prdReset(): Promise<void> {
   );
 }
 
-export function parseListArgs(args: string[]): { category?: string; passesFilter?: boolean } {
+export function parseListArgs(args: string[]): {
+  category?: string;
+  passesFilter?: boolean;
+} {
   let category: string | undefined;
   let passesFilter: boolean | undefined;
 

@@ -26,15 +26,15 @@ ralph action --help             # Show help
 
 These actions are available by default without configuration:
 
-| Action | Description | Requires Daemon | Availability |
-|--------|-------------|-----------------|--------------|
-| `ping` | Health check - responds with 'pong' | Yes | Always |
-| `notify` | Send notification via configured provider | Yes | When `notifications.provider` is set |
-| `telegram_notify` | Send notification via Telegram | Yes | When Telegram chat is configured |
-| `slack_notify` | Send notification via Slack | Yes | When Slack chat is configured |
-| `discord_notify` | Send notification via Discord | Yes | When Discord chat is configured |
-| `chat_status` | Get PRD status as JSON | Yes | Always |
-| `chat_add` | Add new task to PRD | Yes | Always |
+| Action            | Description                               | Requires Daemon | Availability                         |
+| ----------------- | ----------------------------------------- | --------------- | ------------------------------------ |
+| `ping`            | Health check - responds with 'pong'       | Yes             | Always                               |
+| `notify`          | Send notification via configured provider | Yes             | When `notifications.provider` is set |
+| `telegram_notify` | Send notification via Telegram            | Yes             | When Telegram chat is configured     |
+| `slack_notify`    | Send notification via Slack               | Yes             | When Slack chat is configured        |
+| `discord_notify`  | Send notification via Discord             | Yes             | When Discord chat is configured      |
+| `chat_status`     | Get PRD status as JSON                    | Yes             | Always                               |
+| `chat_add`        | Add new task to PRD                       | Yes             | Always                               |
 
 > **Important**: All built-in actions require the daemon to be running (`ralph daemon start`). They use a message queue to communicate between the container and the host.
 
@@ -63,6 +63,7 @@ When running `ralph action`:
 ### 1. Build & Test Actions
 
 #### Run Build Script
+
 Execute a custom build script on the host.
 
 ```json
@@ -79,6 +80,7 @@ Execute a custom build script on the host.
 ```
 
 #### Run Tests with Coverage
+
 Run tests and generate coverage reports.
 
 ```json
@@ -95,6 +97,7 @@ Run tests and generate coverage reports.
 ```
 
 #### Type Check
+
 Run TypeScript type checking.
 
 ```json
@@ -111,6 +114,7 @@ Run TypeScript type checking.
 ```
 
 #### Lint and Fix
+
 Run linter with auto-fix.
 
 ```json
@@ -131,6 +135,7 @@ Run linter with auto-fix.
 ### 2. macOS/Swift Development
 
 #### Generate Xcode Project
+
 Generate Xcode project from Swift package.
 
 ```json
@@ -147,6 +152,7 @@ Generate Xcode project from Swift package.
 ```
 
 #### Xcode Build
+
 Build project using xcodebuild.
 
 ```json
@@ -163,6 +169,7 @@ Build project using xcodebuild.
 ```
 
 #### Xcode Test
+
 Run tests via xcodebuild.
 
 ```json
@@ -179,6 +186,7 @@ Run tests via xcodebuild.
 ```
 
 #### Open in Xcode
+
 Open project in Xcode.
 
 ```json
@@ -199,6 +207,7 @@ Open project in Xcode.
 ### 3. Deployment Actions
 
 #### Deploy to Staging
+
 Deploy application to staging environment.
 
 ```json
@@ -215,6 +224,7 @@ Deploy application to staging environment.
 ```
 
 #### Deploy to Production
+
 Deploy application to production (with confirmation).
 
 ```json
@@ -231,6 +241,7 @@ Deploy application to production (with confirmation).
 ```
 
 #### Fastlane Beta (iOS)
+
 Deploy to TestFlight.
 
 ```json
@@ -247,6 +258,7 @@ Deploy to TestFlight.
 ```
 
 #### Fastlane Release (iOS)
+
 Deploy to App Store.
 
 ```json
@@ -263,6 +275,7 @@ Deploy to App Store.
 ```
 
 #### Docker Build and Push
+
 Build and push Docker image.
 
 ```json
@@ -283,6 +296,7 @@ Build and push Docker image.
 ### 4. Logging & Monitoring
 
 #### Log Task Completion
+
 Log completed tasks to a file.
 
 ```json
@@ -299,6 +313,7 @@ Log completed tasks to a file.
 ```
 
 #### Log Ralph Complete
+
 Log when all PRD tasks are complete.
 
 ```json
@@ -315,6 +330,7 @@ Log when all PRD tasks are complete.
 ```
 
 #### Log with JSON Format
+
 Log events in JSON format for parsing.
 
 ```json
@@ -335,6 +351,7 @@ Log events in JSON format for parsing.
 ### 5. Git & Version Control
 
 #### Git Status
+
 Show git status.
 
 ```json
@@ -351,6 +368,7 @@ Show git status.
 ```
 
 #### Git Diff
+
 Show uncommitted changes.
 
 ```json
@@ -367,6 +385,7 @@ Show uncommitted changes.
 ```
 
 #### Create Git Tag
+
 Create a version tag.
 
 ```json
@@ -383,6 +402,7 @@ Create a version tag.
 ```
 
 #### Push to Remote
+
 Push changes to remote repository.
 
 ```json
@@ -403,6 +423,7 @@ Push changes to remote repository.
 ### 6. Notification Actions
 
 #### Desktop Notification (macOS)
+
 Send macOS desktop notification.
 
 ```json
@@ -419,6 +440,7 @@ Send macOS desktop notification.
 ```
 
 #### Slack Notification
+
 Send notification to Slack webhook.
 
 ```json
@@ -435,6 +457,7 @@ Send notification to Slack webhook.
 ```
 
 #### Discord Notification
+
 Send notification to Discord webhook.
 
 ```json
@@ -451,6 +474,7 @@ Send notification to Discord webhook.
 ```
 
 #### Play Sound (macOS)
+
 Play a sound when task completes.
 
 ```json
@@ -471,6 +495,7 @@ Play a sound when task completes.
 ### 7. Database Actions
 
 #### Run Database Migrations
+
 Run database migrations.
 
 ```json
@@ -487,6 +512,7 @@ Run database migrations.
 ```
 
 #### Database Backup
+
 Create database backup.
 
 ```json
@@ -503,6 +529,7 @@ Create database backup.
 ```
 
 #### Seed Database
+
 Seed database with test data.
 
 ```json
@@ -523,6 +550,7 @@ Seed database with test data.
 ### 8. Environment & Utilities
 
 #### Open Browser
+
 Open URL in default browser.
 
 ```json
@@ -539,6 +567,7 @@ Open URL in default browser.
 ```
 
 #### Clear Cache
+
 Clear application cache.
 
 ```json
@@ -555,6 +584,7 @@ Clear application cache.
 ```
 
 #### Kill Port
+
 Kill process on a specific port.
 
 ```json
@@ -571,6 +601,7 @@ Kill process on a specific port.
 ```
 
 #### Check System Resources
+
 Display system resource usage.
 
 ```json
@@ -641,12 +672,12 @@ Actions can be automatically triggered by Ralph events. Add an `events` section 
 
 ### Available Events
 
-| Event | Description | Placeholders |
-|-------|-------------|--------------|
-| `task_complete` | After each task is marked as passing | `{{task}}` |
-| `ralph_complete` | When all PRD tasks are complete | - |
-| `iteration_complete` | After each `ralph once` iteration | - |
-| `error` | When an error occurs | `{{error}}` |
+| Event                | Description                          | Placeholders |
+| -------------------- | ------------------------------------ | ------------ |
+| `task_complete`      | After each task is marked as passing | `{{task}}`   |
+| `ralph_complete`     | When all PRD tasks are complete      | -            |
+| `iteration_complete` | After each `ralph once` iteration    | -            |
+| `error`              | When an error occurs                 | `{{error}}`  |
 
 ---
 
@@ -719,16 +750,19 @@ Here's a comprehensive config with multiple useful actions:
 1. **Use `$RALPH_MESSAGE`**: Actions receive arguments via the `RALPH_MESSAGE` environment variable.
 
 2. **Chain commands**: Use `&&` to run multiple commands in sequence:
+
    ```json
    "command": "npm run build && npm run test"
    ```
 
 3. **Silent failures**: Use `|| true` to prevent action failures from stopping the workflow:
+
    ```json
    "command": "some-command || true"
    ```
 
 4. **Background processes**: Use `&` to run commands in the background:
+
    ```json
    "command": "npm run dev &"
    ```
@@ -781,11 +815,13 @@ Verify that:
 ### Notifications Not Being Sent
 
 For ntfy:
+
 - Verify `notifications.provider` is set to `"ntfy"`
 - Check that `notifications.ntfy.topic` is set
 - Test manually: `curl -d "test" https://ntfy.sh/your-topic`
 
 For Telegram:
+
 - Verify `chat.telegram.botToken` is set
 - Verify `chat.telegram.allowedChatIds` contains your chat ID
 - Check the daemon logs for errors

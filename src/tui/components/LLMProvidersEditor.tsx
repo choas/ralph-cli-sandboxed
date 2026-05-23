@@ -68,7 +68,9 @@ export function LLMProvidersEditor({
   isFocused = true,
   maxHeight = 15,
 }: LLMProvidersEditorProps): React.ReactElement {
-  const [editProviders, setEditProviders] = useState<LLMProvidersConfig>({ ...providers });
+  const [editProviders, setEditProviders] = useState<LLMProvidersConfig>({
+    ...providers,
+  });
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [mode, setMode] = useState<EditorMode>("list");
   const [editText, setEditText] = useState("");

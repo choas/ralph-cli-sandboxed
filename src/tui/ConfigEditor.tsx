@@ -283,7 +283,9 @@ export function ConfigEditor(): React.ReactElement {
         }
       }
     },
-    { isActive: focusPane !== "field-editor" && focusPane !== "preset-selector" },
+    {
+      isActive: focusPane !== "field-editor" && focusPane !== "preset-selector",
+    },
   );
 
   // Render loading state

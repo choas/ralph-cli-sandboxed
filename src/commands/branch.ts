@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { execSync, execFileSync } from "child_process";
 import { existsSync } from "fs";
 import { join } from "path";
 import { getPrdFiles, loadBranchState, getProjectName } from "../utils/config.js";
@@ -44,7 +44,9 @@ function loadPrdEntries(): { entries: PrdEntry[]; prdPath: string } | null {
  */
 function getBaseBranch(): string {
   try {
-    return execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf-8" }).trim();
+    return execSync("git rev-parse --abbrev-ref HEAD", {
+      encoding: "utf-8",
+    }).trim();
   } catch {
     return "main";
   }
@@ -55,7 +57,7 @@ function getBaseBranch(): string {
  */
 function branchExists(branch: string): boolean {
   try {
-    execSync(`git rev-parse --verify "${branch}"`, { stdio: "pipe" });
+    execFileSync("git", ["rev-parse", "--verify", branch], { stdio: "pipe" });
     return true;
   } catch {
     return false;
@@ -178,7 +180,7 @@ async function branchMerge(args: string[]): Promise<void> {
   // Perform the merge into the base branch
   try {
     console.log(`\nMerging "${branchName}" into "${baseBranch}"...`);
-    execSync(`git merge "${branchName}" --no-edit`, { stdio: "pipe" });
+    execFileSync("git", ["merge", branchName, "--no-edit"], { stdio: "pipe" });
     console.log(`\x1b[32mSuccessfully merged "${branchName}" into "${baseBranch}".\x1b[0m`);
   } catch (err) {
     // Check if this is a merge conflict
@@ -245,7 +247,7 @@ async function branchMerge(args: string[]): Promise<void> {
   if (existsSync(worktreePath)) {
     console.log(`\nCleaning up worktree at ${worktreePath}...`);
     try {
-      execSync(`git worktree remove "${worktreePath}"`, { stdio: "pipe" });
+      execFileSync("git", ["worktree", "remove", worktreePath], { stdio: "pipe" });
       console.log(`\x1b[32mWorktree removed.\x1b[0m`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -309,11 +311,13 @@ async function branchPr(args: string[]): Promise<void> {
 
   // Auto-push: if branch has no upstream tracking, push it
   try {
-    execSync(`git rev-parse --abbrev-ref "${branchName}@{upstream}"`, { stdio: "pipe" });
+    execFileSync("git", ["rev-parse", "--abbrev-ref", `${branchName}@{upstream}`], {
+      stdio: "pipe",
+    });
   } catch {
     console.log(`Pushing "${branchName}" to ${remote}...`);
     try {
-      execSync(`git push -u "${remote}" "${branchName}"`, { stdio: "inherit" });
+      execFileSync("git", ["push", "-u", remote, branchName], { stdio: "inherit" });
     } catch {
       console.error(`\x1b[31mError: Failed to push "${branchName}" to ${remote}.\x1b[0m`);
       process.exit(1);
@@ -342,9 +346,13 @@ async function branchPr(args: string[]): Promise<void> {
 
   // Commits section
   try {
-    const log = execSync(`git log "${baseBranch}..${branchName}" --oneline --no-decorate`, {
-      encoding: "utf-8",
-    }).trim();
+    const log = execFileSync(
+      "git",
+      ["log", `${baseBranch}..${branchName}`, "--oneline", "--no-decorate"],
+      {
+        encoding: "utf-8",
+      },
+    ).trim();
     if (log) {
       bodyParts.push("## Commits\n");
       bodyParts.push(log);
@@ -371,8 +379,20 @@ async function branchPr(args: string[]): Promise<void> {
 
   // Create the PR using gh, piping body via stdin to avoid shell escaping issues
   try {
-    const prUrl = execSync(
-      `gh pr create --base "${baseBranch}" --head "${branchName}" --title "${prTitle.replace(/"/g, '\\"')}" --body-file -`,
+    const prUrl = execFileSync(
+      "gh",
+      [
+        "pr",
+        "create",
+        "--base",
+        baseBranch,
+        "--head",
+        branchName,
+        "--title",
+        prTitle,
+        "--body-file",
+        "-",
+      ],
       {
         encoding: "utf-8",
         input: prBody,
@@ -437,7 +457,9 @@ async function branchDelete(args: string[]): Promise<void> {
   if (hasWorktree) {
     console.log(`\nRemoving worktree at ${worktreePath}...`);
     try {
-      execSync(`git worktree remove "${worktreePath}" --force`, { stdio: "pipe" });
+      execFileSync("git", ["worktree", "remove", worktreePath, "--force"], {
+        stdio: "pipe",
+      });
       console.log(`\x1b[32mWorktree removed.\x1b[0m`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -449,7 +471,7 @@ async function branchDelete(args: string[]): Promise<void> {
   // Step 2: Delete the git branch
   console.log(`Deleting branch "${branchName}"...`);
   try {
-    execSync(`git branch -D "${branchName}"`, { stdio: "pipe" });
+    execFileSync("git", ["branch", "-D", branchName], { stdio: "pipe" });
     console.log(`\x1b[32mBranch deleted.\x1b[0m`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

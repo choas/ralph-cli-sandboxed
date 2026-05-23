@@ -13,13 +13,13 @@ ralph docker run
 
 ## Docker Commands
 
-| Command | Description |
-|---------|-------------|
-| `ralph docker init` | Generate/regenerate Docker configuration files |
-| `ralph docker build` | Build the Docker image |
-| `ralph docker run` | Run ralph inside the container (auto-builds if needed) |
-| `ralph docker clean` | Remove Docker image and associated resources |
-| `ralph docker help` | Show help message |
+| Command              | Description                                            |
+| -------------------- | ------------------------------------------------------ |
+| `ralph docker init`  | Generate/regenerate Docker configuration files         |
+| `ralph docker build` | Build the Docker image                                 |
+| `ralph docker run`   | Run ralph inside the container (auto-builds if needed) |
+| `ralph docker clean` | Remove Docker image and associated resources           |
+| `ralph docker help`  | Show help message                                      |
 
 ## Generated Files
 
@@ -124,11 +124,11 @@ Record terminal sessions inside the container for demos, debugging, or sharing A
 }
 ```
 
-| Setting | Description |
-|---------|-------------|
-| `enabled` | Install asciinema in the container |
+| Setting      | Description                                         |
+| ------------ | --------------------------------------------------- |
+| `enabled`    | Install asciinema in the container                  |
 | `autoRecord` | Automatically start recording when container starts |
-| `outputDir` | Directory for recordings (default: `.recordings`) |
+| `outputDir`  | Directory for recordings (default: `.recordings`)   |
 
 After enabling, regenerate Docker files: `ralph docker init`
 
@@ -137,6 +137,7 @@ After enabling, regenerate Docker files: `ralph docker init`
 Recordings are saved to the mounted workspace directory (e.g., `.recordings/`). They never leave the container automatically - no network access is needed.
 
 To upload recordings:
+
 1. Exit the container
 2. From your host machine: `asciinema upload .recordings/session-*.cast`
 3. Or set `ASCIINEMA_SERVER_URL` environment variable before uploading to use a self-hosted server
@@ -175,11 +176,11 @@ After adding domains, regenerate Docker files: `ralph docker init`
 
 The firewall script resolves domains to IPs at container startup using `dig`. Common use cases:
 
-| Use Case | Domains |
-|----------|---------|
-| Python/PyPI | `pypi.org`, `files.pythonhosted.org` |
-| Maven Central | `repo1.maven.org`, `repo.maven.apache.org` |
-| Internal registry | `registry.mycompany.com` |
+| Use Case          | Domains                                    |
+| ----------------- | ------------------------------------------ |
+| Python/PyPI       | `pypi.org`, `files.pythonhosted.org`       |
+| Maven Central     | `repo1.maven.org`, `repo.maven.apache.org` |
+| Internal registry | `registry.mycompany.com`                   |
 
 ## Installing Packages
 

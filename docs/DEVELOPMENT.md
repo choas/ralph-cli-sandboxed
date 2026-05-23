@@ -122,9 +122,7 @@ Edit `src/config/languages.json`:
       "docker": {
         "install": "# Installation commands for Dockerfile"
       },
-      "technologies": [
-        { "name": "Framework", "description": "Description" }
-      ]
+      "technologies": [{ "name": "Framework", "description": "Description" }]
     }
   }
 }
@@ -204,6 +202,7 @@ npm run format:check  # Check formatting without changes
 ```
 
 Configuration is in `.oxfmtrc.json`:
+
 - 2 spaces indentation
 - Double quotes
 - Semicolons

@@ -305,7 +305,13 @@ server.tool(
             {
               type: "text" as const,
               text: JSON.stringify(
-                { passing: 0, total: 0, percentage: 0, categories: {}, remaining: [] },
+                {
+                  passing: 0,
+                  total: 0,
+                  percentage: 0,
+                  categories: {},
+                  remaining: [],
+                },
                 null,
                 2,
               ),
@@ -330,7 +336,11 @@ server.tool(
       const remaining = prd.reduce<{ index: number; category: string; description: string }[]>(
         (acc, entry, i) => {
           if (!entry.passes) {
-            acc.push({ index: i + 1, category: entry.category, description: entry.description });
+            acc.push({
+              index: i + 1,
+              category: entry.category,
+              description: entry.description,
+            });
           }
           return acc;
         },

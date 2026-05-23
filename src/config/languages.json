@@ -14,7 +14,10 @@
         { "name": "Drizzle ORM", "description": "TypeScript ORM" },
         { "name": "Prisma", "description": "Type-safe database ORM" },
         { "name": "React", "description": "UI component library" },
-        { "name": "Tailwind CSS", "description": "Utility-first CSS framework" },
+        {
+          "name": "Tailwind CSS",
+          "description": "Utility-first CSS framework"
+        },
         { "name": "tRPC", "description": "End-to-end typesafe APIs" },
         { "name": "Zod", "description": "TypeScript-first schema validation" },
         { "name": "SQLite", "description": "Embedded SQL database" },
@@ -37,10 +40,16 @@
         { "name": "Remix", "description": "Full stack web framework" },
         { "name": "Prisma", "description": "Type-safe database ORM" },
         { "name": "TypeORM", "description": "TypeScript ORM" },
-        { "name": "Drizzle ORM", "description": "TypeScript ORM with SQL-like syntax" },
+        {
+          "name": "Drizzle ORM",
+          "description": "TypeScript ORM with SQL-like syntax"
+        },
         { "name": "tRPC", "description": "End-to-end typesafe APIs" },
         { "name": "Zod", "description": "TypeScript-first schema validation" },
-        { "name": "Turborepo", "description": "High-performance monorepo build system" },
+        {
+          "name": "Turborepo",
+          "description": "High-performance monorepo build system"
+        },
         { "name": "SWC", "description": "Fast TypeScript/JavaScript compiler" },
         { "name": "Jest", "description": "JavaScript testing framework" },
         { "name": "Vitest", "description": "Fast unit testing framework" },
@@ -66,14 +75,23 @@
         { "name": "SQLAlchemy", "description": "SQL toolkit and ORM" },
         { "name": "Pydantic", "description": "Data validation library" },
         { "name": "Celery", "description": "Distributed task queue" },
-        { "name": "LangChain", "description": "Framework for LLM applications" },
+        {
+          "name": "LangChain",
+          "description": "Framework for LLM applications"
+        },
         { "name": "Alembic", "description": "Database migration tool" },
-        { "name": "Poetry", "description": "Dependency management and packaging" },
+        {
+          "name": "Poetry",
+          "description": "Dependency management and packaging"
+        },
         { "name": "Ruff", "description": "Fast Python linter and formatter" },
         { "name": "Uvicorn", "description": "ASGI web server" },
         { "name": "Typer", "description": "CLI application framework" },
         { "name": "Polars", "description": "Fast DataFrame library" },
-        { "name": "uv", "description": "Fast Python package installer and resolver" },
+        {
+          "name": "uv",
+          "description": "Fast Python package installer and resolver"
+        },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
         { "name": "MySQL", "description": "Popular SQL database" },
         { "name": "Redis", "description": "In-memory data store" },
@@ -99,7 +117,10 @@
         { "name": "Cobra", "description": "CLI application framework" },
         { "name": "Viper", "description": "Configuration management library" },
         { "name": "Wire", "description": "Compile-time dependency injection" },
-        { "name": "testify", "description": "Testing toolkit with assertions and mocks" },
+        {
+          "name": "testify",
+          "description": "Testing toolkit with assertions and mocks"
+        },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
         { "name": "MongoDB", "description": "NoSQL document database" },
         { "name": "MySQL", "description": "Popular SQL database" },
@@ -125,7 +146,10 @@
         { "name": "Tauri", "description": "Desktop app framework" },
         { "name": "SeaORM", "description": "Async ORM for Rust" },
         { "name": "Clap", "description": "Command-line argument parser" },
-        { "name": "Tracing", "description": "Application-level tracing framework" },
+        {
+          "name": "Tracing",
+          "description": "Application-level tracing framework"
+        },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
         { "name": "Redis", "description": "In-memory data store" },
         { "name": "MongoDB", "description": "NoSQL document database" }
@@ -148,10 +172,16 @@
         { "name": "Hibernate", "description": "ORM framework" },
         { "name": "JPA", "description": "Java Persistence API" },
         { "name": "Gradle", "description": "Build automation tool" },
-        { "name": "Lombok", "description": "Boilerplate code reduction library" },
+        {
+          "name": "Lombok",
+          "description": "Boilerplate code reduction library"
+        },
         { "name": "MapStruct", "description": "Bean mapping code generator" },
         { "name": "Flyway", "description": "Database migration tool" },
-        { "name": "Testcontainers", "description": "Integration testing with containers" },
+        {
+          "name": "Testcontainers",
+          "description": "Integration testing with containers"
+        },
         { "name": "JUnit", "description": "Testing framework" },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
         { "name": "MySQL", "description": "Popular SQL database" },
@@ -177,12 +207,24 @@
         { "name": "Exposed", "description": "Kotlin SQL framework" },
         { "name": "Koin", "description": "Dependency injection framework" },
         { "name": "Kotest", "description": "Kotlin testing framework" },
-        { "name": "kotlinx.coroutines", "description": "Coroutines for async programming" },
-        { "name": "kotlinx.serialization", "description": "Multiplatform serialization" },
-        { "name": "Arrow", "description": "Functional companion to Kotlin's standard library" },
+        {
+          "name": "kotlinx.coroutines",
+          "description": "Coroutines for async programming"
+        },
+        {
+          "name": "kotlinx.serialization",
+          "description": "Multiplatform serialization"
+        },
+        {
+          "name": "Arrow",
+          "description": "Functional companion to Kotlin's standard library"
+        },
         { "name": "Mockk", "description": "Mocking library for Kotlin" },
         { "name": "Flyway", "description": "Database migration tool" },
-        { "name": "Compose Multiplatform", "description": "Declarative UI framework for Kotlin" },
+        {
+          "name": "Compose Multiplatform",
+          "description": "Declarative UI framework for Kotlin"
+        },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
         { "name": "MySQL", "description": "Popular SQL database" },
         { "name": "Redis", "description": "In-memory data store" },
@@ -200,7 +242,10 @@
       "technologies": [
         { "name": "ASP.NET Core", "description": "Web framework for .NET" },
         { "name": "Blazor", "description": "Web UI framework using C#" },
-        { "name": "Entity Framework Core", "description": "Modern ORM for .NET" },
+        {
+          "name": "Entity Framework Core",
+          "description": "Modern ORM for .NET"
+        },
         { "name": "Dapper", "description": "Simple object mapper for .NET" },
         { "name": "xUnit", "description": "Unit testing framework" },
         { "name": "NUnit", "description": "Testing framework for .NET" },
@@ -263,13 +308,22 @@
       },
       "technologies": [
         { "name": "Vapor", "description": "Server-side Swift web framework" },
-        { "name": "Hummingbird", "description": "Lightweight Swift web framework" },
+        {
+          "name": "Hummingbird",
+          "description": "Lightweight Swift web framework"
+        },
         { "name": "Fluent ORM", "description": "Swift ORM for Vapor" },
         { "name": "SwiftNIO", "description": "Event-driven network framework" },
         { "name": "SwiftUI", "description": "Apple declarative UI framework" },
-        { "name": "Fastlane", "description": "iOS/macOS deployment automation" },
+        {
+          "name": "Fastlane",
+          "description": "iOS/macOS deployment automation"
+        },
         { "name": "Combine", "description": "Reactive programming framework" },
-        { "name": "Swift Testing", "description": "Modern testing framework for Swift" },
+        {
+          "name": "Swift Testing",
+          "description": "Modern testing framework for Swift"
+        },
         { "name": "XCTest", "description": "Swift testing framework" },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
         { "name": "SQLite", "description": "Embedded SQL database" },
@@ -288,7 +342,10 @@
       },
       "technologies": [
         { "name": "Phoenix", "description": "Web framework for Elixir" },
-        { "name": "Ecto", "description": "Database wrapper and query generator" },
+        {
+          "name": "Ecto",
+          "description": "Database wrapper and query generator"
+        },
         { "name": "LiveView", "description": "Real-time server-rendered HTML" },
         { "name": "Oban", "description": "Background job processing" },
         { "name": "ExUnit", "description": "Built-in testing framework" },
@@ -305,15 +362,24 @@
         "install": "# Install Java and sbt\nRUN apt-get update && apt-get install -y \\\n    openjdk-17-jdk \\\n    apt-transport-https \\\n    gnupg \\\n    && rm -rf /var/lib/apt/lists/*\nENV JAVA_HOME=\"/usr/lib/jvm/java-17-openjdk-$(dpkg --print-architecture)\"\n# Install sbt\nRUN echo \"deb https://repo.scala-sbt.org/scalasbt/debian all main\" | tee /etc/apt/sources.list.d/sbt.list && \\\n    curl -sL \"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823\" | gpg --dearmor -o /etc/apt/trusted.gpg.d/sbt.gpg && \\\n    apt-get update && apt-get install -y sbt && rm -rf /var/lib/apt/lists/*"
       },
       "technologies": [
-        { "name": "Play Framework", "description": "High-velocity web framework" },
-        { "name": "Akka HTTP", "description": "HTTP server and client toolkit" },
+        {
+          "name": "Play Framework",
+          "description": "High-velocity web framework"
+        },
+        {
+          "name": "Akka HTTP",
+          "description": "HTTP server and client toolkit"
+        },
         { "name": "http4s", "description": "Typeful, functional HTTP library" },
         { "name": "Slick", "description": "Functional relational mapping" },
         { "name": "Doobie", "description": "Functional JDBC layer" },
         { "name": "ScalaTest", "description": "Testing framework for Scala" },
         { "name": "Specs2", "description": "Software specification library" },
         { "name": "PostgreSQL", "description": "Advanced SQL database" },
-        { "name": "Kafka", "description": "Distributed event streaming platform" },
+        {
+          "name": "Kafka",
+          "description": "Distributed event streaming platform"
+        },
         { "name": "Spark", "description": "Unified analytics engine" }
       ]
     },
@@ -326,7 +392,10 @@
         "install": "# Install Zig compiler\nRUN ARCH=$(dpkg --print-architecture) && \\\n    if [ \"$ARCH\" = \"amd64\" ]; then ZIG_ARCH=\"x86_64\"; else ZIG_ARCH=\"aarch64\"; fi && \\\n    curl -fsSL https://ziglang.org/download/0.11.0/zig-linux-${ZIG_ARCH}-0.11.0.tar.xz | tar -xJ -C /opt && \\\n    ln -s /opt/zig-linux-${ZIG_ARCH}-0.11.0/zig /usr/local/bin/zig"
       },
       "technologies": [
-        { "name": "std.http", "description": "Zig standard library HTTP server/client" },
+        {
+          "name": "std.http",
+          "description": "Zig standard library HTTP server/client"
+        },
         { "name": "SQLite", "description": "Embedded SQL database" },
         { "name": "PostgreSQL", "description": "Advanced SQL database" }
       ]
@@ -344,9 +413,15 @@
         { "name": "Yesod", "description": "Full-stack Haskell web framework" },
         { "name": "Scotty", "description": "Lightweight web framework" },
         { "name": "Persistent", "description": "Type-safe database access" },
-        { "name": "Esqueleto", "description": "Type-safe EDSL for SQL queries" },
+        {
+          "name": "Esqueleto",
+          "description": "Type-safe EDSL for SQL queries"
+        },
         { "name": "HSpec", "description": "BDD-style testing framework" },
-        { "name": "QuickCheck", "description": "Property-based testing library" },
+        {
+          "name": "QuickCheck",
+          "description": "Property-based testing library"
+        },
         { "name": "PostgreSQL", "description": "Advanced SQL database" }
       ]
     },

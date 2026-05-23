@@ -45,7 +45,10 @@ export async function ask(args: string[]): Promise<void> {
   }
 
   // Override maxLength for CLI (no truncation)
-  const config: ResponderConfig = { ...responderConfig, maxLength: CLI_MAX_LENGTH };
+  const config: ResponderConfig = {
+    ...responderConfig,
+    maxLength: CLI_MAX_LENGTH,
+  };
 
   // Execute based on type
   const result = await executeResponder(config, message);
@@ -77,7 +80,10 @@ function resolveResponder(name: string): {
   const presetsConfig = loadResponderPresets();
   const preset = presetsConfig.presets[name];
   if (preset) {
-    return { responderConfig: presetToResponderConfig(preset), source: "preset" };
+    return {
+      responderConfig: presetToResponderConfig(preset),
+      source: "preset",
+    };
   }
 
   return { responderConfig: null, source: "preset" };

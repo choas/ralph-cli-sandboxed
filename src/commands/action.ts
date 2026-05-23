@@ -51,7 +51,10 @@ export async function action(args: string[]): Promise<void> {
   const configuredActions = config.daemon?.actions || {};
 
   // Merge: configured actions override built-in ones
-  const allActions: Record<string, DaemonAction> = { ...builtInActions, ...configuredActions };
+  const allActions: Record<string, DaemonAction> = {
+    ...builtInActions,
+    ...configuredActions,
+  };
   const actionNames = Object.keys(allActions);
 
   // If --list, no action specified, or "help" action, show available actions
