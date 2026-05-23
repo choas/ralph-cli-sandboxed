@@ -308,7 +308,7 @@ export function RespondersEditor({
         handleNavigateUp();
       } else if (key.return || input === "e") {
         handleStartEdit();
-      } else if (input === "d" || key.delete || key.backspace) {
+      } else if (input === "d" || key.delete) {
         handleDelete();
       } else if (key.escape) {
         onCancel();

@@ -195,7 +195,7 @@ export function ObjectEditor({
       } else if (key.return || input === "e") {
         // Enter or 'e' to edit/add
         handleStartEdit();
-      } else if (input === "d" || key.delete || key.backspace) {
+      } else if (input === "d" || key.delete) {
         handleDelete();
       } else if (key.tab || input === " ") {
         // Tab or Space to expand/collapse value

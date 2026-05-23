@@ -163,7 +163,7 @@ export function ArrayEditor({
       } else if (key.return || input === "e") {
         // Enter or 'e' to edit/add
         handleStartEdit();
-      } else if (input === "d" || key.delete || key.backspace) {
+      } else if (input === "d" || key.delete) {
         handleDelete();
       } else if (input === "K" || (key.shift && key.upArrow)) {
         // Shift+K or Shift+Up to move up
