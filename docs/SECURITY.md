@@ -12,17 +12,17 @@ When running inside a container, ralph automatically passes the appropriate auto
 
 ### Provider Support
 
-| Provider    | Autonomous Flag                  | Status                 |
-| ----------- | -------------------------------- | ---------------------- |
-| Claude Code | `--dangerously-skip-permissions` | ✅ Supported           |
-| Gemini CLI  | `-y`                             | ✅ Supported           |
-| Codex CLI   | `--approval-mode full-auto`      | ✅ Supported           |
-| AMP         | `--dangerously-allow-all`        | ✅ Supported           |
-| Aider       | `--yes-always`                   | ✅ Supported           |
-| Goose       | (none needed)                    | ✅ Supported           |
-| OpenCode    | (none)                           | ❌ Not yet implemented |
-| Ollama      | (none needed)                    | ✅ Supported           |
-| Custom      | (none)                           | ⚙️ User-configured     |
+| Provider    | Autonomous Flag                                | Status              |
+| ----------- | ---------------------------------------------- | ------------------- |
+| Claude Code | `--dangerously-skip-permissions`               | ✅ Supported        |
+| Gemini CLI  | `-y`                                           | ✅ Supported        |
+| Codex CLI   | `--dangerously-bypass-approvals-and-sandbox`   | ✅ Supported        |
+| AMP         | `--dangerously-allow-all`                      | ✅ Supported        |
+| Aider       | `--yes-always`                                 | ✅ Supported        |
+| Goose       | (none needed)                                  | ✅ Supported        |
+| OpenCode    | (none)                                         | ❌ Not implemented  |
+| Ollama      | (none needed)                                  | ✅ Supported        |
+| Custom      | (none)                                         | ⚙️ User-configured  |
 
 For providers without autonomous mode support, you may need to manually approve actions during execution.
 

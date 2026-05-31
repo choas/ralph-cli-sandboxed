@@ -48,6 +48,15 @@
       "timeout": 300000,
       "maxLength": 2000
     },
+    "codex": {
+      "name": "Codex CLI Editor",
+      "description": "Codex CLI responder for making file modifications",
+      "type": "cli",
+      "trigger": "@codex",
+      "command": "codex exec --dangerously-bypass-approvals-and-sandbox '{{message}}'",
+      "timeout": 300000,
+      "maxLength": 2000
+    },
     "audit": {
       "name": "Security Auditor",
       "description": "Claude Code responder for running npm audit and fixing vulnerabilities",

@@ -260,7 +260,7 @@ Ralph supports multiple AI CLI tools. Select your provider during `ralph init`:
 | [Aider](https://github.com/paul-gauthier/aider)           | Working        | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`                                 |                                                                                                   |
 | [Goose](https://github.com/block/goose)                   | Working        | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`                                 | Block's AI coding agent                                                                           |
 | [Ollama](https://ollama.com/)                             | Working        | (none)                                                                | Local LLM server                                                                                  |
-| [Codex CLI](https://github.com/openai/codex)              | Testers wanted | `OPENAI_API_KEY`                                                      | Sponsors welcome                                                                                  |
+| [Codex CLI](https://github.com/openai/codex)              | Working        | `OPENAI_API_KEY`                                                      | Also supports mounted `~/.codex` ChatGPT OAuth credentials                                         |
 | [AMP](https://ampcode.com/)                               | Testers wanted | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`                                 | Sponsors welcome                                                                                  |
 | Custom                                                    | -              | User-defined                                                          | Configure your own CLI                                                                            |
 
@@ -531,8 +531,8 @@ ralph docker run
 Features:
 
 - Based on [Claude Code devcontainer](https://github.com/anthropics/claude-code/tree/main/.devcontainer)
-- Network sandboxing (firewall allows only GitHub, npm, Anthropic API, plus language-specific domains — e.g., `deno.land`, `jsr.io`, `esm.sh` for Deno projects)
-- Your `~/.claude` credentials mounted automatically (Pro/Max OAuth)
+- Network sandboxing (firewall allows only GitHub, npm, selected provider APIs, plus language-specific domains — e.g., `deno.land`, `jsr.io`, `esm.sh` for Deno projects)
+- Your provider credentials mounted automatically (`~/.claude` for Claude Code, `~/.codex` for Codex CLI, `~/.gemini` for Gemini CLI)
 - Language-specific tooling pre-installed
 - Language-specific Claude Code hooks (e.g., Deno projects auto-install a `PreToolUse` hook that blocks `npm`/`npx`/`yarn`/`pnpm` commands)
 

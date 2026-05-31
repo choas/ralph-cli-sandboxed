@@ -401,7 +401,11 @@ echo "Allowed: ${allowedList}"
 `;
 }
 
-function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig["docker"]): string {
+function generateDockerCompose(
+  imageName: string,
+  dockerConfig?: RalphConfig["docker"],
+  cliProvider?: string,
+): string {
   // Build ports section if configured
   let portsSection = "";
   if (dockerConfig?.ports && dockerConfig.ports.length > 0) {
@@ -409,14 +413,23 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig["do
     portsSection = `    ports:\n${portLines}\n`;
   }
 
-  // Build volumes array: base volumes + custom volumes
+  // Build volumes array: base volumes + provider credential mount + custom volumes
+  const cliProvidersJson = getCliProvidersJson();
+  const providerKey = cliProvider || "claude";
+  const provider = cliProvidersJson.providers[providerKey] || cliProvidersJson.providers.claude;
   const baseVolumes = [
     "      # Mount project root (two levels up from .ralph/docker/)",
     "      - ../..:/workspace",
-    "      # Mount host's ~/.claude for Pro/Max OAuth credentials",
-    "      - ${HOME}/.claude:/home/node/.claude",
-    `      - ${imageName}-history:/commandhistory`,
   ];
+
+  if (provider?.credentialMount) {
+    const [hostPath, containerPath] = provider.credentialMount.split(":");
+    const expandedHostPath = hostPath.replace(/^~(?=\/|$)/, "${HOME}");
+    baseVolumes.push(`      # Mount host credentials for ${provider.name}`);
+    baseVolumes.push(`      - ${expandedHostPath}:${containerPath}`);
+  }
+
+  baseVolumes.push(`      - ${imageName}-history:/commandhistory`);
 
   // Mount worktrees path if configured
   if (dockerConfig?.worktreesPath) {
@@ -463,12 +476,19 @@ function generateDockerCompose(imageName: string, dockerConfig?: RalphConfig["do
   }
 
   if (envEntries.length > 0) {
-    environmentSection = `    environment:\n${envEntries.join("\n")}\n`;
+    environmentSection = `    environment:
+${envEntries.join("\n")}
+`;
   } else {
-    // Keep the commented placeholder for users who don't have config
+    // Keep commented placeholders for users who don't have config.
+    const providerEnvVars = provider?.envVars || ["ANTHROPIC_API_KEY"];
+    const envCommentLines = providerEnvVars.length
+      ? providerEnvVars.map((envVar) => `    #   - ${envVar}=$` + `{${envVar}}`).join("\n")
+      : "    #   - YOUR_API_KEY=$" + "{YOUR_API_KEY}";
     environmentSection = `    # Uncomment to use API key instead of OAuth:
     # environment:
-    #   - ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY}\n`;
+${envCommentLines}
+`;
   }
 
   // Build command section if configured
@@ -834,7 +854,7 @@ async function generateFiles(
     },
     {
       name: "docker-compose.yml",
-      content: generateDockerCompose(imageName, dockerConfig),
+      content: generateDockerCompose(imageName, dockerConfig, cliProvider),
     },
     { name: ".dockerignore", content: DOCKERIGNORE },
   ];
