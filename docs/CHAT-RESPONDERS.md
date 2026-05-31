@@ -446,6 +446,7 @@ Ralph includes preset responder configurations for common use cases. Select pres
 | `architect` | `@arch`    | LLM         | Architecture discussions   |
 | `explain`   | `@explain` | LLM         | Detailed code explanations |
 | `code`      | `@code`    | Claude Code | File modifications         |
+| `codex`     | `@codex`   | CLI         | Codex CLI file modifications |
 
 ### Preset Bundles
 
@@ -484,6 +485,13 @@ Copy preset configs from `src/config/responder-presets.json` or use these exampl
       "code": {
         "type": "claude-code",
         "trigger": "@code",
+        "timeout": 300000,
+        "maxLength": 2000
+      },
+      "codex": {
+        "type": "cli",
+        "trigger": "@codex",
+        "command": "codex exec --dangerously-bypass-approvals-and-sandbox '{{message}}'",
         "timeout": 300000,
         "maxLength": 2000
       }

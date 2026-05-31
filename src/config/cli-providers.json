@@ -43,18 +43,18 @@
     },
     "codex": {
       "name": "OpenAI Codex CLI",
-      "description": "OpenAI's Codex CLI for code generation",
+      "description": "OpenAI's Codex CLI coding agent",
       "command": "codex",
-      "defaultArgs": ["--approval-mode", "suggest"],
-      "yoloArgs": ["--approval-mode", "full-auto"],
+      "defaultArgs": [],
+      "yoloArgs": ["--dangerously-bypass-approvals-and-sandbox"],
       "promptArgs": ["exec"],
       "streamJsonArgs": ["--json"],
       "docker": {
         "install": "# Install OpenAI Codex CLI\nRUN npm install -g @openai/codex",
-        "note": "Check 'codex --help' for available flags"
+        "note": "Run 'codex login' for ChatGPT OAuth, or set OPENAI_API_KEY for API-key auth"
       },
       "envVars": ["OPENAI_API_KEY"],
-      "credentialMount": null,
+      "credentialMount": "~/.codex:/home/node/.codex",
       "instructionFile": "AGENTS.md",
       "modelConfig": {
         "envVar": "CODEX_MODEL",
